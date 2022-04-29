@@ -15,5 +15,7 @@ All of our software is open with intent. We welcome contributions - we want pull
 to hear about issues. See also [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## What's here / changelog
+### Next ...
+* README for the Java client library
 ### Apr 29 2022
 * at_client : Initial implementation of Java client library for the @ platform
