@@ -7,7 +7,7 @@ public class KeyBuilders {
     public interface KeyBuilder {
         KeyBuilder timeToLive(int ttl);
         KeyBuilder timeToBirth(int ttb);
-        Keys.AtKey build() throws AtException;
+        Keys.AtKey build();
         void validate() throws AtException;
         KeyBuilder namespace(String namespace);
     }
@@ -121,11 +121,6 @@ public class KeyBuilders {
         }
 
         @Override
-        public void validate() throws AtException {
-            super.validate();
-        }
-
-        @Override
         public PublicKeyBuilder cache(int ttr, boolean ccd) {
             super.cache(ttr, ccd);
             return this;
@@ -173,7 +168,7 @@ public class KeyBuilders {
         }
 
         @Override
-        public SharedKey build() throws AtException {
+        public SharedKey build() {
             return (SharedKey) _atKey;
         }
 
@@ -232,11 +227,6 @@ public class KeyBuilders {
         public SelfKey build() {
             return (SelfKey) _atKey;
         }
-
-        @Override
-        public void validate() throws AtException {
-            super.validate();
-        }
     }
 
     /// Builder to build the hidden keys
@@ -277,11 +267,6 @@ public class KeyBuilders {
         @Override
         public PrivateHiddenKey build() {
             return (PrivateHiddenKey) _atKey;
-        }
-
-        @Override
-        public void validate() throws AtException {
-            super.validate();
         }
     }
 

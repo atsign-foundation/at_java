@@ -1,7 +1,10 @@
-package org.atsign.client.api.impl;
+package org.atsign.client.api.impl.secondaries;
 
 import org.atsign.client.api.AtConnectionFactory;
+import static org.atsign.client.api.AtEvents.*;
 import org.atsign.client.api.Secondary;
+import org.atsign.client.api.impl.connections.AtMonitorConnection;
+import org.atsign.client.api.impl.connections.AtSecondaryConnection;
 import org.atsign.common.AtSign;
 import org.atsign.common.AtException;
 import org.atsign.client.util.AuthUtil;
@@ -12,43 +15,40 @@ import java.util.*;
 /**
  * @see org.atsign.client.api.Secondary
  */
-@SuppressWarnings("unused")
-public class RemoteSecondary implements Secondary, Secondary.EventListener {
+public class RemoteSecondary implements Secondary {
 
     private final AtConnectionFactory connectionFactory;
+    private final AtEventBus eventBus;
+
+    @SuppressWarnings("unused")
     public AtConnectionFactory getConnectionFactory() {return connectionFactory;}
 
     private final AtSecondaryConnection connection;
+    @SuppressWarnings("unused")
     public AtSecondaryConnection getConnection() {return connection;}
 
     private AtMonitorConnection monitorConnection;
+    @SuppressWarnings("unused")
     public AtMonitorConnection getMonitorConnection() {return monitorConnection;}
 
     private final AtSign atSign;
     public AtSign getAtSign() {return atSign;}
 
-    @SuppressWarnings("FieldCanBeLocal")
-    private final Map<String, String> keys;
-
     private final String secondaryUrl;
+    @SuppressWarnings("unused")
     public String getSecondaryUrl() {return secondaryUrl;}
 
-    private final Map<EventListener, Set<EventType>> eventListeners = new HashMap<>();
-
-    public RemoteSecondary(AtSign atSign, String secondaryUrl, Map<String, String> keys) throws AtException, IOException {
-        this(atSign, secondaryUrl, keys, new DefaultAtConnectionFactory());
-    }
-
-    public RemoteSecondary(AtSign atSign, String secondaryUrl,
+    public RemoteSecondary(AtEventBus eventBus, AtSign atSign, String secondaryUrl,
                            Map<String, String> keys, AtConnectionFactory connectionFactory) throws IOException, AtException {
+        this.eventBus = eventBus;
         this.atSign = atSign;
         this.secondaryUrl = secondaryUrl;
         this.connectionFactory = connectionFactory;
-        this.keys = keys;
 
         this.connection = connectionFactory.getSecondaryConnection(
+                this.eventBus,
                 this.atSign,
-                secondaryUrl,
+                this.secondaryUrl,
                 connection -> new AuthUtil().authenticateWithPkam(connection, atSign, keys));
         connection.connect();
     }
@@ -91,36 +91,13 @@ public class RemoteSecondary implements Secondary, Secondary.EventListener {
         return response;
     }
 
-    @SuppressWarnings("DuplicatedCode")
-    @Override
-    public synchronized void handleEvent(EventType eventType, String eventData) {
-        Set<Map.Entry<EventListener, Set<EventType>>> listenerEntries = eventListeners.entrySet();
-        for (Map.Entry<EventListener, Set<EventType>> next : listenerEntries) {
-            try {
-                Set<EventType> acceptedEventTypes = next.getValue();
-                if (acceptedEventTypes.contains(eventType)) {
-                    EventListener listener = next.getKey();
-                    listener.handleEvent(eventType, eventData);
-                }
-            } catch (Exception e) {
-                System.err.println(this.getClass().getSimpleName() + " caught exception from one of its event listeners : " + e.getMessage());
-                e.printStackTrace(System.err);
-            }
-        }
-    }
+    @Override public void startMonitor() {ensureMonitorRunning();}
+    @Override public void stopMonitor() {ensureMonitorNotRunning();}
+    @Override public boolean isMonitorRunning() {return monitorConnection.isRunning();}
 
     @Override
-    public synchronized void addEventListener(EventListener listener, Set<EventType> eventTypes) {
-        ensureMonitorRunning();
-        eventListeners.put(listener, eventTypes);
-    }
-
-    @Override
-    public synchronized void  removeEventListener(EventListener listener) {
-        eventListeners.remove(listener);
-        if (eventListeners.isEmpty()) {
-            ensureMonitorNotRunning();
-        }
+    public synchronized void handleEvent(AtEventType eventType, Map<String, Object> eventData) {
+//        if (eventType == )
     }
 
     private void ensureMonitorRunning() {
@@ -128,15 +105,11 @@ public class RemoteSecondary implements Secondary, Secondary.EventListener {
         try {
             if (monitorConnection == null) {
                 what = "construct an AtMonitorConnection";
-                monitorConnection = new AtMonitorConnection(this, atSign, secondaryUrl, connection.authenticator, true);
-            }
-            if (! monitorConnection.isConnected()) {
-                what = "call monitorConnection.connect()";
-                monitorConnection.connect();
+                monitorConnection = new AtMonitorConnection(eventBus, atSign, secondaryUrl, connection.getAuthenticator(), false);
             }
             if (! monitorConnection.isRunning()) {
                 what = "call monitorConnection.startMonitor()";
-                monitorConnection.startMonitor("addEventListener->ensureMonitorRunning");
+                monitorConnection.startMonitor();
             }
         } catch (Exception e) {
             System.err.println("SEVERE: failed to " + what + " : " + e.getMessage());
@@ -152,11 +125,7 @@ public class RemoteSecondary implements Secondary, Secondary.EventListener {
             }
             if (monitorConnection.isRunning()) {
                 what = "call monitorConnection.stopMonitor()";
-                monitorConnection.stopMonitor("removeEventListener->ensureMonitorNotRunning");
-            }
-            if (monitorConnection.isConnected()) {
-                what = "call monitorConnection.disconnect()";
-                monitorConnection.disconnect();
+                monitorConnection.stopMonitor();
             }
         } catch (Exception e) {
             System.err.println("SEVERE: failed to " + what + " : " + e.getMessage());

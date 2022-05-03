@@ -1,6 +1,7 @@
-package org.atsign.client.api.impl;
+package org.atsign.client.api.impl.connections;
 
 import org.atsign.client.api.AtConnection;
+import org.atsign.client.api.AtEvents;
 import org.atsign.common.AtException;
 
 import javax.net.SocketFactory;
@@ -44,12 +45,15 @@ public abstract class AtConnectionBase implements AtConnection {
     @Override
     public void setLogging(boolean logging) {this.logging = logging;}
 
-    protected Authenticator authenticator;
+    protected final Authenticator authenticator;
+    public Authenticator getAuthenticator() {return authenticator;}
 
     protected PrintWriter socketWriter;
     protected Scanner socketScanner;
 
-    public AtConnectionBase(String url, AtConnection.Authenticator authenticator, boolean autoReconnect, boolean logging) {
+    protected final AtEvents.AtEventBus eventBus;
+    public AtConnectionBase(AtEvents.AtEventBus eventBus, String url, AtConnection.Authenticator authenticator, boolean autoReconnect, boolean logging) {
+        this.eventBus = eventBus;
         this.url = url;
         this.host = url.split(":")[0];
         this.port = Integer.parseInt(url.split(":")[1]);
@@ -71,9 +75,7 @@ public abstract class AtConnectionBase implements AtConnection {
             socketWriter.close();
             socket.shutdownInput();
             socket.shutdownOutput();
-        } catch (Exception e) {
-            System.err.println("disconnect caught exception " + e.getMessage());
-            e.printStackTrace(System.err);
+        } catch (Exception ignore) {
         }
     }
     @Override

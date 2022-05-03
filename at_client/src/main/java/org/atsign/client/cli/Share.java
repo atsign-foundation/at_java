@@ -5,9 +5,10 @@ import org.atsign.common.AtSign;
 import static org.atsign.common.KeyBuilders.*;
 
 import org.atsign.common.Keys;
-import org.atsign.client.api.impl.AtRootConnection;
+import org.atsign.client.api.impl.connections.AtRootConnection;
 import org.atsign.common.AtException;
 
+import java.time.OffsetDateTime;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -58,8 +59,9 @@ public class Share {
             sharedKeyBuilder = sharedKeyBuilder.key(keyName);
             Keys.SharedKey sharedKey = sharedKeyBuilder.build();
 
+            System.out.println(OffsetDateTime.now() + " | calling atClient.put()");
             String putResponse = atClient.put(sharedKey, toShare).get();
-            System.out.println("put response : " + putResponse);
+            System.out.println(OffsetDateTime.now() + " | put response : " + putResponse);
         } catch (AtException | InterruptedException | ExecutionException e) {
             System.err.println("Failed to share : " + e.getMessage());
             e.printStackTrace(System.err);

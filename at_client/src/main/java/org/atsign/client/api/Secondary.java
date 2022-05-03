@@ -2,8 +2,6 @@ package org.atsign.client.api;
 
 import org.atsign.common.AtException;
 
-import java.util.Set;
-
 /**
  * Clients ultimately talk to a Secondary server - usually this is a microservice which implements
  * the @ protocol server spec, running somewhere in the cloud.
@@ -20,7 +18,7 @@ import java.util.Set;
  * from command line.
  */
 @SuppressWarnings("unused")
-public interface Secondary {
+public interface Secondary extends AtEvents.AtEventListener {
     /**
      * @param command in @ protocol format
      * @param throwExceptionOnErrorResponse sometimes we want to inspect an error response,
@@ -31,16 +29,9 @@ public interface Secondary {
      */
     Response executeCommand(String command, boolean throwExceptionOnErrorResponse) throws AtException;
 
-    /**
-     * @param listener to handle various events which originate from Secondaries
-     * @param eventTypes the set of EventTypes that the listener is interested in
-     */
-    void addEventListener(EventListener listener, Set<EventType> eventTypes);
-
-    /**
-     * @param listener the listener to remove
-     */
-    void removeEventListener(EventListener listener);
+    void startMonitor();
+    void stopMonitor();
+    boolean isMonitorRunning();
 
     class Response {
         public String data;
@@ -55,17 +46,5 @@ public interface Secondary {
                 return "data:" + data;
             }
         }
-    }
-
-    interface EventListener {
-        void handleEvent(EventType eventType, String eventData);
-    }
-
-    enum EventType {
-        heartbeatAck,
-        sharedKeyNotification,
-        updateNotification, deleteNotification, unknownNotification, statsNotification,
-        data, error,
-        unknown
     }
 }

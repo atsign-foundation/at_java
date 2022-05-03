@@ -1,9 +1,10 @@
 package org.atsign.client.api;
 
-import org.atsign.client.api.impl.AtClientImpl;
-import org.atsign.client.api.impl.AtRootConnection;
-import org.atsign.client.api.impl.RemoteSecondary;
-import org.atsign.client.api.impl.DefaultAtConnectionFactory;
+import org.atsign.client.api.impl.clients.AtClientImpl;
+import org.atsign.client.api.impl.connections.AtRootConnection;
+import org.atsign.client.api.impl.connections.DefaultAtConnectionFactory;
+import org.atsign.client.api.impl.events.SimpleAtEventBus;
+import org.atsign.client.api.impl.secondaries.RemoteSecondary;
 import org.atsign.common.AtSign;
 import org.atsign.common.AtException;
 import org.atsign.client.util.KeysUtil;
@@ -18,7 +19,7 @@ import java.util.concurrent.CompletableFuture;
  * The primary interface of the AtSign client library.
  */
 @SuppressWarnings("unused")
-public interface AtClient extends Secondary {
+public interface AtClient extends Secondary, AtEvents.AtEventBus {
     /**
      * Factory - returns default AtClientImpl with a RemoteSecondary and a DefaultConnectionFactory
      * @param rootUrl the address of the root server to use - e.g. root.atsign.org:64 for prod, or
@@ -29,11 +30,12 @@ public interface AtClient extends Secondary {
      */
     static AtClient withRemoteSecondary(String rootUrl, AtSign atSign) throws AtException {
         DefaultAtConnectionFactory connectionFactory = new DefaultAtConnectionFactory();
+        AtEvents.AtEventBus eventBus = new SimpleAtEventBus();
 
         String secondaryUrl;
         try {
             // secondaryUrl = new AtRootConnection(rootUrl).lookupAtSign(atSign);
-            AtRootConnection rootConnection = connectionFactory.getRootConnection(rootUrl);
+            AtRootConnection rootConnection = connectionFactory.getRootConnection(eventBus, rootUrl);
             rootConnection.connect();
             secondaryUrl = rootConnection.lookupAtSign(atSign);
         } catch (Exception e) {
@@ -49,12 +51,12 @@ public interface AtClient extends Secondary {
 
         RemoteSecondary secondary;
         try {
-            secondary = new RemoteSecondary(atSign, secondaryUrl, keys, connectionFactory);
+            secondary = new RemoteSecondary(eventBus, atSign, secondaryUrl, keys, connectionFactory);
         } catch (Exception e) {
             throw new AtException("Failed to create RemoteSecondary: " + e.getMessage(), e);
         }
 
-        return new AtClientImpl(atSign, keys, secondary);
+        return new AtClientImpl(eventBus, atSign, keys, secondary);
     }
 
     AtSign getAtSign();

@@ -1,5 +1,6 @@
-package org.atsign.client.api.impl;
+package org.atsign.client.api.impl.connections;
 
+import org.atsign.client.api.AtEvents;
 import org.atsign.common.AtSign;
 import org.atsign.common.AtException;
 
@@ -12,10 +13,13 @@ import java.io.IOException;
 public class AtRootConnection extends AtConnectionBase {
 
     public AtRootConnection(String rootUrl) {
-        this(rootUrl, true, false);
+        this (null, rootUrl);
     }
-    public AtRootConnection(String rootUrl, boolean autoReconnect, boolean logging) {
-        super(rootUrl, null, autoReconnect, logging);
+    public AtRootConnection(AtEvents.AtEventBus eventBus, String rootUrl) {
+        this(eventBus, rootUrl, true, false);
+    }
+    public AtRootConnection(AtEvents.AtEventBus eventBus, String rootUrl, boolean autoReconnect, boolean logging) {
+        super(eventBus, rootUrl, null, autoReconnect, logging);
     }
 
     @SuppressWarnings("RedundantThrows")

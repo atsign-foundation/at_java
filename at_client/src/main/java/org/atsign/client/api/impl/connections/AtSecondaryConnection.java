@@ -1,6 +1,7 @@
-package org.atsign.client.api.impl;
+package org.atsign.client.api.impl.connections;
 
 import org.atsign.client.api.AtConnection;
+import org.atsign.client.api.AtEvents;
 import org.atsign.common.AtSign;
 
 import java.io.IOException;
@@ -13,8 +14,8 @@ public class AtSecondaryConnection extends AtConnectionBase {
     private final AtSign atSign;
     public AtSign getAtSign() {return atSign;}
 
-    public AtSecondaryConnection(AtSign atSign, String secondaryUrl, AtConnection.Authenticator authenticator, boolean autoReconnect, boolean logging) {
-        super(secondaryUrl, authenticator, autoReconnect, logging);
+    public AtSecondaryConnection(AtEvents.AtEventBus eventBus, AtSign atSign, String secondaryUrl, AtConnection.Authenticator authenticator, boolean autoReconnect, boolean logging) {
+        super(eventBus, secondaryUrl, authenticator, autoReconnect, logging);
         this.atSign = atSign;
     }
 

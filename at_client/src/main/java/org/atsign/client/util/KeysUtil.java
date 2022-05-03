@@ -16,11 +16,12 @@ public class KeysUtil {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     private static final String rootFolder = System.getProperty("user.dir") + "/keys/";
-    public static String pkamPublicKeyName = "aesPkamPublicKey";
-    public static String pkamPrivateKeyName = "aesPkamPrivateKey";
-    public static String encryptionPublicKeyName = "aesEncryptPublicKey";
-    public static String encryptionPrivateKeyName = "aesEncryptPrivateKey";
-    public static String selfEncryptionKeyName = "selfEncryptionKey";
+
+    public  static final String pkamPublicKeyName = "aesPkamPublicKey";
+    public  static final String pkamPrivateKeyName = "aesPkamPrivateKey";
+    public  static final String encryptionPublicKeyName = "aesEncryptPublicKey";
+    public  static final String encryptionPrivateKeyName = "aesEncryptPrivateKey";
+    public  static final String selfEncryptionKeyName = "selfEncryptionKey";
 
     public static void saveKeys(AtSign atSign, Map<String, String> keys) throws Exception {
         _makeRootFolder();

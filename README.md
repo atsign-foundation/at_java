@@ -16,10 +16,19 @@ to hear about issues. See also [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## What's here / changelog
 ### Next ...
-* Java client library
-  * Better README for the Java client library
-  * fluid APIs for sharing data - e.g. share(value).with(atSign/s).as(keyName)
-  * extend REPL so that you can call AtClient methods (e.g. the share() above) interactively 
+* Provide a CLI tool for atSign registration. Onboard CLI can then be used to Onboard the newly-registered atSign.
+* Getting started guide - from nothing to end-to-end-encrypted chat session in < 5 minutes
+* fluid client APIs for sharing data - e.g. share(value).with(atSign/s).as(keyName)
+* extend client REPL so that you can call AtClient methods (e.g. the share() above) interactively 
+
+### May 03 2022
+* Better event distribution
+* Improved Monitor's event generation
+* Added 'userDefined' to the AtEventType enum, to allow the event bus to be used by application code
+* Caches shared keys after first retrieval
+* AtClientImpl listens for updateNotification events, decrypts the ciphertext on-the-fly, and publishes a decryptedUpdateNotification which is more useful for application code
+* Enhanced REPL to optionally listen to only decryptedUpdateNotification; added command-line flag to listen to both
+
 ### Apr 29 2022
 * **at_client** : Initial implementation of Java client library for the @ platform. README will come soon 
 but here's a very brief summary which will get you going if you already know the basics of the @ platform

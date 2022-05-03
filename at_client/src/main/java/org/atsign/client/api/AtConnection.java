@@ -27,7 +27,7 @@ public interface AtConnection {
     void setLogging(boolean logging);
 
     void connect() throws IOException, AtException;
-    void disconnect() throws IOException, AtException;
+    void disconnect();
 
     String executeCommand(String command) throws IOException;
 

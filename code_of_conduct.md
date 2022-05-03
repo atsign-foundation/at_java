@@ -1,5 +1,5 @@
 
-<img src="https://atsign.dev/assets/img/@dev.png?sanitize=true">
+<img src="https://atsign.dev/assets/img/@dev.png?sanitize=true" alt="@ Dev logo">
 
 ### Now for a little internet optimism
 

@@ -14,7 +14,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
 public class EncryptionUtil {
-    static IvParameterSpec IV = new IvParameterSpec(new byte[16]);
+    static final IvParameterSpec IV = new IvParameterSpec(new byte[16]);
 
     static {
         Security.addProvider(new BouncyCastleProvider());

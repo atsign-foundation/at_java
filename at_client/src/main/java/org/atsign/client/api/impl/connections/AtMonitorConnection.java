@@ -1,11 +1,12 @@
-package org.atsign.client.api.impl;
+package org.atsign.client.api.impl.connections;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.atsign.client.api.Secondary;
 import org.atsign.common.AtSign;
 
-import java.io.IOException;
-import java.util.Map;
+import java.util.HashMap;
+
+import static org.atsign.client.api.AtEvents.*;
+import static org.atsign.client.api.AtEvents.AtEventType.*;
 
 /**
  *
@@ -20,11 +21,11 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
     private boolean running = false;
     public boolean isRunning() { return running; }
 
-    private final RemoteSecondary remoteSecondary;
-
     private boolean _shouldBeRunning = false;
     private void setShouldBeRunning(boolean b) {
-        System.err.println("Setting shouldBeRunning " + b);
+        if (_shouldBeRunning != b) {
+            System.err.println("Monitor setting shouldBeRunning to [" + b + "]");
+        }
         _shouldBeRunning = b;
     }
 
@@ -32,10 +33,14 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
         return _shouldBeRunning;
     }
 
-    public AtMonitorConnection(RemoteSecondary remoteSecondary, AtSign atSign, String secondaryUrl, Authenticator authenticator, boolean logging) {
+    public AtMonitorConnection(
+            AtEventBus eventBus,
+            AtSign atSign,
+            String secondaryUrl,
+            Authenticator authenticator,
+            boolean logging) {
         // Note that the Monitor doesn't make use of the auto-reconnect functionality, it does its own thing
-        super(atSign, secondaryUrl, authenticator, false, logging);
-        this.remoteSecondary = remoteSecondary;
+        super(eventBus, atSign, secondaryUrl, authenticator, false, logging);
         startHeartbeat();
     }
 
@@ -49,8 +54,8 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
                     if (!isRunning() || lastHeartbeatSentTime - lastHeartbeatAckTime >= heartbeatIntervalMillis) {
                         try {
                             // heartbeats have stopped being acked
-                            stopMonitor("monitor heartbeat");
-                            disconnect();
+                            System.err.println("Monitor heartbeats not being received");
+                            stopMonitor();
                             long waitStartTime = System.currentTimeMillis();
                             while (isRunning() && System.currentTimeMillis() - waitStartTime < 5000) {
                                 // wait for monitor to stop
@@ -61,10 +66,8 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
                             }
                             if (isRunning()) {
                                 System.err.println("Monitor thread has not stopped, but going to start another one anyway");
-                            } else {
-                                System.err.println("heartbeat thread - monitor has stopped OK");
                             }
-                            startMonitor("monitor heartbeat");
+                            startMonitor();
                         } catch (Exception e) {
                             System.err.println("Monitor restart failed " + e);
                             e.printStackTrace(System.err);
@@ -72,12 +75,10 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
                     } else {
                         if (System.currentTimeMillis() - lastHeartbeatSentTime > heartbeatIntervalMillis) {
                             try {
-                                System.err.println("Sending heartbeat");
                                 executeCommand("noop:0", false, false);
-                                System.err.println("Sent heartbeat");
                                 lastHeartbeatSentTime = System.currentTimeMillis();
-                            } catch (Exception heartbeatSendException) {
-                                System.err.println("heartbeat send resulted in exception : " + heartbeatSendException.getMessage());
+                            } catch (Exception ignore) {
+                                // Can't do anything, the heartbeat loop will take care of restarting the monitor connection
                             }
                         }
                     }
@@ -94,8 +95,7 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
      * @return true if the monitor start request has succeeded, or if the monitor is already running.
      */
     @SuppressWarnings("UnusedReturnValue")
-    public synchronized boolean startMonitor(String requester) {
-        System.err.println("Monitor START requested by " + requester);
+    public synchronized boolean startMonitor() {
         setShouldBeRunning(true);
         if (! running) {
             running = true;
@@ -113,8 +113,7 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
         return true;
     }
 
-    public synchronized void stopMonitor(String requester) {
-        System.err.println("Monitor STOP requested by " + requester);
+    public synchronized void stopMonitor() {
         setShouldBeRunning(false);
         disconnect();
     }
@@ -122,6 +121,7 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
     /**
      * Please don't call this directly. Call startMonitor() instead, which starts the monitor in its own thread
      */
+    @SuppressWarnings("unchecked")
     @Override
     public void run() {
         System.err.println("***");
@@ -144,58 +144,76 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
             while (isShouldBeRunning() && socketScanner.hasNextLine()) {
                 what = "read from connection";
                 String response = parseRawResponse(socketScanner.nextLine());
-                Secondary.EventType eventType;
-                String eventDataAsString;
+                AtEventType eventType;
+                HashMap<String, Object> eventData = new HashMap<>();
                 what = "parse monitor message";
                 try {
                     if (response.startsWith("data:ok")) {
-                        eventType = Secondary.EventType.heartbeatAck;
-                        eventDataAsString = response.substring("data:".length());
+                        eventType = monitorHeartbeatAck;
+                        eventData.put("key", "__heartbeat__");
+                        eventData.put("value", response.substring("data:".length()));
                         lastHeartbeatAckTime = System.currentTimeMillis();
+
                     } else if (response.startsWith("data:")) {
-                        eventType = Secondary.EventType.data;
-                        eventDataAsString = response.substring("data:".length());
+                        eventType = monitorException;
+                        eventData.put("key", "__monitorException__");
+                        eventData.put("value", response);
+                        eventData.put("exception", "Unexpected 'data:' message from server");
+
                     } else if (response.startsWith("error:")) {
-                        eventType = Secondary.EventType.error;
-                        eventDataAsString = response.substring("error:".length());
+                        eventType = monitorException;
+                        eventData.put("key", "__monitorException__");
+                        eventData.put("value", response);
+                        eventData.put("exception", "Unexpected 'error:' message from server");
+
                     } else if (response.startsWith("notification:")) {
                         // if id is -1 then it's a stats update
                         // if id is > 0 then it's a data notification:
                         //   operation will be either 'update' or 'delete'
                         //   key will be the key that has changed
                         //   value will be the value, if available, or null, if not (e.g. when ttr == 0, value is not available)
-                        eventDataAsString = response.substring("notification:".length());
-                        @SuppressWarnings("rawtypes") Map map = mapper.readValue(eventDataAsString, Map.class);
-                        String id = (String) map.get("id");
-                        String operation = (String) map.get("operation");
-                        String key = (String) map.get("key");
-                        @SuppressWarnings("unused") String value = (String) map.get("value");
-                        setLastReceivedTime(map.containsKey("epochMillis")
-                                ? (long) map.get("epochMillis")
+                        eventData = mapper.readValue(response.substring("notification:".length()), HashMap.class);
+                        String id = (String) eventData.get("id");
+                        String operation = (String) eventData.get("operation");
+                        String key = (String) eventData.get("key");
+                        setLastReceivedTime(eventData.containsKey("epochMillis")
+                                ? (long) eventData.get("epochMillis")
                                 : System.currentTimeMillis());
+
                         if (id.equals("-1")) {
-                            eventType = Secondary.EventType.statsNotification;
+                            eventType = statsNotification;
+
                         } else if ("update".equals(operation)) {
                             if (key.startsWith(getAtSign() + ":shared_key@")) {
-                                eventType = Secondary.EventType.sharedKeyNotification;
+                                eventType = sharedKeyNotification;
                             } else {
-                                eventType = Secondary.EventType.updateNotification;
+                                eventType = updateNotification;
                             }
+
                         } else if ("delete".equals(operation)) {
-                            eventType = Secondary.EventType.deleteNotification;
+                            eventType = deleteNotification;
+
                         } else {
-                            eventType = Secondary.EventType.unknownNotification;
+                            eventType = monitorException;
+                            eventData.put("key", "__monitorException__");
+                            eventData.put("value", response);
+                            eventData.put("exception", "Unknown notification operation '" + operation);
                         }
                     } else {
-                        eventType = Secondary.EventType.unknown;
-                        eventDataAsString = response;
+                        eventType = monitorException;
+                        eventData.put("key", "__monitorException__");
+                        eventData.put("value", response);
+                        eventData.put("exception", "Malformed response from server");
+
                     }
                 } catch (Exception e)  {
                     System.err.println("" + e);
-                    eventType = Secondary.EventType.unknown;
-                    eventDataAsString = response;
+                    eventType = monitorException;
+                    eventData.put("key", "__monitorException__");
+                    eventData.put("value", response);
+                    eventData.put("exception", e.toString());
                 }
-                remoteSecondary.handleEvent(eventType, eventDataAsString);
+                eventBus.publishEvent(eventType, eventData);
             }
             System.err.println("Monitor ending normally - shouldBeRunning is " + isShouldBeRunning());
         } catch (Exception e) {

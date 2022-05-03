@@ -93,15 +93,28 @@ public abstract class Keys {
             super.metadata.isHidden = false;
         }
 
-        public static SharedKey fromString(String key) {
+        public static SharedKey fromString(String key) throws IllegalArgumentException {
+            if (key == null) {
+                throw new IllegalArgumentException("SharedKey.fromString(key) : key may not be null");
+            }
             String[] splitByColon = key.split(":");
+            if (splitByColon.length != 2) {
+                throw new IllegalArgumentException("SharedKey.fromString(key) : key must have structure @bob:shared_key@alice");
+            }
             String sharedWith = splitByColon[0];
             String[] splitByAtSign = splitByColon[1].split("@");
+            if (splitByAtSign.length != 2) {
+                throw new IllegalArgumentException("SharedKey.fromString(key) : key must have structure @bob:shared_key@alice");
+            }
             String keyName = splitByAtSign[0];
             String sharedBy = splitByAtSign[1];
             SharedKey sharedKey = new SharedKey (new AtSign(sharedBy), new AtSign(sharedWith));
             sharedKey.name = keyName;
             return sharedKey;
+        }
+
+        public String getSharedSharedKeyName() {
+            return sharedWith + ":shared_key" + sharedBy;
         }
     }
 

@@ -1,8 +1,9 @@
 package org.atsign.client.cli;
 
+import org.atsign.client.api.impl.events.SimpleAtEventBus;
 import org.atsign.common.AtSign;
-import org.atsign.client.api.impl.AtSecondaryConnection;
-import org.atsign.client.api.impl.AtRootConnection;
+import org.atsign.client.api.impl.connections.AtSecondaryConnection;
+import org.atsign.client.api.impl.connections.AtRootConnection;
 import org.atsign.client.util.AuthUtil;
 import org.atsign.client.util.KeysUtil;
 import org.atsign.client.util.OnboardingUtil;
@@ -31,7 +32,7 @@ public class Onboard {
         System.out.println("Got address: " + secondaryUrl);
 
         System.out.println("Connecting to " + secondaryUrl);
-        AtSecondaryConnection conn = new AtSecondaryConnection(atSign, secondaryUrl, null, false, true);
+        AtSecondaryConnection conn = new AtSecondaryConnection(new SimpleAtEventBus(), atSign, secondaryUrl, null, false, true);
         conn.connect();
 
         AuthUtil auth = new AuthUtil();

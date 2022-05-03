@@ -2,7 +2,7 @@ package org.atsign.client.util;
 
 import org.atsign.client.api.AtConnection;
 import org.atsign.common.AtSign;
-import org.atsign.client.api.impl.AtSecondaryConnection;
+import org.atsign.client.api.impl.connections.AtSecondaryConnection;
 import org.atsign.common.AtException;
 
 import java.io.IOException;
