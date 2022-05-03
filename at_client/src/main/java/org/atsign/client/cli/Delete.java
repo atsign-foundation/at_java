@@ -40,7 +40,7 @@ public class Delete {
         try {
             String deleteResponse = atClient.delete(new KeyBuilders.SharedKeyBuilder(atSign, otherAtSign).key(keyName).build()).get();
             System.out.println("delete response : " + deleteResponse);
-        } catch (AtException | InterruptedException | ExecutionException e) {
+        } catch (InterruptedException | ExecutionException e) {
             System.err.println("Failed to get : " + e.getMessage());
             e.printStackTrace(System.err);
             System.exit(1);

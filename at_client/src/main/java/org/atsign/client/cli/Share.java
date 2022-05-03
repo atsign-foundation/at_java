@@ -62,7 +62,7 @@ public class Share {
             System.out.println(OffsetDateTime.now() + " | calling atClient.put()");
             String putResponse = atClient.put(sharedKey, toShare).get();
             System.out.println(OffsetDateTime.now() + " | put response : " + putResponse);
-        } catch (AtException | InterruptedException | ExecutionException e) {
+        } catch (InterruptedException | ExecutionException e) {
             System.err.println("Failed to share : " + e.getMessage());
             e.printStackTrace(System.err);
             System.exit(1);

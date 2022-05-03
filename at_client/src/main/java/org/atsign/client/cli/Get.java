@@ -42,7 +42,7 @@ public class Get {
             Keys.SharedKey sharedKey = new KeyBuilders.SharedKeyBuilder(otherAtSign, atSign).key(keyName).build();
             String getResponse = atClient.get(sharedKey).get();
             System.out.println("get response : " + getResponse);
-        } catch (AtException | InterruptedException | ExecutionException e) {
+        } catch (InterruptedException | ExecutionException e) {
             System.err.println("Failed to get : " + e.getMessage());
             e.printStackTrace(System.err);
             System.exit(1);
