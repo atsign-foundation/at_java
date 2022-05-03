@@ -7,6 +7,9 @@
 This repo contains libraries, tools, samples and examples for developers who wish
 to work with the @ platform from Java code.
 
+NB: As of May 3 2022, the Java client library can still be considered a 1.0.0-Beta version - i.e. there may occasionally
+be breaking changes, based on feedback from users of the library, until we get to a final version 1.0.0
+
 ### Contributions welcome!
 
 [![gitHub license](https://img.shields.io/badge/license-BSD3-blue.svg)](./LICENSE)
