@@ -14,6 +14,7 @@ import org.atsign.common.AtException;
 import org.json.JSONObject;
 
 public class RegisterUtil {
+    //Calls the API to receive atsigns that are ready to be claimed. Returns a free atsign.
     public String getFreeAtsign() throws AtException, MalformedURLException, IOException {
         URL urlObject = new URL(Constants.AT_DEV_DOMAIN + Constants.API_PATH + Constants.GET_FREE_ATSIGN);
         HttpsURLConnection connection = (HttpsURLConnection) urlObject.openConnection();
@@ -33,6 +34,8 @@ public class RegisterUtil {
         }
     }
 
+    //Accepts your email and an unpaired atsign. This method will pair the free atsign with your email.
+    //Sends the one-time-password to the provided email. Returns bool, true if OTP sent or False otherwise.
     public Boolean registerAtsign(String email, String atsign) throws AtException, MalformedURLException, IOException {
         URL urlObject = new URL(Constants.AT_DEV_DOMAIN + Constants.API_PATH + Constants.REGISTER_ATSIGN);
         HttpsURLConnection httpsConnection = (HttpsURLConnection) urlObject.openConnection();
@@ -60,6 +63,9 @@ public class RegisterUtil {
         throw new AtException(httpsConnection.getResponseCode() + " " + httpsConnection.getResponseMessage());
     }
 
+    //Accepts your email, unpaired atsign, and the otp received on the provided email.
+    //Validates the one-time-password against the atsign and registers it to the provided email if valid.
+    //Returns the CRAM secret pertaining to the atsign which is registered.
     public String validateOtp(String email, String atsign, String otp) throws IOException, AtException {
         String validationUrl = Constants.AT_DEV_DOMAIN + Constants.API_PATH + Constants.VALIDATE_OTP;
         URL validateOtpUrl = new URL(validationUrl);
@@ -84,8 +90,10 @@ public class RegisterUtil {
             response.append(bufferedReader.readLine());
             JSONObject dataJsonObject = new JSONObject(response.toString());
             System.out.println(dataJsonObject);
+            System.out.println("test" + dataJsonObject.getString("message"));
+            System.out.println(dataJsonObject.getString("message")=="Verified");
             if (dataJsonObject.getString("message") == "Verified") {
-                System.out.println(dataJsonObject.getString("cramkey").split(":")[1]);
+                System.out.println("Success " + dataJsonObject.getString("cramkey").split(":")[1]);
                 return dataJsonObject.getString("cramkey");
             } else if (dataJsonObject.getString("message").contains("Try again")) {
                 return "retry";

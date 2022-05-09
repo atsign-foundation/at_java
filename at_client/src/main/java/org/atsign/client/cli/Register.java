@@ -25,16 +25,17 @@ public class Register {
             System.out.println("Enter OTP received on: " + email);
             otp = scanner.nextLine();
             validationResponse = registerUtil.validateOtp(email, atsign, otp);
-            if (validationResponse.startsWith("@")) {
-                cramSecret = validationResponse.split(":")[1];
-                System.out.println(cramSecret);
-            } else if (validationResponse == "retry") {
+            if (validationResponse == "retry") {
                 while (validationResponse == "retry") {
                     System.out.println("Incorrect OTP entered. Re-enter the OTP");
                     otp = scanner.nextLine();
                     validationResponse = registerUtil.validateOtp(email, atsign, otp);
                 }
-            } else {
+            } else if (validationResponse.startsWith("@")) {
+                cramSecret = validationResponse.split(":")[1];
+                System.out.println(cramSecret);
+                //call the onboarding CLI with the available cram secret
+            }  else {
                 System.out.println(validationResponse);
             }
         }
