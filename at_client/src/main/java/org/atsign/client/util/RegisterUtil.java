@@ -2,27 +2,20 @@ package org.atsign.client.util;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
-import java.net.http.HttpClient;
-import java.net.http.HttpConnectTimeoutException;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import javax.net.ssl.HttpsURLConnection;
+
 import org.atsign.common.AtException;
 import org.json.JSONObject;
 
 public class RegisterUtil {
     public String getFreeAtsign() throws AtException, MalformedURLException, IOException {
-        String getAtsignUrl = Constants.AT_DEV_DOMAIN + Constants.API_PATH + Constants.GET_FREE_ATSIGN;
-        URL urlObject = new URL(getAtsignUrl);
+        URL urlObject = new URL(Constants.AT_DEV_DOMAIN + Constants.API_PATH + Constants.GET_FREE_ATSIGN);
         HttpsURLConnection connection = (HttpsURLConnection) urlObject.openConnection();
         connection.setRequestMethod("GET");
         connection.setRequestProperty("Content-Type", "application/json");
@@ -34,7 +27,6 @@ public class RegisterUtil {
             response.append(bufferedReader.readLine());
             JSONObject dataJsonObject = new JSONObject(response.toString());
             dataJsonObject = dataJsonObject.getJSONObject("data");
-            System.out.println(dataJsonObject.getString("atsign"));
             return dataJsonObject.getString("atsign");
         } else {
             throw new AtException(connection.getResponseCode() + " " + connection.getResponseMessage());
@@ -42,15 +34,9 @@ public class RegisterUtil {
     }
 
     public Boolean registerAtsign(String email, String atsign) throws AtException, MalformedURLException, IOException {
-        String registerUrl = Constants.AT_DEV_DOMAIN + Constants.API_PATH + Constants.REGISTER_ATSIGN;
-        URL urlObject = new URL(registerUrl);
+        URL urlObject = new URL(Constants.AT_DEV_DOMAIN + Constants.API_PATH + Constants.REGISTER_ATSIGN);
         HttpsURLConnection httpsConnection = (HttpsURLConnection) urlObject.openConnection();
-        JSONObject postParams = new JSONObject();
-        postParams.put("atsign", atsign);
-        postParams.put("email", email);
-        String params = postParams.toString().replaceAll("\"\"", "\"");
-        // RequestBody body = RequestBody.create(mediaType,
-        // "{\"atsign\":\"pinegreen7amateur\", \"email\":\"n150232@rguktn.ac.in\"}");
+        String params = "{\"atsign\":\"" + atsign + "\", \"email\":\"" + email + "\"}";
         httpsConnection.setRequestMethod("POST");
         httpsConnection.setRequestProperty("Content-Type", "application/json");
         httpsConnection.setRequestProperty("Authorization", Constants.DEV_API_KEY);
@@ -75,13 +61,12 @@ public class RegisterUtil {
     }
 
     public String validateOtp(String email, String atsign, String otp) throws IOException, AtException {
-        URL validateOtpUrl = new URL(Constants.AT_DEV_DOMAIN, Constants.API_PATH, Constants.VALIDATE_OTP);
+        String validationUrl = Constants.AT_DEV_DOMAIN + Constants.API_PATH + Constants.VALIDATE_OTP;
+        URL validateOtpUrl = new URL(validationUrl);
         HttpsURLConnection httpsConnection = (HttpsURLConnection) validateOtpUrl.openConnection();
-        JSONObject postParams = new JSONObject();
-        postParams.put("atsign", atsign);
-        postParams.put("email", email);
-        postParams.put("otp", otp);
-        String params = postParams.toString().replaceAll("\"\"", "\"");
+        String params = "{\"atsign\":\"" + atsign + "\", \"email\":\"" + email + "\", \"otp\":\"" + otp
+                + "\", \"confirmation\":\"" + "true\"}";
+        System.out.println(params);
         httpsConnection.setRequestMethod("POST");
         httpsConnection.setRequestProperty("Content-Type", "application/json");
         httpsConnection.setRequestProperty("Authorization", Constants.DEV_API_KEY);
@@ -90,19 +75,23 @@ public class RegisterUtil {
         outputStream.write(params.getBytes(StandardCharsets.UTF_8), 0, params.length());
         outputStream.flush();
         outputStream.close();
+        System.out.println(httpsConnection.getResponseCode());
+        System.out.println(httpsConnection.getResponseMessage());
         if (httpsConnection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(
                     httpsConnection.getInputStream()));
             StringBuffer response = new StringBuffer();
             response.append(bufferedReader.readLine());
             JSONObject dataJsonObject = new JSONObject(response.toString());
-            System.out.println(dataJsonObject.getString("atsign"));
-            if (dataJsonObject.getString("atsign") == "true") {
+            System.out.println(dataJsonObject);
+            if (dataJsonObject.getString("message") == "Verified") {
+                System.out.println(dataJsonObject.getString("cramkey").split(":")[1]);
                 return dataJsonObject.getString("cramkey");
+            } else if (dataJsonObject.getString("message").contains("Try again")) {
+                return "retry";
+            } else {
+                return "could not validate. Something went wrong";
             }
-            // else{
-            // return "fail";
-            // }
         } else {
             throw new AtException(httpsConnection.getResponseCode() + " " + httpsConnection.getResponseMessage());
         }

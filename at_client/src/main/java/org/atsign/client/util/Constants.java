@@ -11,6 +11,6 @@ public final class Constants {
     public static final String API_PATH = "/api/app/v2";
     public static final String GET_FREE_ATSIGN = "/get-free-atsign";
     public static final String REGISTER_ATSIGN = "/register-person";
-    public static final String VALIDATE_OTP = "validate-otp";
+    public static final String VALIDATE_OTP = "/validate-person";
     public static final String DEV_API_KEY = "477b-876u-bcez-c42z-6a3d";
 }
