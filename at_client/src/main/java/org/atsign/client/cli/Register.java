@@ -1,7 +1,10 @@
 package org.atsign.client.cli;
 
 import java.util.Scanner;
+
+import org.atsign.client.util.Constants;
 import org.atsign.client.util.RegisterUtil;
+import org.atsign.common.AtSign;
 
 public class Register {
     public static void main(String[] args) throws Exception {
@@ -16,9 +19,8 @@ public class Register {
         String cramSecret;
 
         Scanner scanner = new Scanner(System.in);
-        Onboard onboardCli = new Onboard();
         RegisterUtil registerUtil = new RegisterUtil();
-        String atsign = registerUtil.getFreeAtsign();
+        AtSign atsign = new AtSign(registerUtil.getFreeAtsign());
         System.out.println("Your atsign is: " + atsign);
 
         if (registerUtil.registerAtsign(email, atsign)) {
@@ -31,11 +33,13 @@ public class Register {
                     otp = scanner.nextLine();
                     validationResponse = registerUtil.validateOtp(email, atsign, otp);
                 }
+                scanner.close();
             } else if (validationResponse.startsWith("@")) {
                 cramSecret = validationResponse.split(":")[1];
                 System.out.println(cramSecret);
-                //call the onboarding CLI with the available cram secret
-            }  else {
+                String[] onboardArgs = { Constants.DEV_DOMAIN, atsign.toString(), cramSecret };
+                Onboard.main(onboardArgs);
+            } else {
                 System.out.println(validationResponse);
             }
         }
