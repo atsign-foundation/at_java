@@ -5,7 +5,7 @@ public final class Constants {
 
     public static final String ROOT_DOMAIN = "root.atsign.org";
     public static final String DEV_DOMAIN = "root.atsign.wtf";
-    public static final int ROOT_PORT = 64;
+    public static final String ROOT_PORT = "64";
     public static final String AT_DOMAIN = "https://my.atsign.com";
     public static final String AT_DEV_DOMAIN = "https://my.atsign.wtf";
     public static final String API_PATH = "/api/app/v2";
