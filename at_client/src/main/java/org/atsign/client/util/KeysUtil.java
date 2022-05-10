@@ -25,7 +25,7 @@ public class KeysUtil {
 
     public static void saveKeys(AtSign atSign, Map<String, String> keys) throws Exception {
         _makeRootFolder();
-        File file = new File(rootFolder + atSign + ".keys");
+        File file = getKeysFile(atSign);
         System.out.println("Saving keys to " + file.getAbsolutePath());
         if (file.exists()) {
             //noinspection ResultOfMethodCallIgnored
@@ -47,9 +47,13 @@ public class KeysUtil {
         Files.write(file.toPath(), json.getBytes(StandardCharsets.UTF_8));
     }
 
+    private static File getKeysFile(AtSign atSign) {
+        return new File(rootFolder + atSign + "_key.atKeys");
+    }
+
     public static Map<String, String> loadKeys(AtSign atSign) throws Exception {
         _makeRootFolder();
-        File file = new File(rootFolder + atSign + ".keys");
+        File file = getKeysFile(atSign);
         if (! file.exists()) {
             throw new AtException("loadKeys: No file at " + file.getAbsolutePath());
         }
