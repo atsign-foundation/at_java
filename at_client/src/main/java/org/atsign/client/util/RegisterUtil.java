@@ -105,7 +105,7 @@ public class RegisterUtil {
             } else if (responseData.get("message").contains("Try again")) {
                 return "retry";
             } else {
-                return "could not validate. Something went wrong";
+                return responseData.get("message");
             }
         } else {
             throw new AtException(httpsConnection.getResponseCode() + " " + httpsConnection.getResponseMessage());
