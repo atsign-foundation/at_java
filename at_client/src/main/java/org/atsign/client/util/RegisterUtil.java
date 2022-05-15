@@ -20,8 +20,8 @@ import org.atsign.common.AtSign;
 public class RegisterUtil {
     // Calls API to get atsigns which are ready to be claimed.
     // Returns a free atsign.
-    public String getFreeAtsign() throws AtException, MalformedURLException, IOException {
-        URL urlObject = new URL(Constants.AT_DEV_DOMAIN + Constants.API_PATH + Constants.GET_FREE_ATSIGN);
+    public String getFreeAtsign(String registrarUrl) throws AtException, MalformedURLException, IOException {
+        URL urlObject = new URL(Constants.PROTOCOL + registrarUrl + Constants.GET_FREE_ATSIGN);
         HttpsURLConnection connection = (HttpsURLConnection) urlObject.openConnection();
         connection.setRequestMethod("GET");
         connection.setRequestProperty("Content-Type", "application/json");
@@ -44,8 +44,9 @@ public class RegisterUtil {
     // Accepts email and an unpaired atsign. Method pairs free atsign with email.
     // Sends the one-time-password to the provided email.
     // Returns bool, true if OTP sent or False otherwise.
-    public Boolean registerAtsign(String email, AtSign atsign) throws AtException, MalformedURLException, IOException {
-        URL urlObject = new URL(Constants.AT_DEV_DOMAIN + Constants.API_PATH + Constants.REGISTER_ATSIGN);
+    public Boolean registerAtsign(String email, AtSign atsign, String registrarUrl)
+            throws AtException, MalformedURLException, IOException {
+        URL urlObject = new URL(Constants.PROTOCOL + registrarUrl + Constants.REGISTER_ATSIGN);
         HttpsURLConnection httpsConnection = (HttpsURLConnection) urlObject.openConnection();
         String params = "{\"atsign\":\"" + atsign.withoutPrefix() + "\", \"email\":\"" + email + "\"}";
         httpsConnection.setRequestMethod("POST");
@@ -78,9 +79,9 @@ public class RegisterUtil {
     // Validates the OTP against the atsign and registers it to the
     // provided email if valid.
     // Returns the CRAM secret pertaining to the atsign which is registered.
-    public String validateOtp(String email, AtSign atsign, String otp) throws IOException, AtException {
-        String validationUrl = Constants.AT_DEV_DOMAIN + Constants.API_PATH + Constants.VALIDATE_OTP;
-        URL validateOtpUrl = new URL(validationUrl);
+    public String validateOtp(String email, AtSign atsign, String otp, String registrarUrl)
+            throws IOException, AtException {
+        URL validateOtpUrl = new URL(Constants.PROTOCOL + registrarUrl + Constants.VALIDATE_OTP);
         HttpsURLConnection httpsConnection = (HttpsURLConnection) validateOtpUrl.openConnection();
         String params = "{\"atsign\":\"" + atsign.withoutPrefix() + "\", \"email\":\"" + email + "\", \"otp\":\"" + otp
                 + "\", \"confirmation\":\"" + "true\"}";
@@ -89,7 +90,7 @@ public class RegisterUtil {
         httpsConnection.setRequestProperty("Authorization", Constants.DEV_API_KEY);
         httpsConnection.setDoOutput(true);
         OutputStream outputStream = httpsConnection.getOutputStream();
-        outputStream.write(params.getBytes(StandardCharsets.UTF_8), 0, params.length());
+        outputStream.write(params.getBytes(StandardCharsets.UTF_8));
         outputStream.flush();
         outputStream.close();
         if (httpsConnection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
