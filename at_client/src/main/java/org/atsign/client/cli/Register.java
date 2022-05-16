@@ -1,6 +1,5 @@
 package org.atsign.client.cli;
 
-import java.util.Iterator;
 import java.util.Scanner;
 
 import org.atsign.client.util.Constants;

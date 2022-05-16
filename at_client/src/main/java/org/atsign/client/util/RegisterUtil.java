@@ -16,16 +16,26 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
+import org.atsign.conifg.ConfigProperties;
 
 public class RegisterUtil {
-    // Calls API to get atsigns which are ready to be claimed.
-    // Returns a free atsign.
+    /**
+     * Calls API to get atsigns which are ready to be claimed.
+     * Returns a free atsign.
+     * 
+     * @param registrarUrl
+     * @return
+     * @throws AtException
+     * @throws MalformedURLException
+     * @throws IOException
+     */
+
     public String getFreeAtsign(String registrarUrl) throws AtException, MalformedURLException, IOException {
         URL urlObject = new URL(Constants.PROTOCOL + registrarUrl + Constants.GET_FREE_ATSIGN);
         HttpsURLConnection connection = (HttpsURLConnection) urlObject.openConnection();
         connection.setRequestMethod("GET");
         connection.setRequestProperty("Content-Type", "application/json");
-        connection.setRequestProperty("Authorization", Constants.DEV_API_KEY);
+        connection.setRequestProperty("Authorization", ConfigProperties.getApiKey());
         if (connection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(
                     connection.getInputStream()));
@@ -41,9 +51,19 @@ public class RegisterUtil {
         }
     }
 
-    // Accepts email and an unpaired atsign. Method pairs free atsign with email.
-    // Sends the one-time-password to the provided email.
-    // Returns bool, true if OTP sent or False otherwise.
+    /**
+     * Accepts email and an unpaired atsign. Method pairs free atsign with email.
+     * Sends the one-time-password to the provided email.
+     * Returns bool, true if OTP sent or False otherwise.
+     * 
+     * @param email
+     * @param atsign
+     * @param registrarUrl
+     * @return
+     * @throws AtException
+     * @throws MalformedURLException
+     * @throws IOException
+     */
     public Boolean registerAtsign(String email, AtSign atsign, String registrarUrl)
             throws AtException, MalformedURLException, IOException {
         URL urlObject = new URL(Constants.PROTOCOL + registrarUrl + Constants.REGISTER_ATSIGN);
@@ -51,7 +71,7 @@ public class RegisterUtil {
         String params = "{\"atsign\":\"" + atsign.withoutPrefix() + "\", \"email\":\"" + email + "\"}";
         httpsConnection.setRequestMethod("POST");
         httpsConnection.setRequestProperty("Content-Type", "application/json");
-        httpsConnection.setRequestProperty("Authorization", Constants.DEV_API_KEY);
+        httpsConnection.setRequestProperty("Authorization", ConfigProperties.getApiKey());
         httpsConnection.setDoOutput(true);
         OutputStream outputStream = httpsConnection.getOutputStream();
         outputStream.write(params.toString().getBytes(StandardCharsets.UTF_8));
@@ -75,10 +95,20 @@ public class RegisterUtil {
         throw new AtException(httpsConnection.getResponseCode() + " " + httpsConnection.getResponseMessage());
     }
 
-    // Accepts email, unpaired atsign, and the otp received on the provided email.
-    // Validates the OTP against the atsign and registers it to the
-    // provided email if valid.
-    // Returns the CRAM secret pertaining to the atsign which is registered.
+    /**
+     * Accepts email, unpaired atsign, and the otp received on the provided email.
+     * Validates the OTP against the atsign and registers it to the provided email
+     * if OTP is valid.
+     * Returns the CRAM secret of the atsign which is registered.
+     * 
+     * @param email
+     * @param atsign
+     * @param otp
+     * @param registrarUrl
+     * @return
+     * @throws IOException
+     * @throws AtException
+     */
     public String validateOtp(String email, AtSign atsign, String otp, String registrarUrl)
             throws IOException, AtException {
         URL validateOtpUrl = new URL(Constants.PROTOCOL + registrarUrl + Constants.VALIDATE_OTP);
@@ -87,7 +117,7 @@ public class RegisterUtil {
                 + "\", \"confirmation\":\"" + "true\"}";
         httpsConnection.setRequestMethod("POST");
         httpsConnection.setRequestProperty("Content-Type", "application/json");
-        httpsConnection.setRequestProperty("Authorization", Constants.DEV_API_KEY);
+        httpsConnection.setRequestProperty("Authorization", ConfigProperties.getApiKey());
         httpsConnection.setDoOutput(true);
         OutputStream outputStream = httpsConnection.getOutputStream();
         outputStream.write(params.getBytes(StandardCharsets.UTF_8));
