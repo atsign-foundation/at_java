@@ -1,0 +1,4 @@
+API_KEY: "477b-876u-bcez-c42z-6a3d" ##staging api key. please obtain a key to the production registrar api and replace it
+ROOT_DOMAIN: "root.atsign.wtf" ##staging root server. use "root.atsign.org" to use the production root domain
+ROOT_PORT: "64" 
+REGISTRAR_URL: "https://my.atsign.wtf/api/app/v2" ##staging registrar url. please use "https://my.atsign.com/api/app/v2" to use the production registrar api

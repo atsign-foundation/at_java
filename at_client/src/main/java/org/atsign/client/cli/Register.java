@@ -2,9 +2,9 @@ package org.atsign.client.cli;
 
 import java.util.Scanner;
 
-import org.atsign.client.util.Constants;
 import org.atsign.client.util.RegisterUtil;
 import org.atsign.common.AtSign;
+import org.atsign.config.ConfigReader;
 
 /**
  * Command line interface to claim a free atsign. Requires one-time-password
@@ -13,58 +13,47 @@ import org.atsign.common.AtSign;
  */
 public class Register {
     public static void main(String[] args) throws Exception {
+        ConfigReader configReader = new ConfigReader();
         String email = args[0];
         String otp;
         String validationResponse;
         String cramSecret;
-        String rootDomain = Constants.ROOT_DOMAIN_PROD;
-        String rootPort = Constants.ROOT_PORT;
-        String resgistrarDomain = Constants.REGISTRAR_DOMAIN_DEV;
-
-        if (!args[0].equals("-e")) {
+        String rootDomain = configReader.getProperty("ROOT_DOMAIN");
+        String rootPort = configReader.getProperty("ROOT_PORT");
+        String registrarUrl = configReader.getProperty("REGISTRAR_URL");
+        String apiKey = configReader.getProperty("API_KEY");
+        
+        if (args.length != 1) {
             System.err.println(
-                    "Usage: Register -e <email@email.com> -r [optional] <Root Server Domain> -p [optional] <Root Server Port> -a [optional] <Registrar URL>");
+                    "Usage: Register <email@email.com>");
             System.exit(1);
         }
 
-        for (int arg = 0; arg < args.length; arg += 2) {
-            switch (args[arg]) {
-                case "-e":
-                    email = args[arg + 1];
-                    break;
-                case "-r":
-                    rootDomain = args[arg + 1];
-                    break;
-                case "-p":
-                    rootPort = args[arg + 1];
-                    break;
-                case "-a":
-                    resgistrarDomain = args[arg + 1];
-                    break;
-            }
-
+        if (rootDomain == null || rootPort == null || registrarUrl == null || apiKey == null){
+            System.err.println("Please make sure to set all relevant configuration in src/main/resources/config.yaml");
+            System.exit(1);
         }
-
+        
         Scanner scanner = new Scanner(System.in);
         RegisterUtil registerUtil = new RegisterUtil();
 
         System.out.println("Getting free atsign");
-        AtSign atsign = new AtSign(registerUtil.getFreeAtsign(resgistrarDomain));
+        AtSign atsign = new AtSign(registerUtil.getFreeAtsign(registrarUrl, apiKey));
         System.out.println("Got atsign: " + atsign);
 
         System.out.println("Sending one-time-password to :" + email);
-        if (registerUtil.registerAtsign(email, atsign, resgistrarDomain)) {
+        if (registerUtil.registerAtsign(email, atsign, registrarUrl, apiKey)) {
             System.out.println("Enter OTP received on: " + email);
 
             otp = scanner.nextLine();
             System.out.println("Validating one-time-password");
-            validationResponse = registerUtil.validateOtp(email, atsign, otp, resgistrarDomain);
+            validationResponse = registerUtil.validateOtp(email, atsign, otp, registrarUrl, apiKey);
 
             if (validationResponse == "retry") {
                 while (validationResponse == "retry") {
                     System.out.println("Incorrect OTP entered. Re-enter the OTP: ");
                     otp = scanner.nextLine();
-                    validationResponse = registerUtil.validateOtp(email, atsign, otp, resgistrarDomain);
+                    validationResponse = registerUtil.validateOtp(email, atsign, otp, registrarUrl, apiKey);
                 }
                 scanner.close();
             } else if (validationResponse.startsWith("@")) {

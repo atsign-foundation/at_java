@@ -16,7 +16,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
-import org.atsign.conifg.ConfigProperties;
 
 public class RegisterUtil {
     /**
@@ -30,12 +29,12 @@ public class RegisterUtil {
      * @throws IOException
      */
 
-    public String getFreeAtsign(String registrarUrl) throws AtException, MalformedURLException, IOException {
-        URL urlObject = new URL(Constants.PROTOCOL + registrarUrl + Constants.GET_FREE_ATSIGN);
+    public String getFreeAtsign(String registrarUrl, String apiKey) throws AtException, MalformedURLException, IOException {
+        URL urlObject = new URL(registrarUrl + Constants.GET_FREE_ATSIGN);
         HttpsURLConnection connection = (HttpsURLConnection) urlObject.openConnection();
         connection.setRequestMethod("GET");
         connection.setRequestProperty("Content-Type", "application/json");
-        connection.setRequestProperty("Authorization", ConfigProperties.getApiKey());
+        connection.setRequestProperty("Authorization", apiKey);
         if (connection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(
                     connection.getInputStream()));
@@ -64,14 +63,14 @@ public class RegisterUtil {
      * @throws MalformedURLException
      * @throws IOException
      */
-    public Boolean registerAtsign(String email, AtSign atsign, String registrarUrl)
+    public Boolean registerAtsign(String email, AtSign atsign, String registrarUrl, String apiKey)
             throws AtException, MalformedURLException, IOException {
-        URL urlObject = new URL(Constants.PROTOCOL + registrarUrl + Constants.REGISTER_ATSIGN);
+        URL urlObject = new URL(registrarUrl + Constants.REGISTER_ATSIGN);
         HttpsURLConnection httpsConnection = (HttpsURLConnection) urlObject.openConnection();
         String params = "{\"atsign\":\"" + atsign.withoutPrefix() + "\", \"email\":\"" + email + "\"}";
         httpsConnection.setRequestMethod("POST");
         httpsConnection.setRequestProperty("Content-Type", "application/json");
-        httpsConnection.setRequestProperty("Authorization", ConfigProperties.getApiKey());
+        httpsConnection.setRequestProperty("Authorization", apiKey);
         httpsConnection.setDoOutput(true);
         OutputStream outputStream = httpsConnection.getOutputStream();
         outputStream.write(params.toString().getBytes(StandardCharsets.UTF_8));
@@ -109,15 +108,15 @@ public class RegisterUtil {
      * @throws IOException
      * @throws AtException
      */
-    public String validateOtp(String email, AtSign atsign, String otp, String registrarUrl)
+    public String validateOtp(String email, AtSign atsign, String otp, String registrarUrl, String apiKey)
             throws IOException, AtException {
-        URL validateOtpUrl = new URL(Constants.PROTOCOL + registrarUrl + Constants.VALIDATE_OTP);
+        URL validateOtpUrl = new URL(registrarUrl + Constants.VALIDATE_OTP);
         HttpsURLConnection httpsConnection = (HttpsURLConnection) validateOtpUrl.openConnection();
         String params = "{\"atsign\":\"" + atsign.withoutPrefix() + "\", \"email\":\"" + email + "\", \"otp\":\"" + otp
                 + "\", \"confirmation\":\"" + "true\"}";
         httpsConnection.setRequestMethod("POST");
         httpsConnection.setRequestProperty("Content-Type", "application/json");
-        httpsConnection.setRequestProperty("Authorization", ConfigProperties.getApiKey());
+        httpsConnection.setRequestProperty("Authorization", apiKey);
         httpsConnection.setDoOutput(true);
         OutputStream outputStream = httpsConnection.getOutputStream();
         outputStream.write(params.getBytes(StandardCharsets.UTF_8));
