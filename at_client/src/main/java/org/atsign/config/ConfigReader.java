@@ -10,8 +10,7 @@ import com.fasterxml.jackson.databind.DatabindException;
 import org.yaml.snakeyaml.Yaml;
 
 /**
- * Loads, reads and returns properties from the configuration file in the class path
- *
+ * Loads, reads and returns properties from the configuration file in the resources
  */
 public class ConfigReader {
     private Map<String, String> config;
@@ -24,7 +23,7 @@ public class ConfigReader {
     }
 
     /**
-     * Loads configuration properties from the yaml provided in the jsrc/main/resources
+     * Loads configuration properties from the yaml provided in the java/src/main/resources
      * Stores these key-value pairs in the config map
      * @throws StreamReadException
      * @throws DatabindException
