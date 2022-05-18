@@ -31,7 +31,7 @@ Sending one-time-password to :<email@email.c0m>
 Got response: Sent Successfully
 Enter OTP received on: <email@email.com>
 ```
-4. Enter the OTP sent to the provided email. NB: OTP is case sensitive
+4. Enter the OTP received on email provided in the previous step. NB: OTP is case sensitive
 ```
 xxxx
 Validating one-time-password
