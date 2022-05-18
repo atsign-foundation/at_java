@@ -20,7 +20,7 @@
 
 To register an atsign run the following commands in your terminal after setting up your environment
 
-1. Set proper configurations in at_client/src/main/resources/config.yaml. 
+1. Set proper configurations in at_client/src/main/resources/config.yaml
 2. run `mvn install` in directory at_java/at_client
 3. run `java -cp "target/client-1.0-SNAPSHOT.jar:target/lib/*" org.atsign.client.cli.Register <email@email.com>`
 
