@@ -11,6 +11,7 @@ import org.atsign.client.util.KeysUtil;
 
 import static org.atsign.common.Keys.*;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -20,12 +21,46 @@ import java.util.concurrent.CompletableFuture;
  */
 @SuppressWarnings("unused")
 public interface AtClient extends Secondary, AtEvents.AtEventBus {
+
+    /**
+     * Standard AtClient factory - uses production @ root to look up the cloud secondary address for this atSign
+     * @param atSign the atsign of this client
+     * @return An {@link AtClient}
+     * @throws AtException if something goes wrong with looking up or connecting to the remote secondary
+     */
+    static AtClient withRemoteSecondary(AtSign atSign) throws AtException {
+        return withRemoteSecondary("root.atsign.org:64", atSign);
+    }
+    /**
+     * Standard AtClient factory - uses production @ root to look up the cloud secondary address for this atSign
+     * @param atSign the atsign of this client
+     * @param verbose set to true for chatty logs
+     * @return An {@link AtClient}
+     * @throws AtException if something goes wrong with looking up or connecting to the remote secondary
+     */
+    static AtClient withRemoteSecondary(AtSign atSign, boolean verbose) throws AtException {
+        return withRemoteSecondary("root.atsign.org:64", atSign, verbose);
+    }
+
+    /**
+     * Factory to use when you wish to use a custom Secondary.AddressFinder
+     * @param atSign the atSign of this client
+     * @param secondaryAddressFinder will be used to find the Secondary.Address of the atSign
+     * @return An {@link AtClient}
+     * @throws IOException if thrown by the address finder
+     * @throws AtException if any other exception occurs while connecting to the remote (cloud) secondary
+     */
+    static AtClient withRemoteSecondary(AtSign atSign, Secondary.AddressFinder secondaryAddressFinder) throws IOException, AtException {
+        Secondary.Address remoteSecondaryAddress = secondaryAddressFinder.findSecondary(atSign);
+        return withRemoteSecondary(atSign, remoteSecondaryAddress, false);
+    }
+
     /**
      * Factory - returns default AtClientImpl with a RemoteSecondary and a DefaultConnectionFactory
      * @param rootUrl the address of the root server to use - e.g. root.atsign.org:64 for prod, or
      *                root.atsign.wtf:64 for staging, or vip.ve.atsign.zone:64 for local host
      * @param atSign the atSign of the client - e.g. @alice
-     * @return an AtClient
+     * @return An {@link AtClient}
      * @throws AtException if anything goes wrong during construction
      */
     static AtClient withRemoteSecondary(String rootUrl, AtSign atSign) throws AtException {
@@ -34,17 +69,44 @@ public interface AtClient extends Secondary, AtEvents.AtEventBus {
 
     static AtClient withRemoteSecondary(String rootUrl, AtSign atSign, boolean verbose) throws AtException {
         DefaultAtConnectionFactory connectionFactory = new DefaultAtConnectionFactory();
-        AtEvents.AtEventBus eventBus = new SimpleAtEventBus();
 
-        String secondaryUrl;
+        Secondary.Address secondaryAddress;
         try {
-            // secondaryUrl = new AtRootConnection(rootUrl).lookupAtSign(atSign);
-            AtRootConnection rootConnection = connectionFactory.getRootConnection(eventBus, rootUrl, verbose);
+            AtRootConnection rootConnection = connectionFactory.getRootConnection(new SimpleAtEventBus(), rootUrl, verbose);
             rootConnection.connect();
-            secondaryUrl = rootConnection.lookupAtSign(atSign);
+            secondaryAddress = rootConnection.findSecondary(atSign);
         } catch (Exception e) {
             throw new AtException("Failed to lookup remote secondary: " + e.getMessage(), e);
         }
+
+        return withRemoteSecondary(atSign, secondaryAddress, verbose);
+    }
+
+    /**
+     * Factory to use when you wish to use a custom Secondary.AddressFinder
+     * @param atSign the atSign of this client
+     * @param secondaryAddressFinder will be used to find the Secondary.Address of the atSign
+     * @param verbose set to true for chatty logs
+     * @return An {@link AtClient}
+     * @throws IOException if thrown by the address finder
+     * @throws AtException if any other exception occurs while connecting to the remote (cloud) secondary
+     */
+    static AtClient withRemoteSecondary(AtSign atSign, Secondary.AddressFinder secondaryAddressFinder, boolean verbose) throws IOException, AtException {
+        Secondary.Address remoteSecondaryAddress = secondaryAddressFinder.findSecondary(atSign);
+        return withRemoteSecondary(atSign, remoteSecondaryAddress, verbose);
+    }
+
+    /**
+     * Factory to use when you already know the address of the remote (cloud) secondary
+     * @param atSign the atSign of this client
+     * @param remoteSecondaryAddress the address of the remote secondary server
+     * @param verbose set to true for chatty logs
+     * @return An {@link AtClient}
+     * @throws AtException if any other exception occurs while connecting to the remote (cloud) secondary
+     */
+    static AtClient withRemoteSecondary(AtSign atSign, Secondary.Address remoteSecondaryAddress, boolean verbose) throws AtException {
+        DefaultAtConnectionFactory connectionFactory = new DefaultAtConnectionFactory();
+        AtEvents.AtEventBus eventBus = new SimpleAtEventBus();
 
         Map<String, String> keys;
         try {
@@ -55,13 +117,26 @@ public interface AtClient extends Secondary, AtEvents.AtEventBus {
 
         RemoteSecondary secondary;
         try {
-            secondary = new RemoteSecondary(eventBus, atSign, secondaryUrl, keys, connectionFactory, verbose);
+            secondary = new RemoteSecondary(eventBus, atSign, remoteSecondaryAddress, keys, connectionFactory, verbose);
         } catch (Exception e) {
             throw new AtException("Failed to create RemoteSecondary: " + e.getMessage(), e);
         }
 
         return new AtClientImpl(eventBus, atSign, keys, secondary);
     }
+
+    /**
+     * Factory to use when you already know the address of the remote (cloud) secondary
+     * @param atSign the atSign of this client
+     * @param remoteSecondaryAddress the address of the remote secondary server
+     * @return An {@link AtClient}
+     * @throws AtException if any other exception occurs while connecting to the remote (cloud) secondary
+     */
+    static AtClient withRemoteSecondary(Secondary.Address remoteSecondaryAddress, AtSign atSign) throws AtException {
+        return withRemoteSecondary(atSign, remoteSecondaryAddress, false);
+    }
+
+
 
     AtSign getAtSign();
     Secondary getSecondary();
