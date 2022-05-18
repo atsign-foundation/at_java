@@ -1,6 +1,10 @@
 package org.atsign.client.api;
 
 import org.atsign.common.AtException;
+import org.atsign.common.AtSign;
+import org.atsign.common.NoSuchSecondaryException;
+
+import java.io.IOException;
 
 /**
  * Clients ultimately talk to a Secondary server - usually this is a microservice which implements
@@ -46,5 +50,39 @@ public interface Secondary extends AtEvents.AtEventListener {
                 return "data:" + data;
             }
         }
+    }
+
+    class Address {
+        public final String host;
+        public final int port;
+
+        public Address(String host, int port) {
+            this.host = host;
+            this.port = port;
+        }
+
+        public static Address fromString(String hostAndPort) throws IllegalArgumentException {
+            String[] split = hostAndPort.split(":");
+            if (split.length != 2) {
+                throw new IllegalArgumentException("Cannot construct Secondary.Address from malformed host:port string '" + hostAndPort + "'");
+            }
+            String host = split[0];
+            int port;
+            try {
+                port = Integer.parseInt(split[1]);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Cannot construct Secondary.Address from malformed host:port string '" + hostAndPort + "'");
+            }
+            return new Address(host, port);
+        }
+
+        @Override
+        public String toString() {
+            return host + ":" + port;
+        }
+    }
+
+    interface AddressFinder {
+        Address findSecondary(AtSign atSign) throws IOException, NoSuchSecondaryException;
     }
 }
