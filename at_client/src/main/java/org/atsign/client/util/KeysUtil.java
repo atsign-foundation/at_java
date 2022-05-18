@@ -7,6 +7,7 @@ import org.atsign.common.AtException;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,7 +26,7 @@ public class KeysUtil {
 
     public static void saveKeys(AtSign atSign, Map<String, String> keys) throws Exception {
         _makeRootFolder();
-        File file = new File(rootFolder + atSign + ".keys");
+        File file = getKeysFile(atSign);
         System.out.println("Saving keys to " + file.getAbsolutePath());
         if (file.exists()) {
             //noinspection ResultOfMethodCallIgnored
@@ -47,9 +48,13 @@ public class KeysUtil {
         Files.write(file.toPath(), json.getBytes(StandardCharsets.UTF_8));
     }
 
+    private static File getKeysFile(AtSign atSign) {
+        return new File(rootFolder + atSign + "_key.atKeys");
+    }
+
     public static Map<String, String> loadKeys(AtSign atSign) throws Exception {
         _makeRootFolder();
-        File file = new File(rootFolder + atSign + ".keys");
+        File file = getKeysFile(atSign);
         if (! file.exists()) {
             throw new AtException("loadKeys: No file at " + file.getAbsolutePath());
         }
@@ -70,6 +75,9 @@ public class KeysUtil {
     }
 
     private static void _makeRootFolder() throws IOException {
-        Files.createDirectories(Paths.get(rootFolder));
+        Path dir = Paths.get(rootFolder);
+        if (! Files.exists(dir)) {
+            Files.createDirectories(dir);
+        }
     }
 }

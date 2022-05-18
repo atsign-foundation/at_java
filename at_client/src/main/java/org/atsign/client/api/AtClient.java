@@ -29,13 +29,17 @@ public interface AtClient extends Secondary, AtEvents.AtEventBus {
      * @throws AtException if anything goes wrong during construction
      */
     static AtClient withRemoteSecondary(String rootUrl, AtSign atSign) throws AtException {
+        return withRemoteSecondary(rootUrl, atSign, false);
+    }
+
+    static AtClient withRemoteSecondary(String rootUrl, AtSign atSign, boolean verbose) throws AtException {
         DefaultAtConnectionFactory connectionFactory = new DefaultAtConnectionFactory();
         AtEvents.AtEventBus eventBus = new SimpleAtEventBus();
 
         String secondaryUrl;
         try {
             // secondaryUrl = new AtRootConnection(rootUrl).lookupAtSign(atSign);
-            AtRootConnection rootConnection = connectionFactory.getRootConnection(eventBus, rootUrl);
+            AtRootConnection rootConnection = connectionFactory.getRootConnection(eventBus, rootUrl, verbose);
             rootConnection.connect();
             secondaryUrl = rootConnection.lookupAtSign(atSign);
         } catch (Exception e) {
@@ -51,7 +55,7 @@ public interface AtClient extends Secondary, AtEvents.AtEventBus {
 
         RemoteSecondary secondary;
         try {
-            secondary = new RemoteSecondary(eventBus, atSign, secondaryUrl, keys, connectionFactory);
+            secondary = new RemoteSecondary(eventBus, atSign, secondaryUrl, keys, connectionFactory, verbose);
         } catch (Exception e) {
             throw new AtException("Failed to create RemoteSecondary: " + e.getMessage(), e);
         }

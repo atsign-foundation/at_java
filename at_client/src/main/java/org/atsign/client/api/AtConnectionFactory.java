@@ -10,5 +10,7 @@ import org.atsign.common.AtSign;
  */
 public interface AtConnectionFactory {
     AtSecondaryConnection getSecondaryConnection(AtEvents.AtEventBus eventBus, AtSign atSign, String secondaryUrl, AtConnection.Authenticator authenticator);
+    AtSecondaryConnection getSecondaryConnection(AtEvents.AtEventBus eventBus, AtSign atSign, String secondaryUrl, AtConnection.Authenticator authenticator, boolean verbose);
     AtRootConnection getRootConnection(AtEvents.AtEventBus eventBus, String rootUrl);
+    AtRootConnection getRootConnection(AtEvents.AtEventBus eventBus, String rootUrl, boolean verbose);
 }

@@ -38,13 +38,13 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
             AtSign atSign,
             String secondaryUrl,
             Authenticator authenticator,
-            boolean logging) {
+            boolean verbose) {
         // Note that the Monitor doesn't make use of the auto-reconnect functionality, it does its own thing
-        super(eventBus, atSign, secondaryUrl, authenticator, false, logging);
+        super(eventBus, atSign, secondaryUrl, authenticator, false, verbose);
         startHeartbeat();
     }
 
-    private long lastHeartbeatSentTime = 0;
+    private long lastHeartbeatSentTime = System.currentTimeMillis();
     private long lastHeartbeatAckTime = System.currentTimeMillis();
     private final int heartbeatIntervalMillis = 30000;
     private void startHeartbeat() {
@@ -96,6 +96,8 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
      */
     @SuppressWarnings("UnusedReturnValue")
     public synchronized boolean startMonitor() {
+        lastHeartbeatSentTime = lastHeartbeatAckTime = System.currentTimeMillis();
+
         setShouldBeRunning(true);
         if (! running) {
             running = true;
@@ -115,6 +117,7 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
 
     public synchronized void stopMonitor() {
         setShouldBeRunning(false);
+        lastHeartbeatSentTime = lastHeartbeatAckTime = System.currentTimeMillis();
         disconnect();
     }
 
@@ -144,6 +147,7 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
             while (isShouldBeRunning() && socketScanner.hasNextLine()) {
                 what = "read from connection";
                 String response = parseRawResponse(socketScanner.nextLine());
+                if (verbose) System.out.println("\tRCVD (MONITOR): " + response);
                 AtEventType eventType;
                 HashMap<String, Object> eventData = new HashMap<>();
                 what = "parse monitor message";

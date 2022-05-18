@@ -11,7 +11,6 @@ import org.yaml.snakeyaml.Yaml;
 
 /**
  * Loads, reads and returns properties from the configuration file in the resources
- *
  */
 public class ConfigReader {
     private Map<String, String> config;

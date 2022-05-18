@@ -14,8 +14,8 @@ public class AtSecondaryConnection extends AtConnectionBase {
     private final AtSign atSign;
     public AtSign getAtSign() {return atSign;}
 
-    public AtSecondaryConnection(AtEvents.AtEventBus eventBus, AtSign atSign, String secondaryUrl, AtConnection.Authenticator authenticator, boolean autoReconnect, boolean logging) {
-        super(eventBus, secondaryUrl, authenticator, autoReconnect, logging);
+    public AtSecondaryConnection(AtEvents.AtEventBus eventBus, AtSign atSign, String secondaryUrl, AtConnection.Authenticator authenticator, boolean autoReconnect, boolean verbose) {
+        super(eventBus, secondaryUrl, authenticator, autoReconnect, verbose);
         this.atSign = atSign;
     }
 

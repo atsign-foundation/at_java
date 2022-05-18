@@ -22,9 +22,9 @@ public interface AtConnection {
 
     boolean isAutoReconnect();
 
-    boolean isLogging();
+    boolean isVerbose();
 
-    void setLogging(boolean logging);
+    void setVerbose(boolean verbose);
 
     void connect() throws IOException, AtException;
     void disconnect();

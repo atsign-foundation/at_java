@@ -39,11 +39,11 @@ public abstract class AtConnectionBase implements AtConnection {
     @Override
     public boolean isAutoReconnect() {return autoReconnect;}
 
-    private boolean logging;
+    protected boolean verbose;
     @Override
-    public boolean isLogging() {return logging;}
+    public boolean isVerbose() {return verbose;}
     @Override
-    public void setLogging(boolean logging) {this.logging = logging;}
+    public void setVerbose(boolean verbose) {this.verbose = verbose;}
 
     protected final Authenticator authenticator;
     public Authenticator getAuthenticator() {return authenticator;}
@@ -52,13 +52,13 @@ public abstract class AtConnectionBase implements AtConnection {
     protected Scanner socketScanner;
 
     protected final AtEvents.AtEventBus eventBus;
-    public AtConnectionBase(AtEvents.AtEventBus eventBus, String url, AtConnection.Authenticator authenticator, boolean autoReconnect, boolean logging) {
+    public AtConnectionBase(AtEvents.AtEventBus eventBus, String url, AtConnection.Authenticator authenticator, boolean autoReconnect, boolean verbose) {
         this.eventBus = eventBus;
         this.url = url;
         this.host = url.split(":")[0];
         this.port = Integer.parseInt(url.split(":")[1]);
         this.autoReconnect = autoReconnect;
-        this.logging = logging;
+        this.verbose = verbose;
         this.authenticator = authenticator;
     }
 
@@ -111,12 +111,12 @@ public abstract class AtConnectionBase implements AtConnection {
             socketWriter.write(command);
             socketWriter.flush();
 
-            if (logging) System.out.println("\tSENT: " + command.trim());
+            if (verbose) System.out.println("\tSENT: " + command.trim());
 
             if (readTheResponse) {
                 // Responses are always terminated by newline
                 String rawResponse = socketScanner.nextLine();
-                if (logging) System.out.println("\tRCVD: " + rawResponse);
+                if (verbose) System.out.println("\tRCVD: " + rawResponse);
 
                 return parseRawResponse(rawResponse);
             } else {

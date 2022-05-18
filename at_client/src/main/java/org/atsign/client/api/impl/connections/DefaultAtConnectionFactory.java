@@ -15,7 +15,17 @@ public class DefaultAtConnectionFactory implements AtConnectionFactory {
     }
 
     @Override
+    public AtSecondaryConnection getSecondaryConnection(AtEvents.AtEventBus eventBus, AtSign atSign, String secondaryUrl, AtConnection.Authenticator authenticator, boolean verbose) {
+        return new AtSecondaryConnection(eventBus, atSign, secondaryUrl, authenticator, true, verbose);
+    }
+
+    @Override
     public AtRootConnection getRootConnection(AtEvents.AtEventBus eventBus, String rootUrl) {
         return new AtRootConnection(eventBus, rootUrl, true, false);
+    }
+
+    @Override
+    public AtRootConnection getRootConnection(AtEvents.AtEventBus eventBus, String rootUrl, boolean verbose) {
+        return new AtRootConnection(eventBus, rootUrl, true, verbose);
     }
 }
