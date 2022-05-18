@@ -33,7 +33,7 @@ public class REPL {
         boolean seeEncryptedNotifications = Boolean.parseBoolean(args[2]);
 
         try {
-            AtClient atClient = AtClient.withRemoteSecondary(rootUrl, atSign);
+            AtClient atClient = AtClient.withRemoteSecondary(rootUrl, atSign, true);
             System.out.println("org.atsign.client.core.Client connected OK");
 
             REPL repl = new REPL(atClient, seeEncryptedNotifications);
@@ -107,6 +107,10 @@ public class REPL {
                             + " REPL NOTIFIED with already-decrypted value [" + decryptedValue + "]"
                             + " for key [" + sharedKey + "]"
                             + " (encryptedValue was [" + value + "])");
+                }
+                break;
+                case updateNotificationText: {
+                    System.out.println(eventData);
                 }
                 break;
                 case updateNotification: {

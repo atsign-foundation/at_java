@@ -38,18 +38,35 @@ public class RemoteSecondary implements Secondary {
     @SuppressWarnings("unused")
     public String getSecondaryUrl() {return secondaryUrl;}
 
+    private boolean verbose;
+    @SuppressWarnings("unused")
+    public boolean isVerbose() {return verbose;}
+    @SuppressWarnings("unused")
+    public void setVerbose(boolean b) {
+        verbose = b;
+        this.connection.setVerbose(b);
+        this.monitorConnection.setVerbose(b);
+    }
+
     public RemoteSecondary(AtEventBus eventBus, AtSign atSign, String secondaryUrl,
                            Map<String, String> keys, AtConnectionFactory connectionFactory) throws IOException, AtException {
+        this(eventBus, atSign, secondaryUrl, keys, connectionFactory, false);
+    }
+    public RemoteSecondary(AtEventBus eventBus, AtSign atSign, String secondaryUrl,
+                           Map<String, String> keys, AtConnectionFactory connectionFactory,
+                           boolean verbose) throws IOException, AtException {
         this.eventBus = eventBus;
         this.atSign = atSign;
         this.secondaryUrl = secondaryUrl;
         this.connectionFactory = connectionFactory;
+        this.verbose = verbose;
 
         this.connection = connectionFactory.getSecondaryConnection(
                 this.eventBus,
                 this.atSign,
                 this.secondaryUrl,
-                connection -> new AuthUtil().authenticateWithPkam(connection, atSign, keys));
+                connection -> new AuthUtil().authenticateWithPkam(connection, atSign, keys),
+                verbose);
         connection.connect();
     }
 
@@ -105,7 +122,7 @@ public class RemoteSecondary implements Secondary {
         try {
             if (monitorConnection == null) {
                 what = "construct an AtMonitorConnection";
-                monitorConnection = new AtMonitorConnection(eventBus, atSign, secondaryUrl, connection.getAuthenticator(), false);
+                monitorConnection = new AtMonitorConnection(eventBus, atSign, secondaryUrl, connection.getAuthenticator(), verbose);
             }
             if (! monitorConnection.isRunning()) {
                 what = "call monitorConnection.startMonitor()";

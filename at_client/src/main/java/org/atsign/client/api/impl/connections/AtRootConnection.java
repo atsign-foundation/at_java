@@ -18,8 +18,8 @@ public class AtRootConnection extends AtConnectionBase {
     public AtRootConnection(AtEvents.AtEventBus eventBus, String rootUrl) {
         this(eventBus, rootUrl, true, false);
     }
-    public AtRootConnection(AtEvents.AtEventBus eventBus, String rootUrl, boolean autoReconnect, boolean logging) {
-        super(eventBus, rootUrl, null, autoReconnect, logging);
+    public AtRootConnection(AtEvents.AtEventBus eventBus, String rootUrl, boolean autoReconnect, boolean verbose) {
+        super(eventBus, rootUrl, null, autoReconnect, verbose);
     }
 
     @SuppressWarnings("RedundantThrows")
@@ -32,6 +32,14 @@ public class AtRootConnection extends AtConnectionBase {
         return rawResponse;
     }
 
+    /**
+     * Looks up the address of the secondary for a given atsign
+     * @param atSign
+     * @return A String in the format host:port
+     * @throws IOException if connection to root server is unavailable or encounters an error
+     * @throws AtException if the root server returns the string 'null' as the lookup response,
+     * which means that the atsign is not known to the root server
+     */
     public String lookupAtSign(AtSign atSign) throws IOException, AtException {
         if (!isConnected()) {
             connect();
