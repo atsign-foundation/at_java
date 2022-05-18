@@ -3,6 +3,7 @@ package org.atsign.client.api.impl.connections;
 import org.atsign.client.api.AtConnection;
 import org.atsign.client.api.AtConnectionFactory;
 import org.atsign.client.api.AtEvents;
+import org.atsign.client.api.Secondary;
 import org.atsign.common.AtSign;
 
 /**
@@ -10,8 +11,13 @@ import org.atsign.common.AtSign;
  */
 public class DefaultAtConnectionFactory implements AtConnectionFactory {
     @Override
-    public AtSecondaryConnection getSecondaryConnection(AtEvents.AtEventBus eventBus, AtSign atSign, String secondaryUrl, AtConnection.Authenticator authenticator) {
-        return new AtSecondaryConnection(eventBus, atSign, secondaryUrl, authenticator, true, false);
+    public AtSecondaryConnection getSecondaryConnection(AtEvents.AtEventBus eventBus, AtSign atSign, Secondary.Address secondaryAddress, AtConnection.Authenticator authenticator) {
+        return new AtSecondaryConnection(eventBus, atSign, secondaryAddress, authenticator, true, false);
+    }
+
+    @Override
+    public AtSecondaryConnection getSecondaryConnection(AtEvents.AtEventBus eventBus, AtSign atSign, Secondary.Address secondaryAddress, AtConnection.Authenticator authenticator, boolean verbose) {
+        return new AtSecondaryConnection(eventBus, atSign, secondaryAddress, authenticator, true, verbose);
     }
 
     @Override

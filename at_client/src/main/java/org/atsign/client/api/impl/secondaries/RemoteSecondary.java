@@ -34,9 +34,11 @@ public class RemoteSecondary implements Secondary {
     private final AtSign atSign;
     public AtSign getAtSign() {return atSign;}
 
-    private final String secondaryUrl;
+    private final Secondary.Address secondaryAddress;
     @SuppressWarnings("unused")
-    public String getSecondaryUrl() {return secondaryUrl;}
+    public Secondary.Address getSecondaryAddress() {return secondaryAddress;}
+    @SuppressWarnings("unused")
+    public String getSecondaryUrl() {return secondaryAddress.toString();}
 
     private boolean verbose;
     @SuppressWarnings("unused")
@@ -48,23 +50,24 @@ public class RemoteSecondary implements Secondary {
         this.monitorConnection.setVerbose(b);
     }
 
-    public RemoteSecondary(AtEventBus eventBus, AtSign atSign, String secondaryUrl,
+    @SuppressWarnings("unused")
+    public RemoteSecondary(AtEventBus eventBus, AtSign atSign, Secondary.Address secondaryAddress,
                            Map<String, String> keys, AtConnectionFactory connectionFactory) throws IOException, AtException {
-        this(eventBus, atSign, secondaryUrl, keys, connectionFactory, false);
+        this(eventBus, atSign, secondaryAddress, keys, connectionFactory, false);
     }
-    public RemoteSecondary(AtEventBus eventBus, AtSign atSign, String secondaryUrl,
+    public RemoteSecondary(AtEventBus eventBus, AtSign atSign, Secondary.Address secondaryAddress,
                            Map<String, String> keys, AtConnectionFactory connectionFactory,
                            boolean verbose) throws IOException, AtException {
         this.eventBus = eventBus;
         this.atSign = atSign;
-        this.secondaryUrl = secondaryUrl;
+        this.secondaryAddress = secondaryAddress;
         this.connectionFactory = connectionFactory;
         this.verbose = verbose;
 
         this.connection = connectionFactory.getSecondaryConnection(
                 this.eventBus,
                 this.atSign,
-                this.secondaryUrl,
+                this.secondaryAddress,
                 connection -> new AuthUtil().authenticateWithPkam(connection, atSign, keys),
                 verbose);
         connection.connect();
@@ -122,7 +125,7 @@ public class RemoteSecondary implements Secondary {
         try {
             if (monitorConnection == null) {
                 what = "construct an AtMonitorConnection";
-                monitorConnection = new AtMonitorConnection(eventBus, atSign, secondaryUrl, connection.getAuthenticator(), verbose);
+                monitorConnection = new AtMonitorConnection(eventBus, atSign, secondaryAddress.toString(), connection.getAuthenticator(), verbose);
             }
             if (! monitorConnection.isRunning()) {
                 what = "call monitorConnection.startMonitor()";
