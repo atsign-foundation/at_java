@@ -19,10 +19,13 @@ to hear about issues. See also [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## What's here / changelog
 ### Next ...
-* Provide a CLI tool for atSign registration. Onboard CLI can then be used to Onboard the newly-registered atSign.
 * Getting started guide - from nothing to end-to-end-encrypted chat session in < 5 minutes
 * fluid client APIs for sharing data - e.g. share(value).with(atSign/s).as(keyName)
 * extend client REPL so that you can call AtClient methods (e.g. the share() above) interactively 
+
+### May 18 2022
+* A new CLI tool Register has been introduced which can acquire a free atsign and register it to the provided email.
+* Register CLI also handles calling the Onboard client with the cram secret which was received during the registration process.
 
 ### May 03 2022
 * Better event distribution
