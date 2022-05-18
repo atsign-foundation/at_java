@@ -2,7 +2,7 @@ package org.atsign.client.cli;
 
 import org.atsign.client.api.AtClient;
 import org.atsign.common.AtSign;
-import org.atsign.common.KeyBuilders;
+import org.atsign.common.builders.KeyBuilders;
 import org.atsign.common.AtException;
 
 import java.util.concurrent.ExecutionException;

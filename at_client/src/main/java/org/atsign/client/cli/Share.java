@@ -1,72 +1,62 @@
 package org.atsign.client.cli;
 
-import org.atsign.client.api.AtClient;
-import org.atsign.common.AtSign;
-import static org.atsign.common.KeyBuilders.*;
-
-import org.atsign.common.Keys;
-import org.atsign.client.api.impl.connections.AtRootConnection;
-import org.atsign.common.AtException;
-
 import java.time.OffsetDateTime;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
+import org.atsign.common.Keys;
+import org.atsign.common.builders.KeyBuilders.SharedKeyBuilder;
+
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+
 /**
- * A command-line interface half-example half-utility to share something with another atSign
+ * A command-line interface half-example half-utility to share something with
+ * another atSign
  */
-public class Share {
-    public static void main(String[] args) {
-        String rootUrl; // e.g. "vip.ve.atsign.zone:64";
-        AtSign atSign;  // e.g. "@alice";
-        AtSign otherAtSign;  // e.g. "@bob";
-        String keyName;
-        String toShare;
-        int ttr;
+@Command(name = "share", description = "Shares a key with the other @sign", requiredOptionMarker = '*')
+public class Share extends OtherAtSignCommand implements Callable<String> {
 
-        if (args.length != 6) {
-            System.err.println("Usage: Share <rootUrl> <your AtSign> <other AtSign> <keyName to share, including namespace> <keyValue to share, a string> <ttr>");
-            System.exit(1);
-        }
+	@Option(names = { "-k", "--key" }, description = "Key to share", required = true)
+	String keyName;
 
-        rootUrl = args[0];
-        atSign = new AtSign(args[1]);
-        otherAtSign = new AtSign(args[2]);
-        keyName = args[3];
-        toShare = args[4];
-        ttr = Integer.parseInt(args[5]);
+	@Option(names = { "-v", "--value" }, description = "Value share", required = true)
+	String toShare;
 
-        // Let's also look up the other one before we do anything, just in case
-        try {
-            new AtRootConnection(rootUrl).lookupAtSign(otherAtSign);
-        } catch (Exception e) {
-            System.err.println("Failed to look up remote secondary for " + otherAtSign + " : " + e.getMessage());
-            e.printStackTrace(System.err);
-            System.exit(1);
-        }
+	@Option(names = {
+			"-ttr" }, description = "Value in milliseconds. Specifying a value for this makes the key cacheable on the other @sign. Cached value will be refreshed with in the value specified for the ttr.", required = false)
+	int ttr;
 
-        AtClient atClient = null;
-        try {
-            atClient = AtClient.withRemoteSecondary(rootUrl, atSign);
-        } catch (AtException e) {
-            System.err.println("Failed to create AtClientImpl : " + e.getMessage());
-            e.printStackTrace(System.err);
-            System.exit(1);
-        }
+	@Override
+	public String call() throws Exception {
+		share();
+		return "Value has been shared successfully";
 
-        try {
-            SharedKeyBuilder sharedKeyBuilder = new SharedKeyBuilder(atSign, otherAtSign);
-            sharedKeyBuilder = sharedKeyBuilder.cache(ttr, true);
-            sharedKeyBuilder = sharedKeyBuilder.key(keyName);
-            Keys.SharedKey sharedKey = sharedKeyBuilder.build();
+	}
 
-            System.out.println(OffsetDateTime.now() + " | calling atClient.put()");
-            String putResponse = atClient.put(sharedKey, toShare).get();
-            System.out.println(OffsetDateTime.now() + " | put response : " + putResponse);
-        } catch (InterruptedException | ExecutionException e) {
-            System.err.println("Failed to share : " + e.getMessage());
-            e.printStackTrace(System.err);
-            System.exit(1);
-        }
-    }
+	void share() {
+		super.initialize();
+
+		try {
+			SharedKeyBuilder sharedKeyBuilder = new SharedKeyBuilder(yourAtSign, otherAtSign);
+			sharedKeyBuilder = sharedKeyBuilder.cache(ttr, true);
+			sharedKeyBuilder = sharedKeyBuilder.key(keyName);
+			Keys.SharedKey sharedKey = sharedKeyBuilder.build();
+
+			System.out.println(OffsetDateTime.now() + " | calling atClient.put()");
+			String putResponse = atClient.put(sharedKey, toShare).get();
+			System.out.println(OffsetDateTime.now() + " | put response : " + putResponse);
+		} catch (InterruptedException | ExecutionException e) {
+			System.err.println("Failed to share : " + e.getMessage());
+			e.printStackTrace(System.err);
+			System.exit(1);
+		}
+	}
+
+	public static void main(String[] args) {
+		int exitCode = new CommandLine(new Share()).execute(args);
+		System.exit(exitCode);
+	}
 
 }

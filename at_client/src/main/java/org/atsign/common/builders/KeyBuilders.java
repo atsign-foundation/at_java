@@ -1,6 +1,17 @@
-package org.atsign.common;
+package org.atsign.common.builders;
 
 import static org.atsign.common.Keys.*;
+
+import java.util.UUID;
+
+import org.atsign.common.AtException;
+import org.atsign.common.AtSign;
+import org.atsign.common.Keys;
+import org.atsign.common.Keys.AtKey;
+import org.atsign.common.Keys.PrivateHiddenKey;
+import org.atsign.common.Keys.PublicKey;
+import org.atsign.common.Keys.SelfKey;
+import org.atsign.common.Keys.SharedKey;
 
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public class KeyBuilders {
@@ -269,5 +280,7 @@ public class KeyBuilders {
             return (PrivateHiddenKey) _atKey;
         }
     }
+    
+    
 
 }
