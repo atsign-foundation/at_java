@@ -55,7 +55,7 @@ public class AtRootConnection extends AtConnectionBase implements Secondary.Addr
         String response = executeCommand(atSign.withoutPrefix());
 
         if ("null".equals(response)) {
-            throw new NoSuchSecondaryException("Root lookup returned null for @" + atSign);
+            throw new NoSuchSecondaryException("Root lookup returned null for " + atSign);
         } else {
             try {
                 return Secondary.Address.fromString(response);

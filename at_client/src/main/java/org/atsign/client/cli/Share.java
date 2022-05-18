@@ -54,9 +54,9 @@ public class Share {
         }
 
         try {
-            SharedKeyBuilder sharedKeyBuilder = new SharedKeyBuilder(atSign, otherAtSign);
-            sharedKeyBuilder = sharedKeyBuilder.cache(ttr, true);
-            sharedKeyBuilder = sharedKeyBuilder.key(keyName);
+            SharedKeyBuilder sharedKeyBuilder = new SharedKeyBuilder(atSign, otherAtSign)
+                    .cache(ttr, true)
+                    .key(keyName);
             Keys.SharedKey sharedKey = sharedKeyBuilder.build();
 
             System.out.println(OffsetDateTime.now() + " | calling atClient.put()");

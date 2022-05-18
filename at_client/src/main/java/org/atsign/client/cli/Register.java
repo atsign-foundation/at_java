@@ -13,6 +13,12 @@ import org.atsign.config.ConfigReader;
  */
 public class Register {
     public static void main(String[] args) throws Exception {
+        if (args.length != 1) {
+            System.err.println(
+                    "Usage: Register <email@email.com>");
+            System.exit(1);
+        }
+
         ConfigReader configReader = new ConfigReader();
         String email = args[0];
         String otp;
@@ -23,12 +29,6 @@ public class Register {
         String registrarUrl = configReader.getProperty("REGISTRAR_URL");
         String apiKey = configReader.getProperty("API_KEY");
         
-        if (args.length != 1) {
-            System.err.println(
-                    "Usage: Register <email@email.com>");
-            System.exit(1);
-        }
-
         if (rootDomain == null || rootPort == null || registrarUrl == null || apiKey == null){
             System.err.println("Please make sure to set all relevant configuration in src/main/resources/config.yaml");
             System.exit(1);
@@ -49,8 +49,8 @@ public class Register {
             System.out.println("Validating one-time-password");
             validationResponse = registerUtil.validateOtp(email, atsign, otp, registrarUrl, apiKey);
 
-            if (validationResponse == "retry") {
-                while (validationResponse == "retry") {
+            if ("retry".equals(validationResponse)) {
+                while ("retry".equals(validationResponse)) {
                     System.out.println("Incorrect OTP entered. Re-enter the OTP: ");
                     otp = scanner.nextLine();
                     validationResponse = registerUtil.validateOtp(email, atsign, otp, registrarUrl, apiKey);
