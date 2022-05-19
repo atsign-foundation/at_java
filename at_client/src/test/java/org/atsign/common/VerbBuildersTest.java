@@ -3,6 +3,7 @@ package org.atsign.common;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
+import org.atsign.common.VerbBuilders.NotificationStatusVerbBuilder;
 import org.atsign.common.VerbBuilders.NotifyKeyChangeBuilder;
 import org.atsign.common.VerbBuilders.NotifyTextVerbBuilder;
 import org.atsign.common.VerbBuilders.ScanVerbBuilder;
@@ -169,6 +170,25 @@ public class VerbBuildersTest {
 		expectedResult = "notify:update:messageType:key:ttr:1000:@recipient:phone@sender:cache_me";
 		assertEquals(expectedResult, command);
 
+	}
+
+	@Test
+	public void notificationStatusVerbBuilderTest() {
+
+		// Test not setting any parameters
+		assertThrows("Mandatory fields are not set. Expecting a IllegalArgumentException being thrown.",
+				IllegalArgumentException.class, () -> {
+					final NotificationStatusVerbBuilder notificationStatusVerbBuilder = new VerbBuilders().new NotificationStatusVerbBuilder();
+					// Expect build to throw Illegal argument exception for not setting mandatory
+					// parameters
+					notificationStatusVerbBuilder.build();
+				});
+		
+		final NotificationStatusVerbBuilder notificationStatusVerbBuilder = new VerbBuilders().new NotificationStatusVerbBuilder();
+		notificationStatusVerbBuilder.setNotificationId("n1234");
+		String expectedResult = "notify:status:n1234";
+		assertEquals(expectedResult, notificationStatusVerbBuilder.build());
+		
 	}
 
 	@After

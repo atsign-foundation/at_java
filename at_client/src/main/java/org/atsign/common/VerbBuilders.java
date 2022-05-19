@@ -190,9 +190,21 @@ public class VerbBuilders {
 	}
 	
 	public class NotificationStatusVerbBuilder implements VerbBuilder {
-		 //notify:status:(?<notificationId>\S+)$';
+		
+		private String notificationId;
+		
+		 public void setNotificationId(String notificationId) {
+			this.notificationId = notificationId;
+		}
+
+		//notify:status:(?<notificationId>\S+)$';
 		public String build() {
-			return null;
+			
+			if(notificationId == null || notificationId.isBlank()) {
+				throw new IllegalArgumentException("notificationId cannot be null or empty");
+			}
+			
+			return "notify:status:" + notificationId;
 		}
 	}
 	
