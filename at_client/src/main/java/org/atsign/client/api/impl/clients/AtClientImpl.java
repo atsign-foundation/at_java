@@ -1,22 +1,29 @@
 package org.atsign.client.api.impl.clients;
 
-import org.atsign.client.api.AtClient;
-import static org.atsign.client.api.AtEvents.*;
-import static org.atsign.client.api.AtEvents.AtEventType.*;
-
-import org.atsign.client.api.Secondary;
-import org.atsign.common.AtSign;
-
-import static org.atsign.common.Keys.*;
-
-import org.atsign.common.AtException;
-import org.atsign.client.util.EncryptionUtil;
-import org.atsign.client.util.KeysUtil;
+import static org.atsign.client.api.AtEvents.AtEventType.decryptedUpdateNotification;
 
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+
+import org.atsign.client.api.AtClient;
+import org.atsign.client.api.AtEvents.AtEventBus;
+import org.atsign.client.api.AtEvents.AtEventListener;
+import org.atsign.client.api.AtEvents.AtEventType;
+import org.atsign.client.api.Secondary;
+import org.atsign.client.util.EncryptionUtil;
+import org.atsign.client.util.KeysUtil;
+import org.atsign.common.AtException;
+import org.atsign.common.AtSign;
+import org.atsign.common.Keys.AtKey;
+import org.atsign.common.Keys.PublicKey;
+import org.atsign.common.Keys.SelfKey;
+import org.atsign.common.Keys.SharedKey;
 
 /**
  * @see org.atsign.client.api.AtClient
@@ -389,8 +396,9 @@ public class AtClientImpl implements AtClient {
     }
 
     private String _get(SelfKey key) throws AtException {throw new RuntimeException("Not Implemented");}
-    private String _put(SelfKey publicKey, String value) {
-        throw new RuntimeException("Not Implemented");
+   
+    private String _put(SelfKey selfKey, String value) {
+    	throw new RuntimeException("Not Implemented");
     }
     private String _delete(SelfKey key) {
         throw new RuntimeException("Not Implemented");

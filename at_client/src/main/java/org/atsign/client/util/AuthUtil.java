@@ -49,14 +49,14 @@ public class AuthUtil {
 
         PrivateKey privateKey;
         try {
-            privateKey = EncryptionUtil._privateKeyFromBase64(keys.get(KeysUtil.pkamPrivateKeyName));
+            privateKey = EncryptionUtil.privateKeyFromBase64(keys.get(KeysUtil.pkamPrivateKeyName));
         } catch (Exception e) {
             throw new AtException("Failed to get private key from stored string: " + e.getMessage());
         }
 
         String signature;
         try {
-            signature = EncryptionUtil._signSHA256RSA(fromResponse, privateKey);
+            signature = EncryptionUtil.signSHA256RSA(fromResponse, privateKey);
         } catch (Exception e) {
             throw new AtException("Failed to create SHA256 signature: " + e.getMessage());
         }

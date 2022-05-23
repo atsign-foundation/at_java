@@ -157,11 +157,19 @@ public abstract class Keys {
             if (ttb != null) s += ":ttb:" + ttb;
             if (ttr != null) s += ":ttr:" + ttr;
             if (ccd != null) s += ":ccd:" + ccd;
-            if (dataSignature != null) s += ":dataSignature:" + ccd;
+            if (dataSignature != null) s += ":dataSignature:" + dataSignature;
             if (sharedKeyStatus != null) s += ":sharedKeyStatus:" + sharedKeyStatus;
             if (sharedKeyEnc != null) s += ":sharedKeyEnc:" + sharedKeyEnc;
             if (pubKeyCS != null) s += ":pubKeyCS:" + pubKeyCS;
+            if(isBinary) {
+            	s += ":isBinary:" + true;
+            }
+            if(isEncrypted) {
+            	s += ":isEncrypted:" + true;
+            }
+            
             return s;
+            
         }
     }
 }
