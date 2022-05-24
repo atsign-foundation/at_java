@@ -48,7 +48,7 @@ public class Register {
             otp = scanner.nextLine();
             System.out.println("Validating one-time-password");
             validationResponse = registerUtil.validateOtp(email, atsign, otp, registrarUrl, apiKey, false);
-
+            //if validationResponse is retry, the OTP entered is incorrect. ASk user to re-enter correct OTP
             if ("retry".equals(validationResponse)) {
                 while ("retry".equals(validationResponse)) {
                     System.out.println("Incorrect OTP entered. Re-enter the OTP: ");
@@ -57,12 +57,17 @@ public class Register {
                 }
                 scanner.close();
             }
-
+            //if validationResponse is follow-up, the atsign has been regstered to email. Again call the API with "confirmation"=true to get the cram key
+            if ("follow-up".equals(validationResponse)) {
+                validationResponse = registerUtil.validateOtp(email, atsign, otp, registrarUrl, apiKey, true);
+            }
+            //if validation response starts with @, that represents that validationResponse contains cram
             if (validationResponse.startsWith("@")) {
                 System.out.println("One-time-password verified. OK");
+                //extract cram from response
                 cramSecret = validationResponse.split(":")[1];
                 System.out.println("Got cram secret for " + atsign + " :" + cramSecret);
-
+                
                 String[] onboardArgs = new String[] { rootDomain + ":" + rootPort,
                         atsign.toString(), cramSecret };
                 Onboard.main(onboardArgs);

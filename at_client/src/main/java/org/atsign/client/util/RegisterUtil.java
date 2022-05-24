@@ -29,7 +29,8 @@ public class RegisterUtil {
      * @throws IOException
      */
 
-    public String getFreeAtsign(String registrarUrl, String apiKey) throws AtException, MalformedURLException, IOException {
+    public String getFreeAtsign(String registrarUrl, String apiKey)
+            throws AtException, MalformedURLException, IOException {
         URL urlObject = new URL(registrarUrl + Constants.GET_FREE_ATSIGN);
         HttpsURLConnection connection = (HttpsURLConnection) urlObject.openConnection();
         connection.setRequestMethod("GET");
@@ -108,9 +109,12 @@ public class RegisterUtil {
      * @throws IOException
      * @throws AtException
      */
-    public String validateOtp(String email, AtSign atsign, String otp, String registrarUrl, String apiKey, boolean confirmation)
+    public String validateOtp(String email, AtSign atsign, String otp, String registrarUrl, String apiKey,
+            boolean confirmation)
             throws IOException, AtException {
+        //creation of a new URL object from provided URL parameters
         URL validateOtpUrl = new URL(registrarUrl + Constants.VALIDATE_OTP);
+        //opens a stream type connetion to the above URL
         HttpsURLConnection httpsConnection = (HttpsURLConnection) validateOtpUrl.openConnection();
         String params = "{\"atsign\":\"" + atsign.withoutPrefix() + "\", \"email\":\"" + email + "\", \"otp\":\"" + otp
                 + "\", \"confirmation\":\"" + confirmation + "\"}";
@@ -119,23 +123,39 @@ public class RegisterUtil {
         httpsConnection.setRequestProperty("Authorization", apiKey);
         httpsConnection.setDoOutput(true);
         OutputStream outputStream = httpsConnection.getOutputStream();
+        //writing POST Body on the output stream stands equal to sending a body with HTTP_POST
         outputStream.write(params.getBytes(StandardCharsets.UTF_8));
         outputStream.flush();
         outputStream.close();
+        //reading response received for the HTTP_REQUEST_POST
         if (httpsConnection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(
                     httpsConnection.getInputStream()));
             StringBuffer response = new StringBuffer();
+            //appending HTTP_RESPONSE to the string buffer line-after-line
             response.append(bufferedReader.readLine());
             ObjectMapper objectMapper = new ObjectMapper();
-            Map<String, String> responseData = objectMapper.readValue(response.toString(), Map.class);
-            System.out.println("Got response: " + responseData.get("message"));
-            if (responseData.get("message").equals("Verified")) {
-                return responseData.get("cramkey");
-            } else if (responseData.get("message").contains("Try again")) {
+            Map<String, String> responseDataStringObject = objectMapper.readValue(response.toString(), Map.class);
+            // API some cases returns response of Type Map<String, Map<String, String>> the
+            // following if condition casts this response to Map<String, String>
+            if (response.toString().startsWith("{\"data")) {
+                Map<String, Map<String, String>> responseDataMapObject = objectMapper.readValue(response.toString(),
+                        Map.class);
+                responseDataStringObject = responseDataMapObject.get("data");
+            }
+            System.out.println("Got response: " + responseDataStringObject.get("message"));
+            if ("Verified".equals(responseDataStringObject.get("message"))) {
+                return responseDataStringObject.get("cramkey");
+            } else if (responseDataStringObject.containsKey("newAtsign")
+                    && responseDataStringObject.get("newAtsign").equals(atsign.withoutPrefix())) {
+                return "follow-up";
+            } else if (responseDataStringObject.get("message").contains("Try again")) {
                 return "retry";
+            } else if (responseDataStringObject.get("message")
+                    .contains("You already have the maximum number of free @signs")) {
+                throw new AtException("Maximum free atsigns reached for email");
             } else {
-                return responseData.get("message");
+                return responseDataStringObject.get("message");
             }
         } else {
             throw new AtException(httpsConnection.getResponseCode() + " " + httpsConnection.getResponseMessage());
