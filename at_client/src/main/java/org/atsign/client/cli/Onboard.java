@@ -22,7 +22,7 @@ public class Onboard {
             System.exit(1);
         }
 
-        String rootUrl = args[0]; // e.g. "vip.ve.atsign.zone:64";
+        String rootUrl = args[0]; // e.g. "root.atsign.org:64";
         AtSign atSign = new AtSign(args[1]);  // e.g. "@alice";
         String cramSecret = args[2];
 

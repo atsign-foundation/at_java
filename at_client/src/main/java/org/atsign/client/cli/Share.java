@@ -1,13 +1,15 @@
 package org.atsign.client.cli;
 
 import org.atsign.client.api.AtClient;
+import org.atsign.client.api.Secondary;
+import org.atsign.client.util.ArgsUtil;
 import org.atsign.common.AtSign;
 import static org.atsign.common.KeyBuilders.*;
 
 import org.atsign.common.Keys;
-import org.atsign.client.api.impl.connections.AtRootConnection;
 import org.atsign.common.AtException;
 
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.concurrent.ExecutionException;
 
@@ -16,7 +18,7 @@ import java.util.concurrent.ExecutionException;
  */
 public class Share {
     public static void main(String[] args) {
-        String rootUrl; // e.g. "vip.ve.atsign.zone:64";
+        String rootUrl; // e.g. "root.atsign.org:64";
         AtSign atSign;  // e.g. "@alice";
         AtSign otherAtSign;  // e.g. "@bob";
         String keyName;
@@ -35,9 +37,10 @@ public class Share {
         toShare = args[4];
         ttr = Integer.parseInt(args[5]);
 
+        Secondary.AddressFinder addressFinder = ArgsUtil.createAddressFinder(rootUrl);
         // Let's also look up the other one before we do anything, just in case
         try {
-            new AtRootConnection(rootUrl).lookupAtSign(otherAtSign);
+            addressFinder.findSecondary(otherAtSign);
         } catch (Exception e) {
             System.err.println("Failed to look up remote secondary for " + otherAtSign + " : " + e.getMessage());
             e.printStackTrace(System.err);
@@ -46,8 +49,8 @@ public class Share {
 
         AtClient atClient = null;
         try {
-            atClient = AtClient.withRemoteSecondary(rootUrl, atSign);
-        } catch (AtException e) {
+            atClient = AtClient.withRemoteSecondary(atSign, addressFinder);
+        } catch (AtException | IOException e) {
             System.err.println("Failed to create AtClientImpl : " + e.getMessage());
             e.printStackTrace(System.err);
             System.exit(1);

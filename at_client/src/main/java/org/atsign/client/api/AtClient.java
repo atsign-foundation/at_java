@@ -57,8 +57,7 @@ public interface AtClient extends Secondary, AtEvents.AtEventBus {
 
     /**
      * Factory - returns default AtClientImpl with a RemoteSecondary and a DefaultConnectionFactory
-     * @param rootUrl the address of the root server to use - e.g. root.atsign.org:64 for prod, or
-     *                root.atsign.wtf:64 for staging, or vip.ve.atsign.zone:64 for local host
+     * @param rootUrl the address of the root server to use - e.g. root.atsign.org:64 for production at-signs
      * @param atSign the atSign of the client - e.g. @alice
      * @return An {@link AtClient}
      * @throws AtException if anything goes wrong during construction

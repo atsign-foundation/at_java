@@ -6,6 +6,7 @@ import org.atsign.client.api.Secondary;
 import static org.atsign.client.api.AtEvents.*;
 import static org.atsign.client.api.AtEvents.AtEventType.*;
 
+import org.atsign.client.util.ArgsUtil;
 import org.atsign.common.AtSign;
 import org.atsign.common.AtException;
 import org.atsign.common.Keys;
@@ -20,7 +21,7 @@ import java.util.*;
  */
 public class REPL {
     public static void main(String[] args) {
-        String rootUrl; // e.g. "vip.ve.atsign.zone:64";
+        String rootUrl; // e.g. "root.atsign.org:64";
         AtSign atSign;  // e.g. "@alice";
 
         if (args.length != 3) {
@@ -32,8 +33,10 @@ public class REPL {
         atSign = new AtSign(args[1]);
         boolean seeEncryptedNotifications = Boolean.parseBoolean(args[2]);
 
+        AtClient atClient;
         try {
-            AtClient atClient = AtClient.withRemoteSecondary(rootUrl, atSign, true);
+            atClient = AtClient.withRemoteSecondary(atSign, ArgsUtil.createAddressFinder(rootUrl), true);
+
             System.out.println("org.atsign.client.core.Client connected OK");
 
             REPL repl = new REPL(atClient, seeEncryptedNotifications);

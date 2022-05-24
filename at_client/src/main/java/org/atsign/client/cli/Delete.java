@@ -1,10 +1,12 @@
 package org.atsign.client.cli;
 
 import org.atsign.client.api.AtClient;
+import org.atsign.client.util.ArgsUtil;
 import org.atsign.common.AtSign;
 import org.atsign.common.KeyBuilders;
 import org.atsign.common.AtException;
 
+import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -13,7 +15,7 @@ import java.util.concurrent.ExecutionException;
 public class Delete {
     @SuppressWarnings("DuplicatedCode")
     public static void main(String[] args) {
-        String rootUrl; // e.g. "vip.ve.atsign.zone:64";
+        String rootUrl; // e.g. "root.atsign.org:64";
         AtSign atSign;  // e.g. "@alice";
         AtSign otherAtSign;  // e.g. "@bob";
         String keyName;
@@ -30,8 +32,8 @@ public class Delete {
 
         AtClient atClient = null;
         try {
-            atClient = AtClient.withRemoteSecondary(rootUrl, atSign);
-        } catch (AtException e) {
+            atClient = AtClient.withRemoteSecondary(atSign, ArgsUtil.createAddressFinder(rootUrl));
+        } catch (AtException | IOException e) {
             System.err.println("Failed to create AtClientImpl : " + e.getMessage());
             e.printStackTrace(System.err);
             System.exit(1);
