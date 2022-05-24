@@ -21,24 +21,24 @@ public class VerbBuildersTest {
 	public void scanVerbBuilderTest() {
 
 		// Test not setting any parameters
-		ScanVerbBuilder scanVerbBuilder = new VerbBuilders().new ScanVerbBuilder();
+		ScanVerbBuilder scanVerbBuilder = new ScanVerbBuilder();
 		String command = scanVerbBuilder.build();
 		assertEquals("Just scan test", "scan", command);
 
 		// Test setting just regex
-		scanVerbBuilder = new VerbBuilders().new ScanVerbBuilder();
+		scanVerbBuilder = new ScanVerbBuilder();
 		scanVerbBuilder.setRegex("*.public");
 		command = scanVerbBuilder.build();
 		assertEquals("Scan with regex", "scan *.public", command);
 
 		// Test setting just fromAtSign
-		scanVerbBuilder = new VerbBuilders().new ScanVerbBuilder();
+		scanVerbBuilder = new ScanVerbBuilder();
 		scanVerbBuilder.setFromAtSign("@other");
 		command = scanVerbBuilder.build();
 		assertEquals("Scan from another @sign", "scan:@other", command);
 
 		// Test setting both regex and fromAtSign
-		scanVerbBuilder = new VerbBuilders().new ScanVerbBuilder();
+		scanVerbBuilder = new ScanVerbBuilder();
 		scanVerbBuilder.setRegex("*.public");
 		scanVerbBuilder.setFromAtSign("@other");
 		command = scanVerbBuilder.build();
@@ -50,7 +50,7 @@ public class VerbBuildersTest {
 		// Test not setting any parameters
 		assertThrows("Recipient @sign and text are mandatory. Expecting a IllegalArgumentException being thrown.",
 				IllegalArgumentException.class, () -> {
-					final NotifyTextVerbBuilder notifyTextBuilder = new VerbBuilders().new NotifyTextVerbBuilder();
+					final NotifyTextVerbBuilder notifyTextBuilder = new NotifyTextVerbBuilder();
 					// Expect build to throw Illegal argument exception for not setting the text
 					notifyTextBuilder.build();
 				});
@@ -58,13 +58,13 @@ public class VerbBuildersTest {
 		// Test not setting the text
 		assertThrows("Text is mandatory. Expecting a IllegalArgumentException being thrown.",
 				IllegalArgumentException.class, () -> {
-					final NotifyTextVerbBuilder notifyTextBuilder = new VerbBuilders().new NotifyTextVerbBuilder();
+					final NotifyTextVerbBuilder notifyTextBuilder = new NotifyTextVerbBuilder();
 					notifyTextBuilder.setRecipientAtSign("@test");
 					// Expect build to throw Illegal argument exception for not setting the text
 					notifyTextBuilder.build();
 				});
 
-		NotifyTextVerbBuilder notifyTextBuilder = new VerbBuilders().new NotifyTextVerbBuilder();
+		NotifyTextVerbBuilder notifyTextBuilder = new NotifyTextVerbBuilder();
 		notifyTextBuilder.setText("Hi");
 		notifyTextBuilder.setRecipientAtSign("@test");
 		String expectedResult = "notify:messageType:text:@test:Hi";
@@ -72,7 +72,7 @@ public class VerbBuildersTest {
 
 		// test not setting an '@' sign to the recipients at sign and expect it to be
 		// appended properly
-		notifyTextBuilder = new VerbBuilders().new NotifyTextVerbBuilder();
+		notifyTextBuilder = new NotifyTextVerbBuilder();
 		notifyTextBuilder.setText("Hello");
 		notifyTextBuilder.setRecipientAtSign("test");
 		expectedResult = "notify:messageType:text:@test:Hello";
@@ -85,7 +85,7 @@ public class VerbBuildersTest {
 		// Test not setting any parameters
 		assertThrows("Mandatory fields are not set. Expecting a IllegalArgumentException being thrown.",
 				IllegalArgumentException.class, () -> {
-					final NotifyKeyChangeBuilder notifyKeyChangeBuilder = new VerbBuilders().new NotifyKeyChangeBuilder();
+					final NotifyKeyChangeBuilder notifyKeyChangeBuilder = new NotifyKeyChangeBuilder();
 					// Expect build to throw Illegal argument exception for not setting key and
 					// other mandatory parameters
 					notifyKeyChangeBuilder.build();
@@ -94,7 +94,7 @@ public class VerbBuildersTest {
 		// Test not setting the key
 		assertThrows("Key is mandatory. Expecting a IllegalArgumentException being thrown.",
 				IllegalArgumentException.class, () -> {
-					final NotifyKeyChangeBuilder notifyKeyChangeBuilder = new VerbBuilders().new NotifyKeyChangeBuilder();
+					final NotifyKeyChangeBuilder notifyKeyChangeBuilder = new NotifyKeyChangeBuilder();
 					notifyKeyChangeBuilder.setOperation("update");
 					notifyKeyChangeBuilder.setSenderAtSign("@sender");
 					notifyKeyChangeBuilder.setRecipientAtSign("@recipient");
@@ -105,7 +105,7 @@ public class VerbBuildersTest {
 		// Test not setting the key
 		assertThrows("Key is mandatory. Expecting a IllegalArgumentException being thrown.",
 				IllegalArgumentException.class, () -> {
-					final NotifyKeyChangeBuilder notifyKeyChangeBuilder = new VerbBuilders().new NotifyKeyChangeBuilder();
+					final NotifyKeyChangeBuilder notifyKeyChangeBuilder = new NotifyKeyChangeBuilder();
 					notifyKeyChangeBuilder.setOperation("update");
 					notifyKeyChangeBuilder.setSenderAtSign("@sender");
 					notifyKeyChangeBuilder.setRecipientAtSign("@recipient");
@@ -116,7 +116,7 @@ public class VerbBuildersTest {
 		// Test setting the value when ttr has been set
 		assertThrows("Value is mandatory if ttr has been set. Expecting a IllegalArgumentException being thrown.",
 				IllegalArgumentException.class, () -> {
-					final NotifyKeyChangeBuilder notifyKeyChangeBuilder = new VerbBuilders().new NotifyKeyChangeBuilder();
+					final NotifyKeyChangeBuilder notifyKeyChangeBuilder = new NotifyKeyChangeBuilder();
 					notifyKeyChangeBuilder.setOperation("update");
 					notifyKeyChangeBuilder.setSenderAtSign("@sender");
 					notifyKeyChangeBuilder.setRecipientAtSign("@recipient");
@@ -129,7 +129,7 @@ public class VerbBuildersTest {
 		// Test setting invalid ttr
 		assertThrows("Value is mandatory if ttr has been set. Expecting a IllegalArgumentException being thrown.",
 				IllegalArgumentException.class, () -> {
-					final NotifyKeyChangeBuilder notifyKeyChangeBuilder = new VerbBuilders().new NotifyKeyChangeBuilder();
+					final NotifyKeyChangeBuilder notifyKeyChangeBuilder = new NotifyKeyChangeBuilder();
 					notifyKeyChangeBuilder.setOperation("update");
 					notifyKeyChangeBuilder.setSenderAtSign("@sender");
 					notifyKeyChangeBuilder.setRecipientAtSign("@recipient");
@@ -140,7 +140,7 @@ public class VerbBuildersTest {
 				});
 
 		// test command
-		NotifyKeyChangeBuilder notifyKeyChangeBuilder = new VerbBuilders().new NotifyKeyChangeBuilder();
+		NotifyKeyChangeBuilder notifyKeyChangeBuilder = new NotifyKeyChangeBuilder();
 		notifyKeyChangeBuilder.setOperation("update");
 		notifyKeyChangeBuilder.setSenderAtSign("@sender");
 		notifyKeyChangeBuilder.setRecipientAtSign("@recipient");
@@ -151,7 +151,7 @@ public class VerbBuildersTest {
 		assertEquals(expectedResult, command);
 
 		// test command with a fully formed key
-		notifyKeyChangeBuilder = new VerbBuilders().new NotifyKeyChangeBuilder();
+		notifyKeyChangeBuilder = new NotifyKeyChangeBuilder();
 		notifyKeyChangeBuilder.setOperation("update");
 		notifyKeyChangeBuilder.setKey("@recipient:phone@sender");
 		// Expect build to throw Illegal argument exception for not setting the text
@@ -160,7 +160,7 @@ public class VerbBuildersTest {
 		assertEquals(expectedResult, command);
 
 		// test command when ttr and value are present
-		notifyKeyChangeBuilder = new VerbBuilders().new NotifyKeyChangeBuilder();
+		notifyKeyChangeBuilder = new NotifyKeyChangeBuilder();
 		notifyKeyChangeBuilder.setOperation("update");
 		notifyKeyChangeBuilder.setKey("@recipient:phone@sender");
 		notifyKeyChangeBuilder.setTtr(1000);
@@ -178,13 +178,13 @@ public class VerbBuildersTest {
 		// Test not setting any parameters
 		assertThrows("Mandatory fields are not set. Expecting a IllegalArgumentException being thrown.",
 				IllegalArgumentException.class, () -> {
-					final NotificationStatusVerbBuilder notificationStatusVerbBuilder = new VerbBuilders().new NotificationStatusVerbBuilder();
+					final NotificationStatusVerbBuilder notificationStatusVerbBuilder = new NotificationStatusVerbBuilder();
 					// Expect build to throw Illegal argument exception for not setting mandatory
 					// parameters
 					notificationStatusVerbBuilder.build();
 				});
 		
-		final NotificationStatusVerbBuilder notificationStatusVerbBuilder = new VerbBuilders().new NotificationStatusVerbBuilder();
+		final NotificationStatusVerbBuilder notificationStatusVerbBuilder = new NotificationStatusVerbBuilder();
 		notificationStatusVerbBuilder.setNotificationId("n1234");
 		String expectedResult = "notify:status:n1234";
 		assertEquals(expectedResult, notificationStatusVerbBuilder.build());

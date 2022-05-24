@@ -1,8 +1,10 @@
 package org.atsign.common;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * 
- * Contains builders that builds commands that are accepted by a secondary server
+ * Contains builders that build commands that are accepted by a secondary server
  *
  */
 public class VerbBuilders {
@@ -12,7 +14,7 @@ public class VerbBuilders {
 		String build();
 	}
 	
-	public class ScanVerbBuilder implements VerbBuilder {
+	public static class ScanVerbBuilder implements VerbBuilder {
 		
 		// Regex to filter the keys
 		private String regex;
@@ -36,11 +38,11 @@ public class VerbBuilders {
 			
 			String command = "scan";
 			
-			if(fromAtSign != null && !fromAtSign.isBlank()) {
+			if(fromAtSign != null && !StringUtils.isBlank(fromAtSign)) {
 				command += ":" + fromAtSign;
 			}
 			
-			if(regex != null && !regex.isBlank()) {
+			if(regex != null && !StringUtils.isBlank(regex)) {
 				command += " " + regex;
 			}
 			
@@ -48,7 +50,7 @@ public class VerbBuilders {
 		}
 	}
 	
-	public class NotifyTextVerbBuilder implements VerbBuilder {
+	public static class NotifyTextVerbBuilder implements VerbBuilder {
 		//notify:((?<operation>update|delete):)?(messageType:(?<messageType>key|text):)?(priority:(?<priority>low|medium|high):)?(strategy:(?<strategy>all|latest):)?(latestN:(?<latestN>\d+):)?(notifier:(?<notifier>[^\s:]+):)?(ttln:(?<ttln>\d+):)?(ttl:(?<ttl>\d+):)?(ttb:(?<ttb>\d+):)?(ttr:(?<ttr>(-)?\d+):)?(ccd:(?<ccd>true|false):)?(@(?<forAtSign>[^@:\s]*)):(?<atKey>[^:@]((?!:{2})[^@])+)(@(?<atSign>[^@:\s]+))?(:(?<value>.+))?$	
 		
 		private String recipientAtSign;
@@ -83,7 +85,7 @@ public class VerbBuilders {
 		}
 	}
 	
-	public class NotifyKeyChangeBuilder implements VerbBuilder {
+	public static class NotifyKeyChangeBuilder implements VerbBuilder {
 		
 		// Only allowed values are "update" or "delete"
 		private String operation = "update";
@@ -96,7 +98,7 @@ public class VerbBuilders {
 		private String value;
 		
 		// If the key has to be cached by the other @sign
-		// ttr of -1 indicated cache for ever without a need to refresh the value again.
+		// ttr of -1 indicated cache forever without a need to refresh the value again.
 		// Any other positive value indicates time after which the value needs to be refreshed
 		private final int defaultTTRValue = -2;		
 		private long ttr = defaultTTRValue;
@@ -106,7 +108,7 @@ public class VerbBuilders {
 			this.operation = operation;
 		}
 
-		// This is optional if the key is fully formed. i.e key in the format @recipientAtSign:phone@senderAtSign
+		// This is optional if the key is fully formed. i.e. key in the format @recipientAtSign:phone@senderAtSign
 		public void setRecipientAtSign(String recipientAtSign) {
 			this.recipientAtSign = recipientAtSign;
 		}
@@ -116,7 +118,7 @@ public class VerbBuilders {
 			this.key = key;
 		}
 
-		// This is optional if the key is fully formed. i.e key in the format @recipientAtSign:phone@senderAtSign
+		// This is optional if the key is fully formed. i.e. key in the format @recipientAtSign:phone@senderAtSign
 		public void setSenderAtSign(String senderAtSign) {
 			this.senderAtSign = senderAtSign;
 		}
@@ -135,7 +137,7 @@ public class VerbBuilders {
 		//notify:((?<operation>update|delete):)?(messageType:(?<messageType>key|text):)?(priority:(?<priority>low|medium|high):)?(strategy:(?<strategy>all|latest):)?(latestN:(?<latestN>\d+):)?(notifier:(?<notifier>[^\s:]+):)?(ttln:(?<ttln>\d+):)?(ttl:(?<ttl>\d+):)?(ttb:(?<ttb>\d+):)?(ttr:(?<ttr>(-)?\d+):)?(ccd:(?<ccd>true|false):)?(@(?<forAtSign>[^@:\s]*)):(?<atKey>[^:@]((?!:{2})[^@])+)(@(?<atSign>[^@:\s]+))?(:(?<value>.+))?$	
 		public String build() {
 			
-			if(key == null || key.isBlank()) {
+			if(key == null || StringUtils.isBlank(key)) {
 				throw new IllegalArgumentException("key cannot be null or empty");
 			}
 			
@@ -148,7 +150,7 @@ public class VerbBuilders {
 				throw new IllegalArgumentException("Invalid value for ttr. Only -1 and positive numbers are allowed");
 			}
 			
-			if(ttr != defaultTTRValue && (value == null || value.isBlank())) {
+			if(ttr != defaultTTRValue && (value == null || StringUtils.isBlank(value))) {
 				throw new IllegalArgumentException("When the ttr is specified value cannot be null or empty");
 			}
 			
@@ -159,8 +161,8 @@ public class VerbBuilders {
 				command += "ttr:" + ttr + ":";
 			}
 			
-			// append recipients @sign if it not part of the key already
-			if(recipientAtSign != null && !recipientAtSign.isBlank()) {
+			// append recipients @sign if it is not part of the key already
+			if(recipientAtSign != null && !StringUtils.isBlank(recipientAtSign)) {
 				
 				if(!recipientAtSign.startsWith("@")) {
 					recipientAtSign = "@" + recipientAtSign;
@@ -172,7 +174,7 @@ public class VerbBuilders {
 			// append the key
 			command += key;
 			
-			if(senderAtSign != null && !senderAtSign.isBlank()) {
+			if(senderAtSign != null && !StringUtils.isBlank(senderAtSign)) {
 				
 				if(!senderAtSign.startsWith("@")) {
 					senderAtSign = "@" + senderAtSign;
@@ -181,7 +183,7 @@ public class VerbBuilders {
 				command += senderAtSign;
 			}
 			
-			if(value != null && !value.isBlank()) {
+			if(value != null && !StringUtils.isBlank(value)) {
 				command += ":" + value;
 			}
 			
@@ -189,7 +191,7 @@ public class VerbBuilders {
 		}
 	}
 	
-	public class NotificationStatusVerbBuilder implements VerbBuilder {
+	public static class NotificationStatusVerbBuilder implements VerbBuilder {
 		
 		private String notificationId;
 		
@@ -200,7 +202,7 @@ public class VerbBuilders {
 		//notify:status:(?<notificationId>\S+)$';
 		public String build() {
 			
-			if(notificationId == null || notificationId.isBlank()) {
+			if(notificationId == null || StringUtils.isBlank(notificationId)) {
 				throw new IllegalArgumentException("notificationId cannot be null or empty");
 			}
 			
