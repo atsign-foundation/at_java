@@ -24,10 +24,10 @@ public class Register {
         String otp;
         String validationResponse;
         String cramSecret;
-        String rootDomain = configReader.getProperty("rootDomain");
-        String rootPort = configReader.getProperty("rootPort");
-        String registrarUrl = configReader.getProperty("registrarUrl");
-        String apiKey = configReader.getProperty("apiKey");
+        String rootDomain = configReader.getProperty("rootServer", "domain");
+        String rootPort = configReader.getProperty("rootServer", "port");
+        String registrarUrl = configReader.getProperty("registrar", "url");
+        String apiKey = configReader.getProperty("registrar", "apiKey");
 
         if (rootDomain == null || rootPort == null || registrarUrl == null || apiKey == null) {
             System.err.println("Please make sure to set all relevant configuration in src/main/resources/config.yaml");
@@ -47,13 +47,13 @@ public class Register {
 
             otp = scanner.nextLine();
             System.out.println("Validating one-time-password");
-            validationResponse = registerUtil.validateOtp(email, atsign, otp, registrarUrl, apiKey);
+            validationResponse = registerUtil.validateOtp(email, atsign, otp, registrarUrl, apiKey, false);
 
             if ("retry".equals(validationResponse)) {
                 while ("retry".equals(validationResponse)) {
                     System.out.println("Incorrect OTP entered. Re-enter the OTP: ");
                     otp = scanner.nextLine();
-                    validationResponse = registerUtil.validateOtp(email, atsign, otp, registrarUrl, apiKey);
+                    validationResponse = registerUtil.validateOtp(email, atsign, otp, registrarUrl, apiKey, false);
                 }
                 scanner.close();
             }

@@ -108,12 +108,12 @@ public class RegisterUtil {
      * @throws IOException
      * @throws AtException
      */
-    public String validateOtp(String email, AtSign atsign, String otp, String registrarUrl, String apiKey)
+    public String validateOtp(String email, AtSign atsign, String otp, String registrarUrl, String apiKey, boolean confirmation)
             throws IOException, AtException {
         URL validateOtpUrl = new URL(registrarUrl + Constants.VALIDATE_OTP);
         HttpsURLConnection httpsConnection = (HttpsURLConnection) validateOtpUrl.openConnection();
         String params = "{\"atsign\":\"" + atsign.withoutPrefix() + "\", \"email\":\"" + email + "\", \"otp\":\"" + otp
-                + "\", \"confirmation\":\"" + "true\"}";
+                + "\", \"confirmation\":\"" + confirmation + "\"}";
         httpsConnection.setRequestMethod("POST");
         httpsConnection.setRequestProperty("Content-Type", "application/json");
         httpsConnection.setRequestProperty("Authorization", apiKey);
