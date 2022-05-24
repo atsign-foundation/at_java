@@ -24,16 +24,16 @@ public class Register {
         String otp;
         String validationResponse;
         String cramSecret;
-        String rootDomain = configReader.getProperty("ROOT_DOMAIN");
-        String rootPort = configReader.getProperty("ROOT_PORT");
-        String registrarUrl = configReader.getProperty("REGISTRAR_URL");
-        String apiKey = configReader.getProperty("API_KEY");
-        
-        if (rootDomain == null || rootPort == null || registrarUrl == null || apiKey == null){
+        String rootDomain = configReader.getProperty("rootDomain");
+        String rootPort = configReader.getProperty("rootPort");
+        String registrarUrl = configReader.getProperty("registrarUrl");
+        String apiKey = configReader.getProperty("apiKey");
+
+        if (rootDomain == null || rootPort == null || registrarUrl == null || apiKey == null) {
             System.err.println("Please make sure to set all relevant configuration in src/main/resources/config.yaml");
             System.exit(1);
         }
-        
+
         Scanner scanner = new Scanner(System.in);
         RegisterUtil registerUtil = new RegisterUtil();
 
@@ -56,7 +56,9 @@ public class Register {
                     validationResponse = registerUtil.validateOtp(email, atsign, otp, registrarUrl, apiKey);
                 }
                 scanner.close();
-            } else if (validationResponse.startsWith("@")) {
+            }
+
+            if (validationResponse.startsWith("@")) {
                 System.out.println("One-time-password verified. OK");
                 cramSecret = validationResponse.split(":")[1];
                 System.out.println("Got cram secret for " + atsign + " :" + cramSecret);
