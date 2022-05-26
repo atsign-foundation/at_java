@@ -13,15 +13,22 @@ import org.yaml.snakeyaml.Yaml;
  * Loads, reads and returns properties from the configuration file in the resources
  */
 public class ConfigReader {
-    private Map<String, Map<String, String>> config;
+    private Map<String, Object> config;
     private Map<String,String>propertyMap;
 
     public String getProperty(String property, String subProperty) throws StreamReadException, DatabindException, FileNotFoundException{
         if (config == null){
             loadConfig();
         }
-        propertyMap = config.get(property);
+        propertyMap = (Map<String, String>) config.get(property);
         return propertyMap.get(subProperty);
+    }
+
+    public String getProperty(String property) throws StreamReadException, DatabindException, FileNotFoundException{
+        if (config == null){
+            loadConfig();
+        }
+        return (String) config.get(property);
     }
 
     /**

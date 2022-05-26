@@ -5,3 +5,9 @@ rootServer:
 registrar:
   url: "https://my.atsign.wtf/api/app/v2" ##staging registrar url. please use "https://my.atsign.com/api/app/v2" to use the production registrar api
   apiKey: "477b-876u-bcez-c42z-6a3d" ##staging api key. please obtain a key to the production registrar api and replace it
+
+##the configurations below are provided for backwards-compatability and will be deprecated in further updates. Kindly use the config structure above for smooth functioning
+API_KEY: "477b-876u-bcez-c42z-6a3d"
+ROOT_DOMAIN: "root.atsign.wtf"
+ROOT_PORT: "64" 
+REGISTRAR_URL: "https://my.atsign.wtf/api/app/v2"
