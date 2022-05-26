@@ -180,6 +180,8 @@ public class RegisterUtil {
                 return responseDataStringObject.get("cramkey");
             } else if (responseDataStringObject.containsKey("newAtsign")
                     && responseDataStringObject.get("newAtsign").equals(atsign.withoutPrefix())) {
+                        System.out.println(responseDataStringObject + "\n");
+                        System.out.println(responseDataStringObject.get("atsigns"));
                 return "follow-up";
             } else if (responseDataStringObject.containsKey("message")
                     && responseDataStringObject.get("message").contains("Try again")) {
