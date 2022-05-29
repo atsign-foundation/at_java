@@ -82,7 +82,7 @@ public class Register {
                 System.out.println("One-time-password verified. OK");
                 // extract cram from response
                 cramSecret = validationResponse.split(":")[1];
-                System.out.println("Got cram secret for " + atsign + " :" + cramSecret);
+                System.out.println("Got cram secret for " + atsign + ": " + cramSecret);
 
                 String[] onboardArgs = new String[] { rootDomain + ":" + rootPort,
                         atsign.toString(), cramSecret };

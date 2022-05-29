@@ -8,14 +8,15 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ser.std.StdKeySerializers.Dynamic;
-
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
 
@@ -138,9 +139,9 @@ public class RegisterUtil {
      *                     HTTP_OK/Status_200.
      */
     public String validateOtp(String email, AtSign atsign, String otp, String registrarUrl, String apiKey,
-            boolean ... confirmation)
+            boolean... confirmation)
             throws IOException, AtException {
-        //setting default confirmation to true in case it's not provided
+        // setting default confirmation to true in case it's not provided
         Boolean defaultConfirmation = (confirmation.length == 0) ? true : confirmation[0];
         // creation of a new URL object from provided URL parameters
         URL validateOtpUrl = new URL(registrarUrl + Constants.VALIDATE_OTP);
@@ -167,12 +168,22 @@ public class RegisterUtil {
             response.append(bufferedReader.readLine());
             ObjectMapper objectMapper = new ObjectMapper();
             Map<String, String> responseDataStringObject = objectMapper.readValue(response.toString(), Map.class);
-            // API in some cases returns response of Type Map<String, Map<String, String>>
-            // the following if condition casts this response to Map<String, String>
+            // API in some cases returns response with a data field of Type
+            // Map<String, Map<String, String>> the following if condition casts this
+            // response to Map<String, String>
             if (response.toString().startsWith("{\"data")) {
                 Map<String, Map<String, String>> responseDataMapObject = objectMapper.readValue(response.toString(),
                         Map.class);
                 responseDataStringObject = responseDataMapObject.get("data");
+                // The following if condition logs the existing atsigns if the API response
+                // contains a List<String> of atsigns.
+                if (responseDataStringObject.containsKey("atsigns")
+                        || responseDataStringObject.containsKey("newAtsign")) {
+                    Map<String, Map<String, List<String>>> responseDataArrayListObject = objectMapper
+                            .readValue(response.toString(), Map.class);
+                    System.out.println("Your existing atsigns: "
+                            + responseDataArrayListObject.get("data").get("atsigns").toString());
+                }
             }
             System.out.println("Got response: " + responseDataStringObject.get("message"));
             if (responseDataStringObject.containsKey("message")
@@ -180,8 +191,6 @@ public class RegisterUtil {
                 return responseDataStringObject.get("cramkey");
             } else if (responseDataStringObject.containsKey("newAtsign")
                     && responseDataStringObject.get("newAtsign").equals(atsign.withoutPrefix())) {
-                        System.out.println(responseDataStringObject + "\n");
-                        System.out.println(responseDataStringObject.get("atsigns"));
                 return "follow-up";
             } else if (responseDataStringObject.containsKey("message")
                     && responseDataStringObject.get("message").contains("Try again")) {
