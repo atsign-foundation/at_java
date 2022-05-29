@@ -21,6 +21,12 @@ to hear about issues. See also [CONTRIBUTING.md](CONTRIBUTING.md)
 * fluid client APIs for sharing data - e.g. share(value).with(atSign/s).as(keyName)
 * extend client REPL so that you can call AtClient methods (e.g. the share() above) interactively 
 
+### May 29 2022
+* Retry bug fixed in Register CLI
+* Config yaml parameters restructured and backwards compatability provided to break exsiting usages.
+* New parameter added to validateOtp method in RegisterUtil.java. The usage of this parameter is provided in java docs of the respective method.
+
+
 ### May 18 2022
 * A new CLI tool Register has been introduced which can acquire a free atsign and register it to the provided email.
 * Register CLI also handles calling the Onboard client with the cram secret which was received during the registration process.

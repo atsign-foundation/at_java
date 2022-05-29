@@ -31,14 +31,17 @@ public class Register {
         }
         String rootPort = configReader.getProperty("rootServer", "port");
         if (rootPort == null) {
+            //reading config from older configuration syntax for backwards compatability
             rootPort = configReader.getProperty("ROOT_PORT");
         }
         String registrarUrl = configReader.getProperty("registrar", "url");
         if (registrarUrl == null) {
+            //reading config from older configuration syntax for backwards compatability
             registrarUrl = configReader.getProperty("REGISTRAR_URL");
         }
         String apiKey = configReader.getProperty("registrar", "apiKey");
         if (apiKey == null) {
+            //reading config from older configuration syntax for backwards compatability
             apiKey = configReader.getProperty("API_KEY");
         }
 
@@ -61,7 +64,7 @@ public class Register {
             otp = scanner.nextLine();
             System.out.println("Validating one-time-password");
             validationResponse = registerUtil.validateOtp(email, atsign, otp, registrarUrl, apiKey, false);
-            // if validationResponse is retry, the OTP entered is incorrect. ASk user to
+            // if validationResponse is retry, the OTP entered is incorrect. Ask user to
             // re-enter correct OTP
             if ("retry".equals(validationResponse)) {
                 while ("retry".equals(validationResponse)) {
