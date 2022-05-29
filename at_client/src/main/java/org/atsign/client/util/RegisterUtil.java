@@ -7,15 +7,12 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
@@ -139,16 +136,14 @@ public class RegisterUtil {
      *                     HTTP_OK/Status_200.
      */
     public String validateOtp(String email, AtSign atsign, String otp, String registrarUrl, String apiKey,
-            boolean... confirmation)
+            Boolean confirmation)
             throws IOException, AtException {
-        // setting default confirmation to true in case it's not provided
-        Boolean defaultConfirmation = (confirmation.length == 0) ? true : confirmation[0];
         // creation of a new URL object from provided URL parameters
         URL validateOtpUrl = new URL(registrarUrl + Constants.VALIDATE_OTP);
         // opens a stream type connetion to the above URL
         HttpsURLConnection httpsConnection = (HttpsURLConnection) validateOtpUrl.openConnection();
         String params = "{\"atsign\":\"" + atsign.withoutPrefix() + "\", \"email\":\"" + email + "\", \"otp\":\"" + otp
-                + "\", \"confirmation\":\"" + defaultConfirmation + "\"}";
+                + "\", \"confirmation\":\"" + confirmation + "\"}";
         httpsConnection.setRequestMethod("POST");
         httpsConnection.setRequestProperty("Content-Type", "application/json");
         httpsConnection.setRequestProperty("Authorization", apiKey);
@@ -204,6 +199,12 @@ public class RegisterUtil {
         } else {
             throw new AtException(httpsConnection.getResponseCode() + " " + httpsConnection.getResponseMessage());
         }
+    }
+
+    // method added for backwards compatability. will be removed in further updates
+    public String validateOtp(String email, AtSign atsign, String otp, String registrarUrl, String apiKey)
+            throws IOException, AtException {
+        return validateOtp(email, atsign, otp, registrarUrl, apiKey, true);
     }
 
 }
