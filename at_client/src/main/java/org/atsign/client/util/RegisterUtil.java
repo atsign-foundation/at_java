@@ -26,9 +26,11 @@ public class RegisterUtil {
      * @param apiKey       - API key to authenticate connection to atsign registrar
      *                     API
      * @return free atsign
-     * @throws AtException
-     * @throws MalformedURLException
-     * @throws IOException
+     * @throws AtException           thrown if HTTPS_REQUEST was not successful
+     * @throws MalformedURLException thrown in case of improper URL params provided
+     * @throws IOException           if anything goes wrong while handling I/O
+     *                               streams from
+     *                               HttpsURLConnection
      */
 
     public String getFreeAtsign(String registrarUrl, String apiKey)
@@ -65,10 +67,12 @@ public class RegisterUtil {
      * @param registrarUrl - URL of the atsign registrar API
      * @param apiKey       - API key to authenticate connection to atsign registrar
      *                     API
-     * @return
-     * @throws AtException
-     * @throws MalformedURLException
-     * @throws IOException
+     * @return true if one-time-password sent successfully, false otherwise
+     * @throws AtException           thrown if HTTPS_REQUEST was not successfull
+     * @throws MalformedURLException thrown in case of improper URL params provided
+     * @throws IOException           if anything goes wrong while handling I/O
+     *                               streams from
+     *                               HttpsURLConnection
      */
     public Boolean registerAtsign(String email, AtSign atsign, String registrarUrl, String apiKey)
             throws AtException, MalformedURLException, IOException {
@@ -119,9 +123,11 @@ public class RegisterUtil {
      *                     case API will return cram key if the user is new
      *                     otherwise will return list of already existing atsigns.
      *                     If the user already has existing atsigns user will have
-     *                     to select a listed atsign and place a second call to the
-     *                     same API endpoint with confirmation set to true with
-     *                     previously received OTP.
+     *                     to select a listed atsign old/new and place a second call
+     *                     to the same API endpoint with confirmation set to true
+     *                     with previously received OTP. The second follow-up call 
+     *                     is automated by this client using new atsign for user
+     *                     simplicity
      * @return Case 1("verified") - the API has registered the atsign to
      *         provided email and cramkey present in HTTP_RESPONSE Body.
      *         Case 2("follow-up"): User already has existing atsigns and new atsign
@@ -129,15 +135,18 @@ public class RegisterUtil {
      *         one
      *         of exsting listed atsigns with confirmation set to true.
      *         Case 3("retry"): Incorrect OTP send request again with correct OTP.
-     * @throws IOException if anything goes wrong while handling I/O streams from
-     *                     HttpsURLConnection.
-     * @throws AtException Case 1: If user has exhausted 10 free atsign quota
-     *                     Case 2: If API response is anything other than
-     *                     HTTP_OK/Status_200.
+     * @throws IOException           thrown if anything goes wrong while handling I/O
+     *                               streams from
+     *                               HttpsURLConnection.
+     * @throws AtException           Case 1: If user has exhausted 10 free atsign
+     *                               quota
+     *                               Case 2: If API response is anything other than
+     *                               HTTP_OK/Status_200.
+     * @throws MalformedURLException thrown in case of improper URL params provided
      */
     public String validateOtp(String email, AtSign atsign, String otp, String registrarUrl, String apiKey,
             Boolean confirmation)
-            throws IOException, AtException {
+            throws IOException, AtException, MalformedURLException {
         // creation of a new URL object from provided URL parameters
         URL validateOtpUrl = new URL(registrarUrl + Constants.VALIDATE_OTP);
         // opens a stream type connetion to the above URL
