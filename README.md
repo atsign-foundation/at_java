@@ -1,9 +1,9 @@
 <img width=250px src="https://atsign.dev/assets/img/@platform_logo_grey.svg?sanitize=true">
 
-# The @ platform for Java developers
+# The atPlatform for Java developers
 
 This repo contains libraries, tools, samples and examples for developers who wish
-to work with the @ platform from Java code.
+to work with the atPlatform from Java code.
 
 NB: As of May 3 2022, the Java client library can still be considered a 1.0.0-Beta version - i.e. there may occasionally
 be breaking changes, based on feedback from users of the library, until we get to a final version 1.0.0
@@ -40,8 +40,8 @@ to hear about issues. See also [CONTRIBUTING.md](CONTRIBUTING.md)
 * Enhanced REPL to optionally listen to only decryptedUpdateNotification; added command-line flag to listen to both
 
 ### Apr 29 2022
-* **at_client** : Initial implementation of Java client library for the @ platform. README will come soon 
-but here's a very brief summary which will get you going if you already know the basics of the @ platform
+* **at_client** : Initial implementation of Java client library for the atPlatform. README will come soon 
+but here's a very brief summary which will get you going if you already know the basics of the atPlatform
 and have used the Dart/Flutter packages
   * **Uses Maven** 
     * The Maven target you want is 'install' which will put things in the 'target' output directory
@@ -58,6 +58,6 @@ and have used the Dart/Flutter packages
         * calls 'get' to decrypt
     * **Share** - a simple 'sender' client - shares some data with another @-sign
     * **Get** - gets data which was shared by another @-sign
-    * **Delete** - deletes data that this @ sign previously shared with another
+    * **Delete** - deletes data that this Atsign previously shared with another
   * To run them, having done a mvn install 
     `java -cp "target/client-1.0-SNAPSHOT.jar:target/lib/*" org.atsign.client.cli.REPL` (or Onboard/Share/Get/Delete )
