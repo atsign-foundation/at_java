@@ -6,6 +6,10 @@ import static org.atsign.client.api.AtEvents.AtEventType.*;
 
 import org.atsign.client.api.Secondary;
 import org.atsign.common.AtSign;
+import org.atsign.common.KeyBuilders;
+import org.atsign.common.KeyBuilders.KeyBuilder;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.atsign.common.Keys.*;
 
@@ -410,8 +414,56 @@ public class AtClientImpl implements AtClient {
     private String _put(SelfKey selfKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
     private String _put(PublicKey publicKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
 
-    private List<AtKey> _getAtKeys(String regex) {
-        throw new RuntimeException("Not Implemented");
+    private List<AtKey> _getAtKeys(String regex) throws AtException {
+        try {
+            Secondary.Response rawResponse = secondary.executeCommand("scan", true);
+            String rawArrayString = rawResponse.data;
+            rawArrayString = rawArrayString.replace("[", "");
+            rawArrayString = rawArrayString.replace("]", "");
+            rawArrayString = rawArrayString.replace("\"", "");
+ 
+            String[] rawArray = rawArrayString.split(","); // eg: ["public:publickey@farinataanxious", "public:signing_publickey@farinataanxious", "@farinataanxious:signing_privatekey@farinataanxious"]
+            List<AtKey> atKeys = new ArrayList<AtKey>(); 
+            for(String atKeyRaw : rawArray) {
+
+                // PublicKey
+                if(atKeyRaw.startsWith("public:") || atKeyRaw.startsWith("cached:public:")) {
+                    // eg: atKeyRaw == "cached:public:publickey@farinataanxious"
+                    String[] atSplit = atKeyRaw.split("@"); // eg: ["cached:public:publickey", "farinataanxious"]
+                    String[] temp = atSplit[0].split(":"); // eg: ["cached", "public", "publickey"]
+                    String keyName = temp[temp.length - 1]; // eg: "publickey"
+
+                    PublicKey publicKey = new KeyBuilders.PublicKeyBuilder().key(keyName).build();
+
+                    if(atKeyRaw.startsWith("cached:public:")) {
+                        publicKey.metadata.isCached = true;
+                    }
+
+                    atKeys.add(publicKey);
+                }
+
+                // PrivateKey
+                if(atKeyRaw.startsWith("privatekey:")) {
+
+                }
+
+                // SharedKey or SelfKey
+                if(atKeyRaw.startsWith("@")) {
+                    if(atKeyRaw.startsWith(atSign.atSign)) {
+                        // SelfKey
+                    } else {
+                        // SharedKey
+                    }
+                    
+                }
+
+
+                
+            }
+            return atKeys;
+        } catch (Exception e) {
+            throw new AtException("todo");
+        }
     }
 
     // ============================================================================================================================================
