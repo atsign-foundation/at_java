@@ -86,7 +86,10 @@ public class KeyBuilders {
     /// Builder to build the public keys
     public static class PublicKeyBuilder extends CachedKeyBuilder implements KeyBuilder {
         public PublicKeyBuilder() {
-            _atKey = new PublicKey();
+            this(defaultAtSign);
+        }
+        public PublicKeyBuilder(AtSign sharedBy) {
+            _atKey = new PublicKey(sharedBy);
             _atKey.metadata.isPublic = true;
             _atKey.metadata.isHidden = false;
         }

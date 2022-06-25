@@ -6,12 +6,16 @@ import static org.atsign.client.api.AtEvents.AtEventType.*;
 
 import org.atsign.client.api.Secondary;
 import org.atsign.common.AtSign;
+import org.atsign.common.KeyBuilders;
 
 import static org.atsign.common.Keys.*;
 
 import org.atsign.common.AtException;
 import org.atsign.client.util.EncryptionUtil;
+import org.atsign.client.util.KeyStringUtil;
 import org.atsign.client.util.KeysUtil;
+import org.atsign.client.util.StringUtil;
+import org.atsign.client.util.KeyStringUtil.KeyType;
 
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -412,6 +416,50 @@ public class AtClientImpl implements AtClient {
 
     private List<AtKey> _getAtKeys(String regex) throws AtException {
         Secondary.Response rawResponse = executeCommand("scan", false);
+        String[] rawArray = StringUtil.getRawStringArrayFromScanRawResponseString(rawResponse.data);
+        List<AtKey> atKeys = new ArrayList<AtKey>(); 
+        for(String atKeyRaw : rawArray) {
+            KeyStringUtil keyStringUtil = new KeyStringUtil(atKeyRaw);
+            KeyType keyType = keyStringUtil.getKeyType();
+            String keyName = keyStringUtil.getKeyName();
+            AtSign sharedBy = new AtSign(keyStringUtil.getSharedBy());
+            AtSign sharedWith = null;
+            if(keyStringUtil.getSharedWith() != null) {
+                sharedWith = new AtSign(keyStringUtil.getSharedWith());
+            }
+            String namespace = keyStringUtil.getNamespace();
+            boolean isCached = keyStringUtil.isCached();
+            // System.out.println(atKeyRaw);
+            // System.out.println("KeyName: " + keyName);
+            // System.out.println("Namespace: " + namespace);
+            // System.out.println("SharedBy: " + sharedBy.atSign);
+            // System.out.println("SharedWith: " + (sharedWith != null ? sharedWith.atSign : "null"));
+            // System.out.println("KeyType: " + keyType.toString());
+            // System.out.println("isCached: " + isCached);
+            // System.out.println("");
+            AtKey atKey = null;
+            switch(keyType) {
+                case PUBLIC_KEY:
+                    atKey = new KeyBuilders.PublicKeyBuilder(sharedBy).key(keyName).build();
+                    break;
+                case SHARED_KEY:
+                    atKey = new KeyBuilders.SharedKeyBuilder(sharedBy, sharedWith).key(keyName).build();
+                    break;
+                case SELF_KEY:
+                    atKey = new KeyBuilders.SelfKeyBuilder(sharedBy).key(keyName).build();
+                    break;
+                case PRIVATE_HIDDEN_KEY:
+                    atKey = new KeyBuilders.PrivateHiddenKeyBuilder(sharedBy).key(keyName).build();
+                    break;
+                default:
+                    throw new AtException("Key \"" + atKeyRaw + "\" was not given a KeyType");
+            }
+            atKey.setNamespace(namespace);
+            atKey.metadata.isCached = isCached;
+
+            atKeys.add(atKey);
+        }
+        return atKeys;
     }
 
     // ============================================================================================================================================

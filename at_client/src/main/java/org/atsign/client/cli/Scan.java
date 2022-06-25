@@ -41,7 +41,7 @@ public class Scan {
         AtSign atSign = new AtSign(atSignConst);
         boolean verbose = Boolean.parseBoolean(verboseStr);
         String what = null; // error message string 
-        
+
         // find secondary address
         Secondary.Address sAddress = null;
         try {
@@ -53,8 +53,8 @@ public class Scan {
             System.err.println("Failed to " + what + " " + e.getMessage());
             e.printStackTrace(System.err);
             System.exit(1);
-        }
-        
+        }   
+
         // initialize AtClient and connect to remote secondary (with pkam auth)
         AtClient atClient = null;
         try {
@@ -77,6 +77,19 @@ public class Scan {
                 System.out.println("\t" + atKey.toString());
             }
             System.out.println("]");
+
+            for(AtKey atKey : atKeys) {
+                System.out.println("======================");
+                System.out.println(atKey.toString());
+                System.out.println("KeyName: " + atKey.name);
+                System.out.println("Namespace: " + atKey.getNamespace());
+                System.out.println("SharedBy: " + atKey.sharedBy.atSign);
+                System.out.println("SharedWith: " + (atKey.sharedWith != null ? atKey.sharedWith.atSign : "null"));
+                System.out.println("KeyType: " + atKey.getClass().toString());
+                System.out.println("isCached: " + atKey.metadata.isCached);
+                System.out.println("======================");
+                System.out.println("");
+            }
         } catch (Exception e) {
             System.err.println("Failed to " + what + " " + e.getMessage());
             e.printStackTrace(System.err);
