@@ -38,16 +38,14 @@ public class Scan {
         AtSign atSign = new AtSign(atSignConst);
         String what = null; // error message string 
         
-        // fetch rootUrl.equals("root.atsign.wtf:64") from config
-        String rootUrl = null;
+        // find secondary address
+        Secondary.Address sAddress = null;
         try {
-            ConfigReader configReader = new ConfigReader();
-            what = "load config";
-            configReader.loadConfig();
-            what = "get properties from config";
-            rootUrl = configReader.getProperty("rootServer", "domain") + ":" + configReader.getProperty("rootServer", "port"); // eg: root.atsign.wtf:64
-            System.out.println("RootURL from config: " + rootUrl);
-        } catch (StreamReadException | DatabindException | FileNotFoundException e) {
+            Secondary.AddressFinder sAddressFinder = ArgsUtil.createAddressFinder(rootUrl);
+            what = "could not find secondary with atSign:" + atSign.atSign;
+            sAddress = sAddressFinder.findSecondary(atSign);
+            System.out.println("Found address of atSign \"" + atSign.atSign + "\": " + sAddress.host + ":" + sAddress.port);
+        } catch (IOException | NoSuchSecondaryException e) {
             System.err.println("Failed to " + what + " " + e.getMessage());
             e.printStackTrace(System.err);
             System.exit(1);
