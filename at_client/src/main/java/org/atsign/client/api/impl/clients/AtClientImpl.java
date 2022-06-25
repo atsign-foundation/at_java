@@ -396,7 +396,13 @@ public class AtClientImpl implements AtClient {
         throw new RuntimeException("Not Implemented");
     }
 
-    private String _get(PublicKey key) throws AtException {throw new RuntimeException("Not Implemented");}
+    private String _get(PublicKey key) throws AtException {
+        String verbCommand = "llookup:" + key.toString();
+        Response rawResponse = secondary.executeCommand(verbCommand, true);
+        String data = rawResponse.data;
+        return data;
+    }
+
     private String _put(PublicKey publicKey, String value) {throw new RuntimeException("Not Implemented");}
     private String _delete(PublicKey key) {
         throw new RuntimeException("Not Implemented");
