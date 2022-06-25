@@ -25,8 +25,14 @@ import com.fasterxml.jackson.databind.DatabindException;
 public class Scan {
     public static void main(String[] args) {
 
+        if(args.length != 3 && (args[2] != "false" || args[2] != "true")) {
+            System.out.println("Incorrect usage | Scan <rootUrl> <atSign> <verbose == true|false>");
+        }
+
         // fetch command line args
-        String atSignConst = args[0];
+        String rootUrl = args[0]; // root.atsign.wtf:64
+        String atSignConst = args[1]; // @sportsunconscious
+        String verboseStr = args[2]; // true|false (true for noisy print logs)
 
         // ======================================================
         AtSign atSign = new AtSign(atSignConst);
