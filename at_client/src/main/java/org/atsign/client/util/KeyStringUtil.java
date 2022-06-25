@@ -1,5 +1,6 @@
 package org.atsign.client.util;
 
+import org.atsign.common.AtSign;
 public class KeyStringUtil {
     
     public enum KeyType {
@@ -13,6 +14,9 @@ public class KeyStringUtil {
     private String _keyName; // should never be null (otherwise it's an error)
     private KeyType _keyType; // see enum above, should never be null (otherwise it's an error)
     private String _namespace; // nullable (some keys don't have namespaces)
+
+    private String _sharedBy;
+    private String _sharedWith;
 
     private boolean _isCached; // true if key starts with "cached:"
 
@@ -31,6 +35,14 @@ public class KeyStringUtil {
 
     public KeyType getKeyType() {
         return this._keyType;
+    }
+    
+    public String getSharedBy() {
+        return this._sharedBy;
+    }
+
+    public String getSharedWith() {
+        return this._sharedWith;
     }
     
     public boolean isCached() {
@@ -68,6 +80,11 @@ public class KeyStringUtil {
             if(split1[0].startsWith("@") || split1[1].startsWith("@")) {
                 // scenario 3 and 4,, it is a SharedKey!
                 _keyType = KeyType.SHARED_KEY;
+                if(split1[0].startsWith("@")) {
+                    _sharedWith = split1[0].substring(1);
+                } else {
+                    _sharedWith = split1[1].substring(1);
+                }
             }
 
             String[] split2 = split1[split1.length-1].split("@");
@@ -76,6 +93,7 @@ public class KeyStringUtil {
             // 3 == {"shared_key", "smoothalligator"}
             // 4 == {"shared_key", "abbcservicesinc"}
             _keyName = split2[0];
+            _sharedBy = split2[1];
 
             // PublicKey and SharedKey can be cacheable!
             if(split1[0].equals("cached")) {
@@ -94,7 +112,7 @@ public class KeyStringUtil {
             // 5 == {"_latestnotificationid.fourballcorporate9", "smoothalligator"}
             // 6 == {"shared_key.wildgreen", "smoothalligator"}
             _keyName = split2[0];
-
+            _sharedBy = split2[1];
         }
     }
 
