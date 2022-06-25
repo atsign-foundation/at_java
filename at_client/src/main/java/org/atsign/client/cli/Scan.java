@@ -2,6 +2,7 @@ package org.atsign.client.cli;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import org.atsign.client.api.AtClient;
@@ -14,13 +15,15 @@ import org.atsign.client.util.AuthUtil;
 import org.atsign.client.util.KeysUtil;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
+import org.atsign.common.NoSuchSecondaryException;
+import org.atsign.common.Keys.AtKey;
 import org.atsign.config.ConfigReader;
 
 import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.databind.DatabindException;
 
 /**
- * A command-line interface for scanning keys in your secondary
+ * A command-line interface for scanning keys in your secondary (must have keys to atSign in keys/)
  */
 public class Scan {
     public static void main(String[] args) {
@@ -66,8 +69,14 @@ public class Scan {
         // run scan command
         try {
             what = "execute scan command";
-            Secondary.Response rawResponse = atClient.executeCommand("scan", true);
-            System.out.println(rawResponse);
+            // Secondary.Response rawResponse = atClient.executeCommand("scan", true);
+            // System.out.println("\n" + rawResponse);
+            List<AtKey> atKeys = atClient.getAtKeys(".").get();
+            System.out.println("atKeys: [");
+            for(AtKey atKey : atKeys) {
+                System.out.println("\t" + atKey.toString());
+            }
+            System.out.println("]");
         } catch (Exception e) {
             System.err.println("Failed to " + what + " " + e.getMessage());
             e.printStackTrace(System.err);

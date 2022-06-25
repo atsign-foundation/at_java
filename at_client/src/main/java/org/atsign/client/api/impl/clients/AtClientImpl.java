@@ -410,8 +410,8 @@ public class AtClientImpl implements AtClient {
     private String _put(SelfKey selfKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
     private String _put(PublicKey publicKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
 
-    private List<AtKey> _getAtKeys(String regex) {
-        throw new RuntimeException("Not Implemented");
+    private List<AtKey> _getAtKeys(String regex) throws AtException {
+        Secondary.Response rawResponse = executeCommand("scan", false);
     }
 
     // ============================================================================================================================================
