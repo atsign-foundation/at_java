@@ -36,6 +36,7 @@ public class Scan {
 
         // ======================================================
         AtSign atSign = new AtSign(atSignConst);
+        boolean verbose = Boolean.parseBoolean(verboseStr);
         String what = null; // error message string 
         
         // find secondary address
