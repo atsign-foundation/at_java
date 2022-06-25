@@ -67,6 +67,15 @@ public class KeyStringUtil {
         // 5 == {"_latestnotificationid.fourballcorporate9@smoothalligator"} [len 1]
         // 6 == {"shared_key.wildgreen@smoothalligator"} [len 1]
 
+        // all keys may have a namespace
+        if(fullKeyName.contains(".")) {
+            String[] split2 = fullKeyName.split("\\.");
+            if(split2.length > 1) {
+                String[] split3 = split2[1].split("@");
+                _namespace = split3[0];
+            }
+        }
+
         if(split1.length > 1) {
             // must be scenarios 1, 2, 3, 4, 
 
