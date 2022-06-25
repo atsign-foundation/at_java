@@ -37,6 +37,26 @@ public class KeyBuildersTest {
         assertEquals(null, publicKey.sharedWith); // null
     }
 
+    @Test
+    public void buildSharedKeyTest() {
+        // want to build:
+        String want = "@bob:shared_key@alice"; // `shared_key` is sharedBy `@alice` and sharedWith `@bob`
+
+        // variables 
+        String keyName = "shared_key";
+        String sharedByStr = "@alice";
+        String sharedWithStr = "@bob";
+
+        // build SharedKey instance
+        AtSign sharedBy = new AtSign(sharedByStr);
+        AtSign sharedWith = new AtSign(sharedWithStr);
+
+        SharedKey sharedKey = new KeyBuilders.SharedKeyBuilder(sharedBy, sharedWith).key(keyName).build();
+
+        assertEquals(want, sharedKey.toString());
+        assertEquals(false, sharedKey.metadata.isPublic);
+    }
+
     @After
     public void tearDown() {
 
