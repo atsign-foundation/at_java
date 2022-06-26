@@ -57,6 +57,7 @@ public class KeyStringUtil {
         // (4) SharedKey (cached)       == cached:@smoothalligator:shared_key@abbcservicesinc
         // (5) PrivateHiddenKey         == _latestnotificationid.fourballcorporate9@smoothalligator
         // (6) SelfKey                  == shared_key.wildgreen@smoothalligator
+        // (7) SelfKey                  == @smoothalligator:lemon@smoothalligator
         String[] split1 = fullKeyName.split(":");
         // split1 results
         // 1 == {"public", "signing_publickey@smoothalligator"} [len 2]
@@ -65,6 +66,7 @@ public class KeyStringUtil {
         // 4 == {"cached", "@smoothalligator", "shared_key@abbcservicesinc"} [len 3]
         // 5 == {"_latestnotificationid.fourballcorporate9@smoothalligator"} [len 1]
         // 6 == {"shared_key.wildgreen@smoothalligator"} [len 1]
+        
 
         // all keys may have a namespace
         if(fullKeyName.contains(".")) {
@@ -106,6 +108,11 @@ public class KeyStringUtil {
             // PublicKey and SharedKey can be cacheable!
             if(split1[0].equals("cached")) {
                 _isCached = true;
+            }
+
+            // _sharedBy == _sharedWith => it's a SelfKey
+            if(_sharedBy.equals(_sharedWith)) {
+                _keyType = KeyType.SELF_KEY;
             }
 
         } else {

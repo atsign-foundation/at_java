@@ -73,7 +73,11 @@ public abstract class Keys {
             this(defaultAtSign);
         }
         public SelfKey(AtSign sharedBy) {
+            this(sharedBy, null);
+        }
+        public SelfKey(AtSign sharedBy, AtSign sharedWith) { // possibility of `@bob:keyName@bob`
             super(sharedBy);
+            super.sharedWith = sharedWith;
             super.metadata.isPublic = false;
             super.metadata.isEncrypted = true;
             super.metadata.isHidden = false;

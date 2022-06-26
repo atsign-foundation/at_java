@@ -1,26 +1,15 @@
 package org.atsign.client.cli;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.Secondary;
-import org.atsign.client.api.impl.connections.AtRootConnection;
-import org.atsign.client.api.impl.connections.AtSecondaryConnection;
-import org.atsign.client.api.impl.events.SimpleAtEventBus;
 import org.atsign.client.util.ArgsUtil;
-import org.atsign.client.util.AuthUtil;
-import org.atsign.client.util.KeysUtil;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
-import org.atsign.common.NoSuchSecondaryException;
 import org.atsign.common.Keys.AtKey;
-import org.atsign.config.ConfigReader;
-
-import com.fasterxml.jackson.core.exc.StreamReadException;
-import com.fasterxml.jackson.databind.DatabindException;
+import org.atsign.common.NoSuchSecondaryException;
 
 /**
  * A command-line interface for scanning keys in your secondary (must have keys to atSign in keys/)
@@ -86,7 +75,7 @@ public class Scan {
                 System.out.println("Namespace: " + atKey.getNamespace());
                 System.out.println("SharedBy: " + atKey.sharedBy.atSign);
                 System.out.println("SharedWith: " + (atKey.sharedWith != null ? atKey.sharedWith.atSign : "null"));
-                System.out.println("KeyType: " + atKey.getClass().toString());
+                System.out.println("KeyType: " + atKey.getClass().toString().split("\\$")[1]);
                 System.out.println("isCached: " + atKey.metadata.isCached);
                 System.out.println("======================");
                 System.out.println("");

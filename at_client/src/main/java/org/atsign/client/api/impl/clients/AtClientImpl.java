@@ -446,7 +446,7 @@ public class AtClientImpl implements AtClient {
                     atKey = new KeyBuilders.SharedKeyBuilder(sharedBy, sharedWith).key(keyName).build();
                     break;
                 case SELF_KEY:
-                    atKey = new KeyBuilders.SelfKeyBuilder(sharedBy).key(keyName).build();
+                    atKey = new KeyBuilders.SelfKeyBuilder(sharedBy, sharedWith).key(keyName).build();
                     break;
                 case PRIVATE_HIDDEN_KEY:
                     atKey = new KeyBuilders.PrivateHiddenKeyBuilder(sharedBy).key(keyName).build();

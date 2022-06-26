@@ -197,7 +197,11 @@ public class KeyBuilders {
             this(defaultAtSign);
         }
         public SelfKeyBuilder(AtSign sharedBy) {
-            _atKey = new SelfKey(sharedBy);
+            this(sharedBy, null);
+        }
+
+        public SelfKeyBuilder(AtSign sharedBy, AtSign sharedWith) {
+            _atKey = new SelfKey(sharedBy, sharedWith);
             _atKey.metadata.isPublic = false;
             _atKey.metadata.isHidden = false;
         }
