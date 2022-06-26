@@ -238,7 +238,7 @@ public class KeyBuilders {
             this(defaultAtSign);
         }
         public PrivateHiddenKeyBuilder(AtSign sharedBy) {
-            _atKey = new PrivateHiddenKey();
+            _atKey = new PrivateHiddenKey(sharedBy);
             _atKey.metadata.isHidden = true;
             _atKey.metadata.isPublic = false;
         }

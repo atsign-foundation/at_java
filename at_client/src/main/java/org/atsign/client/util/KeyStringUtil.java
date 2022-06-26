@@ -1,8 +1,9 @@
 package org.atsign.client.util;
 
 import org.atsign.common.AtSign;
+
 public class KeyStringUtil {
-    
+
     public enum KeyType {
         PUBLIC_KEY, // PublicKey
         SHARED_KEY, // SharedKey
@@ -15,8 +16,8 @@ public class KeyStringUtil {
     private KeyType _keyType; // see enum above, should never be null (otherwise it's an error)
     private String _namespace; // nullable (some keys don't have namespaces)
 
-    private String _sharedBy;
-    private String _sharedWith;
+    private String _sharedBy; // should never be null (all keys have a sharedBy atsign)
+    private String _sharedWith; // nullable
 
     private boolean _isCached; // true if key starts with "cached:"
 
@@ -24,7 +25,6 @@ public class KeyStringUtil {
         this._evaluate(fullKeyName);
     }
 
-    
     public String getKeyName() {
         return this._keyName;
     }
@@ -36,7 +36,7 @@ public class KeyStringUtil {
     public KeyType getKeyType() {
         return this._keyType;
     }
-    
+
     public String getSharedBy() {
         return this._sharedBy;
     }
@@ -57,7 +57,6 @@ public class KeyStringUtil {
         // (4) SharedKey (cached)       == cached:@smoothalligator:shared_key@abbcservicesinc
         // (5) PrivateHiddenKey         == _latestnotificationid.fourballcorporate9@smoothalligator
         // (6) SelfKey                  == shared_key.wildgreen@smoothalligator
-
         String[] split1 = fullKeyName.split(":");
         // split1 results
         // 1 == {"public", "signing_publickey@smoothalligator"} [len 2]

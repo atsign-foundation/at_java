@@ -28,8 +28,9 @@ import com.fasterxml.jackson.databind.DatabindException;
 public class Scan {
     public static void main(String[] args) {
 
-        if(args.length != 3 && (args[2] != "false" || args[2] != "true")) {
+        if(args.length != 3) {
             System.out.println("Incorrect usage | Scan <rootUrl> <atSign> <verbose == true|false>");
+            return;
         }
 
         // fetch command line args
@@ -66,12 +67,12 @@ public class Scan {
             System.exit(1);
         }
 
-        // run scan command
+        // run scan
         try {
             what = "execute scan command";
             // Secondary.Response rawResponse = atClient.executeCommand("scan", true);
             // System.out.println("\n" + rawResponse);
-            List<AtKey> atKeys = atClient.getAtKeys(".").get();
+            List<AtKey> atKeys = atClient.getAtKeys("").get();
             System.out.println("atKeys: [");
             for(AtKey atKey : atKeys) {
                 System.out.println("\t" + atKey.toString());
@@ -80,7 +81,7 @@ public class Scan {
 
             for(AtKey atKey : atKeys) {
                 System.out.println("======================");
-                System.out.println(atKey.toString());
+                System.out.println("Full KeyName: " + atKey.toString());
                 System.out.println("KeyName: " + atKey.name);
                 System.out.println("Namespace: " + atKey.getNamespace());
                 System.out.println("SharedBy: " + atKey.sharedBy.atSign);
