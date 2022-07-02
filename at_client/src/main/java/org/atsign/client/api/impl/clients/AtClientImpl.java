@@ -415,7 +415,7 @@ public class AtClientImpl implements AtClient {
     private String _put(PublicKey publicKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
 
     private List<AtKey> _getAtKeys(String regex) throws AtException {
-        Secondary.Response rawResponse = executeCommand("scan", false);
+        Secondary.Response rawResponse = executeCommand("scan " + regex, false);
         String[] rawArray = StringUtil.getRawStringArrayFromScanRawResponseString(rawResponse.data);
         List<AtKey> atKeys = new ArrayList<AtKey>(); 
         for(String atKeyRaw : rawArray) {
