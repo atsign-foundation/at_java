@@ -128,6 +128,11 @@ public class KeyStringUtil {
             // 6 == {"shared_key.wildgreen", "smoothalligator"}
             _keyName = split2[0];
             _sharedBy = split2[1];
+
+            if(_keyName.startsWith("shared_key")) {
+                // SelfKey with _keyName (like `shared_key.bob@alice`) are keys with no namespace
+                _namespace = null;
+            }
         }
     }
 
