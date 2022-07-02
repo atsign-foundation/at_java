@@ -17,8 +17,8 @@ import org.atsign.common.NoSuchSecondaryException;
 public class Scan {
     public static void main(String[] args) {
 
-        if(args.length != 3) {
-            System.out.println("Incorrect usage | Scan <rootUrl> <atSign> <verbose == true|false>");
+        if(args.length != 4) {
+            System.out.println("Incorrect usage | Scan <rootUrl> <atSign> <verbose == true|false> <scan regex>");
             return;
         }
 
@@ -26,6 +26,7 @@ public class Scan {
         String rootUrl = args[0]; // root.atsign.wtf:64
         String atSignConst = args[1]; // @sportsunconscious
         String verboseStr = args[2]; // true|false (true for noisy print logs)
+        String regex = args[3]; // scan regex (e.g. ".*")
 
         // ======================================================
         AtSign atSign = new AtSign(atSignConst);
@@ -61,25 +62,25 @@ public class Scan {
             what = "execute scan command";
             // Secondary.Response rawResponse = atClient.executeCommand("scan", true);
             // System.out.println("\n" + rawResponse);
-            List<AtKey> atKeys = atClient.getAtKeys("").get();
+            List<AtKey> atKeys = atClient.getAtKeys(regex).get();
             System.out.println("atKeys: [");
             for(AtKey atKey : atKeys) {
                 System.out.println("\t" + atKey.toString());
             }
             System.out.println("]");
 
-            for(AtKey atKey : atKeys) {
-                System.out.println("======================");
-                System.out.println("Full KeyName: " + atKey.toString());
-                System.out.println("KeyName: " + atKey.name);
-                System.out.println("Namespace: " + atKey.getNamespace());
-                System.out.println("SharedBy: " + atKey.sharedBy.atSign);
-                System.out.println("SharedWith: " + (atKey.sharedWith != null ? atKey.sharedWith.atSign : "null"));
-                System.out.println("KeyType: " + atKey.getClass().toString().split("\\$")[1]);
-                System.out.println("isCached: " + atKey.metadata.isCached);
-                System.out.println("======================");
-                System.out.println("");
-            }
+            // for(AtKey atKey : atKeys) {
+            //     System.out.println("======================");
+            //     System.out.println("Full KeyName: " + atKey.toString());
+            //     System.out.println("KeyName: " + atKey.name);
+            //     System.out.println("Namespace: " + atKey.getNamespace());
+            //     System.out.println("SharedBy: " + atKey.sharedBy.atSign);
+            //     System.out.println("SharedWith: " + (atKey.sharedWith != null ? atKey.sharedWith.atSign : "null"));
+            //     System.out.println("KeyType: " + atKey.getClass().toString().split("\\$")[1]);
+            //     System.out.println("isCached: " + atKey.metadata.isCached);
+            //     System.out.println("======================");
+            //     System.out.println("");
+            // }
         } catch (Exception e) {
             System.err.println("Failed to " + what + " " + e.getMessage());
             e.printStackTrace(System.err);
