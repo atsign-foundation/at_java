@@ -8,7 +8,6 @@ import org.atsign.client.api.AtClient;
 import org.atsign.client.api.Secondary;
 import org.atsign.client.util.ArgsUtil;
 import org.atsign.client.util.MetadataUtil;
-import org.atsign.common.Keys.Metadata;
 
 public class MetadataUtilTest {
     public static void main(String[] args) {
@@ -53,9 +52,6 @@ public class MetadataUtilTest {
 
         MetadataUtil metadataUtil = new MetadataUtil(llookupMetaResponse);
         _printMetadataUtil(metadataUtil);
-
-        Metadata metadata = Metadata.fromString(llookupMetaResponse.data);
-        _printMetadata(metadata);
     }
 
     private static void _printMetadataUtil(MetadataUtil metadataUtil) {
@@ -80,28 +76,5 @@ public class MetadataUtilTest {
         System.out.println("sharedKeyEnc: " + metadataUtil.getSharedKeyEnc());
         System.out.println("pubKeyCS: " + metadataUtil.getPubKeyCS());
         System.out.println();
-    }
-
-    private static void _printMetadata(Metadata metadata) {
-        System.out.println("===============");
-        System.out.println("ttl: " + metadata.ttl);
-        System.out.println("ttb: " + metadata.ttb);
-        System.out.println("ttr: " + metadata.ttr);
-        System.out.println("ccd: " + metadata.ccd);
-        System.out.println("availableAt: " + metadata.availableAt);
-        System.out.println("expiresAt: " + metadata.expiresAt);
-        System.out.println("refreshAt: " + metadata.refreshAt);
-        System.out.println("createdAt: " + metadata.createdAt);
-        System.out.println("updatedAt: " + metadata.updatedAt);
-        System.out.println("dataSignature: " + metadata.dataSignature);
-        System.out.println("sharedKeyStatus: " + metadata.sharedKeyStatus);
-        System.out.println("isPublic: " + metadata.isPublic);
-        System.out.println("isEncrypted: " + metadata.isEncrypted);
-        System.out.println("isHidden: " + metadata.isHidden);
-        System.out.println("namespaceAware: " + metadata.namespaceAware);
-        System.out.println("isBinary: " + metadata.isBinary);
-        System.out.println("isCached: " + metadata.isCached);
-        System.out.println("sharedKeyEnc" + metadata.sharedKeyEnc);
-        System.out.println("pubKeyCS: " + metadata.pubKeyCS);
     }
 }
