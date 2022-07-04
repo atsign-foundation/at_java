@@ -49,14 +49,23 @@ public class MetadataUtil {
 	private String _pubKeyCS;
 	
 
-	public MetadataUtil(String llookupResponse) {
-		this._llookupResponse = llookupResponse;
+	public MetadataUtil(Secondary.Response llookupMetaResponse) {
+		// llookupMetaResponse should be the response from a verb command like `llookup:meta:<keyName>`
+		this(llookupMetaResponse.data);
+	}
+
+	public MetadataUtil(String llookupMetaResponseString) {
 		try {
+			this._llookupResponse = llookupMetaResponseString;
 			this._evaluate();
 		} catch (AtException e) {
 			System.err.println(e.toString());
 			e.printStackTrace();
 		}
+	}
+
+	public String getRawLlookupMetaString() {
+		return _llookupResponse;
 	}
 
 	public String getCreatedBy() {
