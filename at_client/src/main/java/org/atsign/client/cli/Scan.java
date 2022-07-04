@@ -2,13 +2,17 @@ package org.atsign.client.cli;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Scanner;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.Secondary;
 import org.atsign.client.util.ArgsUtil;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
 import org.atsign.common.Keys.AtKey;
+import org.atsign.common.Keys.Metadata;
 import org.atsign.common.NoSuchSecondaryException;
 
 /**
@@ -58,33 +62,83 @@ public class Scan {
         }
 
         // run scan
+        List<AtKey> atKeys = null;
         try {
-            what = "execute scan command";
-            // Secondary.Response rawResponse = atClient.executeCommand("scan", true);
-            // System.out.println("\n" + rawResponse);
-            List<AtKey> atKeys = atClient.getAtKeys(regex).get();
-            System.out.println("atKeys: [");
-            for(AtKey atKey : atKeys) {
-                System.out.println("\t" + atKey.toString());
-            }
-            System.out.println("]");
-
-            // for(AtKey atKey : atKeys) {
-            //     System.out.println("======================");
-            //     System.out.println("Full KeyName: " + atKey.toString());
-            //     System.out.println("KeyName: " + atKey.name);
-            //     System.out.println("Namespace: " + atKey.getNamespace());
-            //     System.out.println("SharedBy: " + atKey.sharedBy.atSign);
-            //     System.out.println("SharedWith: " + (atKey.sharedWith != null ? atKey.sharedWith.atSign : "null"));
-            //     System.out.println("KeyType: " + atKey.getClass().toString().split("\\$")[1]);
-            //     System.out.println("isCached: " + atKey.metadata.isCached);
-            //     System.out.println("======================");
-            //     System.out.println("");
-            // }
+            what = "getAtKeys(" + regex + ")";
+            atKeys = atClient.getAtKeys(regex).get();
         } catch (Exception e) {
             System.err.println("Failed to " + what + " " + e.getMessage());
             e.printStackTrace(System.err);
             System.exit(1);
         }
+
+        // CLI
+        String input;
+        Scanner scanner = new Scanner(System.in);
+        do {
+            System.out.println();
+            // _printAtKeys(atKeys);
+            System.out.println("Enter index you want to llookup (l to list, q to quit):");
+            input = scanner.nextLine();
+            if(StringUtils.isNumeric(input)) {
+                int index = Integer.valueOf(input);
+                if(index < atKeys.size()) {
+                    AtKey atKey = atKeys.get(index);
+                    _printAtKeyInfo(atKey);
+                } else {
+                    System.out.println("Index out of bounds");
+                }
+            } else if(input.equalsIgnoreCase("l")) {
+                _printAtKeys(atKeys);
+            } else if(!input.equalsIgnoreCase("q")) { 
+                System.out.println("Invalid input");
+            }
+        } while(!input.equalsIgnoreCase("q"));
+        scanner.close();
+    }
+
+    private static void _printAtKeys(List<AtKey> atKeys) {
+        System.out.println("atKeys: {");
+        for(int i = 0; i < atKeys.size(); i++) {
+            AtKey atKey = atKeys.get(i);
+            System.out.println("  " + i + ":  " + atKey.toString());
+        }
+        System.out.println("}");
+    }
+    
+    private static void _printAtKeyInfo(AtKey atKey) {
+        System.out.println("======================");
+        System.out.println("Full KeyName: " + atKey.toString());
+        System.out.println("KeyName: " + atKey.name);
+        System.out.println("Namespace: " + atKey.getNamespace());
+        System.out.println("SharedBy: " + atKey.sharedBy.atSign);
+        System.out.println("SharedWith: " + (atKey.sharedWith != null ? atKey.sharedWith.atSign : "null"));
+        System.out.println("KeyType: " + atKey.getClass().toString().split("\\$")[1]);
+        System.out.println("Metadata -------------------");
+        _printMetadata(atKey.metadata);
+        System.out.println("======================");
+        System.out.println();
+    }
+
+    private static void _printMetadata(Metadata metadata) {
+        System.out.println("ttl: " + metadata.ttl);
+        System.out.println("ttb: " + metadata.ttb);
+        System.out.println("ttr: " + metadata.ttr);
+        System.out.println("ccd: " + metadata.ccd);
+        // System.out.println("availableAt: " + metadata.availableAt.toString());
+        // System.out.println("expiresAt: " + metadata.expiresAt.toString());
+        // System.out.println("refreshAt: " + metadata.refreshAt.toString());
+        // System.out.println("createdAt: " + metadata.createdAt.toString());
+        // System.out.println("updatedAt: " + metadata.updatedAt.toString());
+        System.out.println("dataSignature: " + metadata.dataSignature);
+        System.out.println("sharedKeyStatus: " + metadata.sharedKeyStatus);
+        System.out.println("isPublic: " + metadata.isPublic);
+        System.out.println("isEncrypted: " + metadata.isEncrypted);
+        System.out.println("isHidden: " + metadata.isHidden);
+        System.out.println("namespaceAware: " + metadata.namespaceAware);
+        System.out.println("isBinary: " + metadata.isBinary);
+        System.out.println("isCached: " + metadata.isCached);
+        System.out.println("sharedKeyEnc: " + metadata.sharedKeyEnc);
+        System.out.println("pubKeyCS: " + metadata.pubKeyCS);
     }
 }

@@ -12,6 +12,8 @@ public class KeyStringUtil {
         ;
     }
 
+    private String _fullKeyName;
+
     private String _keyName; // should never be null (otherwise it's an error)
     private KeyType _keyType; // see enum above, should never be null (otherwise it's an error)
     private String _namespace; // nullable (some keys don't have namespaces)
@@ -22,7 +24,12 @@ public class KeyStringUtil {
     private boolean _isCached; // true if key starts with "cached:"
 
     public KeyStringUtil(String fullKeyName) {
+        this._fullKeyName = fullKeyName;
         this._evaluate(fullKeyName);
+    }
+
+    public String getFullKeyName() {
+        return this._fullKeyName;
     }
 
     public String getKeyName() {

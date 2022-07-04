@@ -7,6 +7,7 @@ import static org.atsign.client.api.AtEvents.AtEventType.*;
 import org.atsign.client.api.Secondary;
 import org.atsign.common.AtSign;
 import org.atsign.common.KeyBuilders;
+import org.atsign.common.Keys;
 
 import static org.atsign.common.Keys.*;
 
@@ -415,48 +416,13 @@ public class AtClientImpl implements AtClient {
     private String _put(PublicKey publicKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
 
     private List<AtKey> _getAtKeys(String regex) throws AtException {
-        Secondary.Response rawResponse = executeCommand("scan " + regex, false);
-        String[] rawArray = StringUtil.getRawStringArrayFromScanRawResponseString(rawResponse.data);
+        Secondary.Response scanRawResponse = executeCommand("scan " + regex, false);
+        String[] rawArray = StringUtil.getRawStringArrayFromScanRawResponseString(scanRawResponse.data); // eg {"public:some_key1@bob", "@alice:some_key2.namespace@bob"}
         List<AtKey> atKeys = new ArrayList<AtKey>(); 
-        for(String atKeyRaw : rawArray) {
-            KeyStringUtil keyStringUtil = new KeyStringUtil(atKeyRaw);
-            KeyType keyType = keyStringUtil.getKeyType();
-            String keyName = keyStringUtil.getKeyName();
-            AtSign sharedBy = new AtSign(keyStringUtil.getSharedBy());
-            AtSign sharedWith = null;
-            if(keyStringUtil.getSharedWith() != null) {
-                sharedWith = new AtSign(keyStringUtil.getSharedWith());
-            }
-            String namespace = keyStringUtil.getNamespace();
-            boolean isCached = keyStringUtil.isCached();
-            // System.out.println(atKeyRaw);
-            // System.out.println("KeyName: " + keyName);
-            // System.out.println("Namespace: " + namespace);
-            // System.out.println("SharedBy: " + sharedBy.atSign);
-            // System.out.println("SharedWith: " + (sharedWith != null ? sharedWith.atSign : "null"));
-            // System.out.println("KeyType: " + keyType.toString());
-            // System.out.println("isCached: " + isCached);
-            // System.out.println("");
-            AtKey atKey = null;
-            switch(keyType) {
-                case PUBLIC_KEY:
-                    atKey = new KeyBuilders.PublicKeyBuilder(sharedBy).key(keyName).build();
-                    break;
-                case SHARED_KEY:
-                    atKey = new KeyBuilders.SharedKeyBuilder(sharedBy, sharedWith).key(keyName).build();
-                    break;
-                case SELF_KEY:
-                    atKey = new KeyBuilders.SelfKeyBuilder(sharedBy, sharedWith).key(keyName).build();
-                    break;
-                case PRIVATE_HIDDEN_KEY:
-                    atKey = new KeyBuilders.PrivateHiddenKeyBuilder(sharedBy).key(keyName).build();
-                    break;
-                default:
-                    throw new AtException("Key \"" + atKeyRaw + "\" was not given a KeyType");
-            }
-            atKey.setNamespace(namespace);
-            atKey.metadata.isCached = isCached;
-
+        for(String atKeyRaw : rawArray) { // eg atKeyRaw == @bob:phone@alice
+            AtKey atKey = Keys.fromString(atKeyRaw);
+            Secondary.Response llookupMetaRaw = executeCommand("llookup:meta:" + atKeyRaw, false);
+            atKey.metadata = Metadata.squash(atKey.metadata, Metadata.fromString(llookupMetaRaw.data)); // atKey.metadata has priority over llookupMetaRaw.data
             atKeys.add(atKey);
         }
         return atKeys;

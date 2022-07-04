@@ -2,6 +2,10 @@ package org.atsign.common;
 
 import java.time.OffsetDateTime;
 
+import org.atsign.client.util.KeyStringUtil;
+import org.atsign.client.util.MetadataUtil;
+import org.atsign.client.util.KeyStringUtil.KeyType;
+
 @SuppressWarnings("unused")
 public abstract class Keys {
     public static AtSign defaultAtSign;
@@ -167,6 +171,132 @@ public abstract class Keys {
             if (pubKeyCS != null) s += ":pubKeyCS:" + pubKeyCS;
             return s;
         }
+
+        public static Metadata fromString(String rawLlookupString) {
+            Metadata metadata = new Metadata();
+            MetadataUtil metadataUtil = new MetadataUtil(rawLlookupString);
+            if(metadataUtil.getTTL() != null) metadata.ttl = Integer.valueOf(metadataUtil.getTTL().intValue());
+            if(metadataUtil.getTTB() != null) metadata.ttb = Integer.valueOf(metadataUtil.getTTB().intValue());
+            if(metadataUtil.getTTR() != null) metadata.ttr = Integer.valueOf(metadataUtil.getTTR().intValue());
+            if(metadataUtil.isCCD() != null) metadata.ccd = Boolean.valueOf(metadataUtil.isCCD().booleanValue());
+            // TODO IMPLEMENT String -> OffsetDataTime conversion
+            // metadata.availableAt = OffsetDateTime.parse(metadataUtil.getAvailableAt());
+            // metadata.expiresAt = OffsetDateTime.parse(metadataUtil.getExpiresAt());
+            // metadata.refreshAt = OffsetDateTime.parse(metadataUtil.getRefreshAt());
+            // metadata.createdAt = OffsetDateTime.parse(metadataUtil.getCreatedAt());
+            // metadata.updatedAt = OffsetDateTime.parse(metadataUtil.getUpdatedAt());
+            if(metadataUtil.isBinary() != null) metadata.isBinary = Boolean.valueOf(metadataUtil.isBinary());
+            if(metadataUtil.isEncrypted() != null) metadata.isEncrypted = Boolean.valueOf(metadataUtil.isEncrypted());
+            metadata.dataSignature = metadataUtil.getDataSignature();
+            metadata.sharedKeyEnc = metadataUtil.getSharedKeyEnc();
+            metadata.pubKeyCS = metadataUtil.getPubKeyCS();
+            return metadata;
+        }
+
+        /**
+         * Squashes the two metadatas into one metadata.
+         * @param atKeyMetadata Metadata from atKey.metadata (has priority)
+         * @param metadataUtilMetadata Metadata from MetadataUtil.java
+         * @return One merged metadata object
+         *
+         */
+        public static Metadata squash(Metadata atKeyMetadata, Metadata metadataUtilMetadata) {
+            Metadata metadata = new Metadata();
+            if(atKeyMetadata.ttl != null) metadata.ttl = atKeyMetadata.ttl;
+            else if(metadataUtilMetadata.ttl != null) metadata.ttl = metadataUtilMetadata.ttl;
+
+            if(atKeyMetadata.ttb != null) metadata.ttb = atKeyMetadata.ttb;
+            else if(metadataUtilMetadata.ttb != null) metadata.ttb = metadataUtilMetadata.ttb;
+
+            if(atKeyMetadata.ttr != null) metadata.ttr = atKeyMetadata.ttr;
+            else if(metadataUtilMetadata.ttr != null) metadata.ttr = metadataUtilMetadata.ttr;
+
+            if(atKeyMetadata.ccd != null) metadata.ccd = atKeyMetadata.ccd;
+            else if(metadataUtilMetadata.ccd != null) metadata.ccd = metadataUtilMetadata.ccd;
+
+            if(atKeyMetadata.availableAt != null) metadata.availableAt = atKeyMetadata.availableAt;
+            else if(metadataUtilMetadata.availableAt != null) metadata.availableAt = metadataUtilMetadata.availableAt;
+
+            if(atKeyMetadata.expiresAt != null) metadata.expiresAt = atKeyMetadata.expiresAt;
+            else if(metadataUtilMetadata.expiresAt != null) metadata.expiresAt = metadataUtilMetadata.expiresAt;
+
+            if(atKeyMetadata.refreshAt != null) metadata.refreshAt = atKeyMetadata.refreshAt;
+            else if(metadataUtilMetadata.refreshAt != null) metadata.refreshAt = metadataUtilMetadata.refreshAt;
+
+            if(atKeyMetadata.createdAt != null) metadata.createdAt = atKeyMetadata.createdAt;
+            else if(metadataUtilMetadata.createdAt != null) metadata.createdAt = metadataUtilMetadata.createdAt;
+
+            if(atKeyMetadata.updatedAt != null) metadata.updatedAt = atKeyMetadata.updatedAt;
+            else if(metadataUtilMetadata.updatedAt != null) metadata.updatedAt = metadataUtilMetadata.updatedAt;            
+
+            if(atKeyMetadata.dataSignature != null) metadata.dataSignature = atKeyMetadata.dataSignature;
+            else if(metadataUtilMetadata.dataSignature != null) metadata.dataSignature = metadataUtilMetadata.dataSignature;
+
+            if(atKeyMetadata.sharedKeyStatus != null) metadata.sharedKeyStatus = atKeyMetadata.sharedKeyStatus;
+            else if(metadataUtilMetadata.sharedKeyStatus != null) metadata.sharedKeyStatus = metadataUtilMetadata.sharedKeyStatus;
+
+            if(atKeyMetadata.sharedKeyEnc != null) metadata.sharedKeyEnc = atKeyMetadata.sharedKeyEnc;
+            else if(metadataUtilMetadata.sharedKeyEnc != null) metadata.sharedKeyEnc = metadataUtilMetadata.sharedKeyEnc;
+
+            if(atKeyMetadata.isPublic != null) metadata.isPublic = atKeyMetadata.isPublic;
+            else if(metadataUtilMetadata.isPublic != null) metadata.isPublic = metadataUtilMetadata.isPublic;
+
+            if(atKeyMetadata.isEncrypted != null) metadata.isEncrypted = atKeyMetadata.isEncrypted;
+            else if(metadataUtilMetadata.isEncrypted != null) metadata.isEncrypted = metadataUtilMetadata.isEncrypted;
+
+            if(atKeyMetadata.isHidden != null) metadata.isHidden = atKeyMetadata.isHidden;
+            else if(metadataUtilMetadata.isHidden != null) metadata.isHidden = metadataUtilMetadata.isHidden;
+
+            if(atKeyMetadata.namespaceAware != null) metadata.namespaceAware = atKeyMetadata.namespaceAware;
+            else if(metadataUtilMetadata.namespaceAware != null) metadata.namespaceAware = metadataUtilMetadata.namespaceAware;
+
+            if(atKeyMetadata.isBinary != null) metadata.isBinary = atKeyMetadata.isBinary;
+            else if(metadataUtilMetadata.isBinary != null) metadata.isBinary = metadataUtilMetadata.isBinary;
+
+            if(atKeyMetadata.isCached != null) metadata.isCached = atKeyMetadata.isCached;
+            else if(metadataUtilMetadata.isCached != null) metadata.isCached = metadataUtilMetadata.isCached;
+
+            if(atKeyMetadata.sharedKeyEnc != null) metadata.sharedKeyEnc = atKeyMetadata.sharedKeyEnc;
+            else if(metadataUtilMetadata.sharedKeyEnc != null) metadata.sharedKeyEnc = metadataUtilMetadata.sharedKeyEnc;
+
+            if(atKeyMetadata.pubKeyCS != null) metadata.pubKeyCS = atKeyMetadata.pubKeyCS;
+            else if(metadataUtilMetadata.pubKeyCS != null) metadata.pubKeyCS = metadataUtilMetadata.pubKeyCS;
+
+            return metadata;
+        }
+    }
+
+    public static AtKey fromString(String fullAtKeyName) throws AtException {
+        KeyStringUtil keyStringUtil = new KeyStringUtil(fullAtKeyName);
+        KeyType keyType = keyStringUtil.getKeyType();
+        String keyName = keyStringUtil.getKeyName();
+        AtSign sharedBy = new AtSign(keyStringUtil.getSharedBy());
+        AtSign sharedWith = null;
+        if(keyStringUtil.getSharedWith() != null) {
+            sharedWith = new AtSign(keyStringUtil.getSharedWith());
+        }
+        String namespace = keyStringUtil.getNamespace();
+        boolean isCached = keyStringUtil.isCached();
+        AtKey atKey = null;
+        switch(keyType) {
+            case PUBLIC_KEY:
+                atKey = new KeyBuilders.PublicKeyBuilder(sharedBy).key(keyName).build();
+                break;
+            case SHARED_KEY:
+                atKey = new KeyBuilders.SharedKeyBuilder(sharedBy, sharedWith).key(keyName).build();
+                break;
+            case SELF_KEY:
+                atKey = new KeyBuilders.SelfKeyBuilder(sharedBy, sharedWith).key(keyName).build();
+                break;
+            case PRIVATE_HIDDEN_KEY:
+                atKey = new KeyBuilders.PrivateHiddenKeyBuilder(sharedBy).key(keyName).build();
+                break;
+            default:
+                throw new AtException("Key \"" + fullAtKeyName + "\" was not given a KeyType");
+        }
+        atKey.setNamespace(namespace);
+        atKey.metadata.isCached = isCached;
+        return atKey;
     }
 }
 
