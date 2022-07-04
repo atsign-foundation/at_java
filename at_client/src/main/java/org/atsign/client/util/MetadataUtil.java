@@ -34,15 +34,15 @@ public class MetadataUtil {
 
 	private String _status;
 
-	private long _version;
+	private Long _version;
 
-	private long _ttl;
-	private long _ttb;
-	private long _ttr;
+	private Long _ttl;
+	private Long _ttb;
+	private Long _ttr;
 
-	private boolean _ccd;
-	private boolean _isBinary;
-	private boolean _isEncrypted;
+	private Boolean _ccd;
+	private Boolean _isBinary;
+	private Boolean _isEncrypted;
 
 	private String _dataSignature;
 	private String _sharedKeyEnc;
@@ -91,31 +91,30 @@ public class MetadataUtil {
 		return _status;
 	}
 
-	public long getVersion() {
+	public Long getVersion() {
 		return _version;
 	}
 
-	public long getTTL() {
+	public Long getTTL() {
 		return _ttl;
 	}
 
-	public long getTTB() {
+	public Long getTTB() {
 		return _ttb;
 	}
 
-	public long getTTR() {
+	public Long getTTR() {
 		return _ttr;
 	}
 
-	public boolean isCCD() {
+	public Boolean isCCD() {
 		return _ccd;
 	}
 
-	public boolean isBinary() {
+	public Boolean isBinary() {
 		return _isBinary;
 	}
-
-	public boolean isEncrypted() {
+	public Boolean isEncrypted() {
 		return _isEncrypted;
 	}
 
