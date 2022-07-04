@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.atsign.client.api.Secondary;
 import org.atsign.common.AtException;
 
 public class MetadataUtil {
@@ -131,92 +132,42 @@ public class MetadataUtil {
 		return _dataSignature;
 	}
 
+	public String getSharedKeyEnc() {
+		return _sharedKeyEnc;
+	}
+
 	public String getPubKeyCS() {
 		return _pubKeyCS;
 	}
 
 	private void _evaluate() throws AtException {
-		/**
-		 * 	What `_llookupResponse` should look like	
-		 * 
-		 * 	{
-		 * 		"key":"@farinataanxious:lemon@sportsunconscious",
-		 * 		"data":"+blpIq6zerL3818FJsFEpw==",
-		 * 		"metaData":
-		 * 			{
-		 * 				"createdBy":null,
-		 * 				"updatedBy":null,
-		 * 				"createdAt":"2022-06-19 20:35:09.962Z",
-		 * 				"updatedAt":"2022-06-19 20:35:09.962Z",
-		 * 				"availableAt":"2022-06-19 20:35:09.962Z",
-		 * 				"expiresAt":null,
-		 * 				"refreshAt":"2022-06-19 21:58:29.962Z",
-		 * 				"status":"active",
-		 * 				"version":0,
-		 * 				"ttl":0,
-		 * 				"ttb":0,
-		 * 				"ttr":5000,
-		 * 				"ccd":true,
-		 * 				"isBinary":false,
-		 * 				"isEncrypted":false,
-		 * 				"dataSignature":null,
-		 * 				"sharedKeyEnc":null,
-		 * 				"pubKeyCS":null
-		 * 			}
-		 * 	}
-		 **/
-		String[] split1 = _llookupResponse.split("metaData\":");
-		String s = split1[split1.length-1];
-		String s1 = s.substring(1, s.length()-2);
-		String[] s2 = s1.split(",");
-		// for(String x : s2) {
-		// 	System.out.println(x);
-		// }
-		Map<String, Object> metaDataRaw = new HashMap<String, Object>();
-		for(String x : s2) {
-			String[] split2 = x.split(":", 2);
-			// System.out.println(split2[0] + " " + split2[1]);
-			String metaDataKeyName = split2[0].replace("\"", "");
-			Object metaDataValue;
-			String toBeVal = split2[1];
-			if(toBeVal.contains("\"")) {
-				toBeVal = toBeVal.substring(1, split2[1].length()-1);
-			}
-			if(toBeVal.equalsIgnoreCase("null")) {
-				metaDataValue = null;
-			} else if(toBeVal.equalsIgnoreCase("true") || toBeVal.equalsIgnoreCase("false")) {
-				metaDataValue = Boolean.parseBoolean(toBeVal);
-			} else if(StringUtils.isNumeric(toBeVal)) {
-				metaDataValue = Long.parseLong(toBeVal);
-			} else {
-				metaDataValue = toBeVal;
-			}
-			metaDataRaw.put(metaDataKeyName, metaDataValue);
-		}
-		System.out.println("============ RAW ============");
-		System.out.println(_llookupResponse);
+		Map<String, Object> metadataRaw = _getMetadataRaw(this._llookupResponse);
+		// System.out.println("============ RAW ============");
+		// System.out.println(_llookupResponse);
 		// ============ RAW ============
 		// {"key":"@farinataanxious:lemon@sportsunconscious","data":"+blpIq6zerL3818FJsFEpw==","metaData":{"createdBy":null,"updatedBy":null,"createdAt":"2022-06-19 20:35:09.962Z","updatedAt":"2022-06-19 20:35:09.962Z","availableAt":"2022-06-19 20:35:09.962Z","expiresAt":null,"refreshAt":"2022-06-19 21:58:29.962Z","status":"active","version":0,"ttl":0,"ttb":0,"ttr":5000,"ccd":true,"isBinary":false,"isEncrypted":false,"dataSignature":null,"sharedKeyEnc":null,"pubKeyCS":null}}
-		System.out.println("============ PARSED ============");
-		for(Map.Entry<String, Object> entry : metaDataRaw.entrySet()) {
-			System.out.print(entry.getKey());
-			System.out.print(" ");
-			if(entry.getValue() == null) {
-				System.out.print("null");
-			} else {
-				System.out.print(entry.getValue() + " (" + entry.getValue().getClass().getSimpleName() + ")");
-			}
-			System.out.println();
+		// System.out.println("============ PARSED ============");
+		for(Map.Entry<String, Object> entry : metadataRaw.entrySet()) {
+			// System.out.print(entry.getKey());
+			// System.out.print(" ");
+			// if(entry.getValue() == null) {
+			// 	System.out.print("null");
+			// } else {
+			// 	System.out.print(entry.getValue() + " (" + entry.getValue().getClass().getSimpleName() + ")");
+			// }
+			// System.out.println();
 			switch(entry.getKey()) {
 				case "createdBy":
-					_createdAt = (String) entry.getValue();
+					_createdBy = (String) entry.getValue();
 					break;
 				case "updatedBy":
 					_updatedBy = (String) entry.getValue();
 					break;
 				case "createdAt":
-					_updatedAt = (String) entry.getValue();
+					_createdAt = (String) entry.getValue();
 					break;
+				case "updatedAt":
+					_updatedAt = (String) entry.getValue();
 				case "availableAt":
 					_availableAt = (String) entry.getValue();
 					break;
@@ -230,25 +181,25 @@ public class MetadataUtil {
 					_status = (String) entry.getValue();
 					break;
 				case "version":
-					_version = (long) entry.getValue();
+					_version = (Long) entry.getValue();
 					break;
 				case "ttl":
-					_ttl = (long) entry.getValue();
+					_ttl = (Long) entry.getValue();
 					break;
 				case "ttb":
-					_ttb = (long) entry.getValue();
+					_ttb = (Long) entry.getValue();
 					break;
 				case "ttr":
-					_ttr = (long) entry.getValue();
+					_ttr = (Long) entry.getValue();
 					break;
 				case "ccd":
-					_ccd = (boolean) entry.getValue();
+					_ccd = (Boolean) entry.getValue();
 					break;
 				case "isBinary":
-					_isBinary = (boolean) entry.getValue();
+					_isBinary = (Boolean) entry.getValue();
 					break;
 				case "isEncrypted": 
-					_isEncrypted = (boolean) entry.getValue();
+					_isEncrypted = (Boolean) entry.getValue();
 					break;
 				case "dataSignature":
 					_dataSignature = (String) entry.getValue();
@@ -259,6 +210,8 @@ public class MetadataUtil {
 				case "pubKeyCS":
 					_pubKeyCS = (String) entry.getValue();
 					break;
+				default:
+					System.out.println("Missed metadata key: " + entry.getKey() + " with value: " + entry.getValue());
 			}
 		}
 		/*
@@ -283,5 +236,55 @@ public class MetadataUtil {
 		 * pubKeyCS null
 		 */
 		
+	}
+
+	private Map<String, Object> _getMetadataRaw(String rawLlookupMetaString) {
+		/**
+		 * 	What `rawLlookupMetaString` should look like	
+		 * 
+		 * 	{
+		 * 		"createdBy":null,
+		 * 		"updatedBy":null,
+		 * 		"createdAt":"2022-06-19 20:35:09.962Z",
+		 * 		"updatedAt":"2022-06-19 20:35:09.962Z",
+		 * 		"availableAt":"2022-06-19 20:35:09.962Z",
+		 * 		"expiresAt":null,
+		 * 		"refreshAt":"2022-06-19 21:58:29.962Z",
+		 * 		"status":"active",
+		 * 		"version":0,
+		 * 		"ttl":0,
+		 * 		"ttb":0,
+		 * 		"ttr":5000,
+		 * 		"ccd":true,
+		 * 		"isBinary":false,
+		 * 		"isEncrypted":false,
+		 * 		"dataSignature":null,
+		 * 		"sharedKeyEnc":null,
+		 * 		"pubKeyCS":null
+		 * 	}
+		 **/
+		String s1 = rawLlookupMetaString.substring(1, rawLlookupMetaString.length()-1); // remove {} at ends
+		String[] s2 = s1.split(",");
+		Map<String, Object> metadataRaw = new HashMap<String, Object>();
+		for(String x : s2) {
+			String[] split2 = x.split(":", 2);
+			String metadataKeyName = split2[0].replace("\"", "");
+			Object metadataValue;
+			String toBeVal = split2[1];
+			if(toBeVal.contains("\"")) { // remove quotes at ends
+				toBeVal = toBeVal.substring(1, split2[1].length()-1);
+			}
+			if(toBeVal.equalsIgnoreCase("null")) { // metaDataValue is undeclared at first, so should set to null
+				metadataValue = null;
+			} else if(toBeVal.equalsIgnoreCase("true") || toBeVal.equalsIgnoreCase("false")) {
+				metadataValue = Boolean.parseBoolean(toBeVal);
+			} else if(StringUtils.isNumeric(toBeVal)) {
+				metadataValue = Long.parseLong(toBeVal);
+			} else {
+				metadataValue = toBeVal;
+			}
+			metadataRaw.put(metadataKeyName, metadataValue);
+		}
+		return metadataRaw;
 	}
 }
