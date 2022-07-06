@@ -1,5 +1,10 @@
 package org.atsign.client.util;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,10 +30,8 @@ public class MetadataUtil {
 	// METADATA values that this class evaluates
 	private String _createdBy;
 	private String _updatedBy;
-
 	private String _createdAt;
 	private String _updatedAt;
-
 	private String _availableAt;
 	private String _expiresAt;
 	private String _refreshAt;
@@ -48,6 +51,15 @@ public class MetadataUtil {
 	private String _dataSignature;
 	private String _sharedKeyEnc;
 	private String _pubKeyCS;
+
+	// 
+	private OffsetDateTime _createdByOffsetDateTime;
+	private OffsetDateTime _updatedByOffsetDateTime;
+	private OffsetDateTime _createdAtOffsetDateTime;
+	private OffsetDateTime _updatedAtOffsetDateTime;
+	private OffsetDateTime _availableAtOffsetDateTime;
+	private OffsetDateTime _expiresAtOffsetDateTime;
+	private OffsetDateTime _refreshAtOffsetDateTime;
 	
 
 	public MetadataUtil(Secondary.Response llookupMetaResponse) {
@@ -56,10 +68,10 @@ public class MetadataUtil {
 	}
 
 	public MetadataUtil(String llookupMetaResponseString) {
+		this._llookupResponse = llookupMetaResponseString;
 		try {
-			this._llookupResponse = llookupMetaResponseString;
 			this._evaluate();
-		} catch (AtException e) {
+		} catch (AtException | ParseException e) {
 			System.err.println(e.toString());
 			e.printStackTrace();
 		}
@@ -69,32 +81,32 @@ public class MetadataUtil {
 		return _llookupResponse;
 	}
 
-	public String getCreatedBy() {
-		return _createdBy;
+	public OffsetDateTime getCreatedBy() {
+		return _createdByOffsetDateTime;
 	}
 
-	public String getUpdatedBy() {
-		return _updatedBy;
+	public OffsetDateTime getUpdatedBy() {
+		return _updatedByOffsetDateTime;
 	}
 
-	public String getCreatedAt() {
-		return _createdAt;
+	public OffsetDateTime getCreatedAt() {
+		return _createdAtOffsetDateTime;
 	}
 
-	public String getUpdatedAt() {
-		return _updatedAt;
+	public OffsetDateTime getUpdatedAt() {
+		return _updatedAtOffsetDateTime;
 	}
 
-	public String getAvailableAt() {
-		return _availableAt;
+	public OffsetDateTime getAvailableAt() {
+		return _availableAtOffsetDateTime;
 	}
 
-	public String getExpiresAt() {
-		return _expiresAt;
+	public OffsetDateTime getExpiresAt() {
+		return _expiresAtOffsetDateTime;
 	}
 
-	public String getRefreshAt() {
-		return _refreshAt;
+	public OffsetDateTime getRefreshAt() {
+		return _refreshAtOffsetDateTime;
 	}
 
 	public String getStatus() {
@@ -140,7 +152,7 @@ public class MetadataUtil {
 		return _pubKeyCS;
 	}
 
-	private void _evaluate() throws AtException {
+	private void _evaluate() throws AtException, ParseException {
 		Map<String, Object> metadataRaw = _getMetadataRaw(this._llookupResponse);
 		// System.out.println("============ RAW ============");
 		// System.out.println(_llookupResponse);
@@ -159,23 +171,30 @@ public class MetadataUtil {
 			switch(entry.getKey()) {
 				case "createdBy":
 					_createdBy = (String) entry.getValue();
+					_createdByOffsetDateTime = getOffsetDateTime(_createdBy);
 					break;
 				case "updatedBy":
 					_updatedBy = (String) entry.getValue();
+					_updatedByOffsetDateTime = getOffsetDateTime(_updatedBy);
 					break;
 				case "createdAt":
 					_createdAt = (String) entry.getValue();
+					_createdAtOffsetDateTime = getOffsetDateTime(_createdAt);
 					break;
 				case "updatedAt":
 					_updatedAt = (String) entry.getValue();
+					_updatedAtOffsetDateTime = getOffsetDateTime(_updatedAt);
 				case "availableAt":
 					_availableAt = (String) entry.getValue();
+					_availableAtOffsetDateTime = getOffsetDateTime(_availableAt);
 					break;
 				case "expiresAt":
 					_expiresAt = (String) entry.getValue();
+					_expiresAtOffsetDateTime = getOffsetDateTime(_expiresAt);
 					break;
 				case "refreshAt":
 					_refreshAt = (String) entry.getValue();
+					_refreshAtOffsetDateTime = getOffsetDateTime(_refreshAt);
 					break;
 				case "status":
 					_status = (String) entry.getValue();
@@ -286,5 +305,20 @@ public class MetadataUtil {
 			metadataRaw.put(metadataKeyName, metadataValue);
 		}
 		return metadataRaw;
+	}
+
+	/**
+	 * Get the OffsetDateTime object from the date string in the metadata.
+	 * @param rawValue string date to be parsed (eg "2022-06-19 20:35:09.962Z")
+	 * @return OffsetDateTime object
+	 */
+	private OffsetDateTime getOffsetDateTime(String rawValue) throws ParseException {
+		if(rawValue != null) {
+			String dateString = rawValue.replace("Z", ""); // remove "Z" at the end
+			Date date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").parse(dateString);
+			OffsetDateTime offsetDateTime = date.toInstant().atOffset(ZoneOffset.UTC);
+			return offsetDateTime;
+		}
+		return null;
 	}
 }

@@ -1,6 +1,9 @@
 package org.atsign.common;
 
+import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.Date;
 
 import org.atsign.client.util.KeyStringUtil;
 import org.atsign.client.util.MetadataUtil;
@@ -178,13 +181,12 @@ public abstract class Keys {
             if(metadataUtil.getTTL() != null) metadata.ttl = Integer.valueOf(metadataUtil.getTTL().intValue());
             if(metadataUtil.getTTB() != null) metadata.ttb = Integer.valueOf(metadataUtil.getTTB().intValue());
             if(metadataUtil.getTTR() != null) metadata.ttr = Integer.valueOf(metadataUtil.getTTR().intValue());
-            if(metadataUtil.isCCD() != null) metadata.ccd = Boolean.valueOf(metadataUtil.isCCD().booleanValue());
-            // TODO IMPLEMENT String -> OffsetDataTime conversion
-            // metadata.availableAt = OffsetDateTime.parse(metadataUtil.getAvailableAt());
-            // metadata.expiresAt = OffsetDateTime.parse(metadataUtil.getExpiresAt());
-            // metadata.refreshAt = OffsetDateTime.parse(metadataUtil.getRefreshAt());
-            // metadata.createdAt = OffsetDateTime.parse(metadataUtil.getCreatedAt());
-            // metadata.updatedAt = OffsetDateTime.parse(metadataUtil.getUpdatedAt());
+            if(metadataUtil.isCCD() != null) metadata.ccd = Boolean.valueOf(metadataUtil.isCCD().booleanValue());            
+            metadata.availableAt = metadataUtil.getAvailableAt();
+            metadata.expiresAt = metadataUtil.getExpiresAt();
+            metadata.refreshAt = metadataUtil.getRefreshAt();
+            metadata.createdAt = metadataUtil.getCreatedAt();
+            metadata.updatedAt = metadataUtil.getUpdatedAt();
             if(metadataUtil.isBinary() != null) metadata.isBinary = Boolean.valueOf(metadataUtil.isBinary());
             if(metadataUtil.isEncrypted() != null) metadata.isEncrypted = Boolean.valueOf(metadataUtil.isEncrypted());
             metadata.dataSignature = metadataUtil.getDataSignature();

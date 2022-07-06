@@ -3,9 +3,9 @@ package org.atsign.client.cli;
 import java.io.IOException;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.Secondary;
 import org.atsign.client.util.ArgsUtil;
@@ -66,7 +66,7 @@ public class Scan {
         try {
             what = "getAtKeys(" + regex + ")";
             atKeys = atClient.getAtKeys(regex).get();
-        } catch (Exception e) {
+        } catch (InterruptedException | ExecutionException e) {
             System.err.println("Failed to " + what + " " + e.getMessage());
             e.printStackTrace(System.err);
             System.exit(1);
@@ -125,11 +125,11 @@ public class Scan {
         System.out.println("ttb: " + metadata.ttb);
         System.out.println("ttr: " + metadata.ttr);
         System.out.println("ccd: " + metadata.ccd);
-        // System.out.println("availableAt: " + metadata.availableAt.toString());
-        // System.out.println("expiresAt: " + metadata.expiresAt.toString());
-        // System.out.println("refreshAt: " + metadata.refreshAt.toString());
-        // System.out.println("createdAt: " + metadata.createdAt.toString());
-        // System.out.println("updatedAt: " + metadata.updatedAt.toString());
+        System.out.println("availableAt: " + (metadata.availableAt != null ? metadata.availableAt.toString() : "null"));
+        System.out.println("expiresAt: " + (metadata.expiresAt != null ? metadata.expiresAt.toString() : "null"));
+        System.out.println("refreshAt: " + (metadata.refreshAt != null ? metadata.refreshAt.toString() : "null"));
+        System.out.println("createdAt: " + (metadata.createdAt != null ? metadata.createdAt.toString() : "null"));
+        System.out.println("updatedAt: " + (metadata.updatedAt != null ? metadata.updatedAt.toString() : "null"));
         System.out.println("dataSignature: " + metadata.dataSignature);
         System.out.println("sharedKeyStatus: " + metadata.sharedKeyStatus);
         System.out.println("isPublic: " + metadata.isPublic);
