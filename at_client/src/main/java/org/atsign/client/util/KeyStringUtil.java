@@ -141,6 +141,9 @@ public class KeyStringUtil {
                 _namespace = null;
             }
         }
+
+        if(_sharedBy != null) _sharedBy = "@" + _sharedBy; // add atSign in front
+        if(_sharedWith != null) _sharedWith = "@" + _sharedWith; // add atSign in front
     }
 
 }
