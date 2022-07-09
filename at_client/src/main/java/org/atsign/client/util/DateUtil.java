@@ -10,10 +10,10 @@ import java.util.TimeZone;
 
 public class DateUtil {
     
-    public static OffsetDateTime transformOffsetDateTime(String rawValue) throws ParseException {
+    public static OffsetDateTime parse(String rawDateStr) throws ParseException {
         OffsetDateTime odt = null;
-        if(rawValue != null) {
-            String dateString = rawValue.replace("Z", "");
+        if(rawDateStr != null) {
+            String dateString = rawDateStr.replace("Z", "");
             String PATTERN = "yyyy-MM-dd HH:mm:ss.SSS";
             SimpleDateFormat sdf = new SimpleDateFormat(PATTERN);
             sdf.setTimeZone(TimeZone.getTimeZone(ZoneId.of("Z")));
