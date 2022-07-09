@@ -1,7 +1,5 @@
 package org.atsign.client.util;
 
-import org.atsign.common.AtSign;
-
 public class KeyStringUtil {
 
     public enum KeyType {
@@ -22,6 +20,7 @@ public class KeyStringUtil {
     private String _sharedWith; // nullable
 
     private boolean _isCached; // true if key starts with "cached:"
+    private boolean _isHidden; // true if key contains "_"
 
     public KeyStringUtil(String fullKeyName) {
         this._fullKeyName = fullKeyName;
@@ -54,6 +53,10 @@ public class KeyStringUtil {
     
     public boolean isCached() {
         return this._isCached;
+    }
+
+    public boolean isHidden() {
+        return this._isHidden;
     }
 
     private void _evaluate(String fullKeyName) {
@@ -91,12 +94,14 @@ public class KeyStringUtil {
             if(split1[0].equals("public") || (split1[0].equals("cached") && split1[1].equals("public"))) {
                 // scenario 1 and 2,, it's a public key!
                 _keyType = KeyType.PUBLIC_KEY;
+            } else if(split1[0].equals("private") || split1[0].equals("privatekey")) {
+                _keyType = KeyType.PRIVATE_HIDDEN_KEY;
+                _isHidden = true;
             }
-
-            // SharedKey check
+            
             if(split1[0].startsWith("@") || split1[1].startsWith("@")) {
                 // scenario 3 and 4,, it is a SharedKey!
-                _keyType = KeyType.SHARED_KEY;
+                if(_keyType == null) _keyType = KeyType.SHARED_KEY; // don't want to overwrite the above checks
                 if(split1[0].startsWith("@")) {
                     _sharedWith = split1[0].substring(1);
                 } else {
@@ -144,6 +149,7 @@ public class KeyStringUtil {
 
         if(_sharedBy != null) _sharedBy = "@" + _sharedBy; // add atSign in front
         if(_sharedWith != null) _sharedWith = "@" + _sharedWith; // add atSign in front
+        if(!_isHidden)  _isHidden = _keyName.startsWith("_"); 
     }
 
 }

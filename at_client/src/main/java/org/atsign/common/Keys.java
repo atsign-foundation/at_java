@@ -292,6 +292,7 @@ public abstract class Keys {
         }
         String namespace = keyStringUtil.getNamespace();
         boolean isCached = keyStringUtil.isCached();
+        boolean isHidden = keyStringUtil.isHidden();
         AtKey atKey = null;
         switch(keyType) {
             case PUBLIC_KEY:
@@ -311,6 +312,7 @@ public abstract class Keys {
         }
         atKey.setNamespace(namespace);
         atKey.metadata.isCached = isCached;
+        if(!atKey.metadata.isHidden) atKey.metadata.isHidden = isHidden; // if KeyBuilders constructor did not already evaluate isHidden, then do it here
         return atKey;
     }
 
