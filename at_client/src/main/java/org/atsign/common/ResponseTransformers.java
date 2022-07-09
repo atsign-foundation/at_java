@@ -10,13 +10,13 @@ public class ResponseTransformers {
 
 	/// Transforms the data from type T to type V
 	public interface ResponseTransformer<T, V> {
-		V tranform(T value);
+		V transform(T value);
 	}
 
-	public class ScanResponseTransformer implements ResponseTransformer<Response, List<String>> {
+	public static class ScanResponseTransformer implements ResponseTransformer<Response, List<String>> {
 
 		@Override
-		public List<String> tranform(Response value) {
+		public List<String> transform(Response value) {
 
 			if (value.data == null || value.data.isEmpty()) {
 				return null;
@@ -35,15 +35,17 @@ public class ResponseTransformers {
 
 	public class NotifyResponseTransformer implements ResponseTransformer<Response, String> {
 		@Override
-		public String tranform(Response value) {
+	public static class NotifyResponseTransformer implements ResponseTransformer<Response, String> {
+		@Override
+		public String transform(Response value) {
 			return value.data;
 		}
 	}
 	
 	
-	public class NotificationStatusResponseTransformer implements ResponseTransformer<Response, NotificationStatus> {
+	public static class NotificationStatusResponseTransformer implements ResponseTransformer<Response, NotificationStatus> {
 		@Override
-		public NotificationStatus tranform(Response value) {
+		public NotificationStatus transform(Response value) {
 			return NotificationStatus.valueOf(value.data);
 		}
 	}
