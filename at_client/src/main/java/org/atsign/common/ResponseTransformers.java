@@ -1,6 +1,7 @@
 package org.atsign.common;
 
 import java.util.List;
+import java.util.Map;
 
 import org.atsign.client.api.Secondary.Response;
 
@@ -33,8 +34,22 @@ public class ResponseTransformers {
 
 	}
 
-	public class NotifyResponseTransformer implements ResponseTransformer<Response, String> {
+	public static class LlookupMetadataResponseTransformer implements ResponseTransformer<Response, Map<String, Object>> {
 		@Override
+		public Map<String, Object> transform(Response value) {
+			if (value.data == null || value.data.isEmpty()) {
+				return null;
+			}
+			ObjectMapper mapper = new ObjectMapper();
+			try {
+				return mapper.readerFor(Map.class).readValue(value.data);
+			} catch (Exception e) {
+				e.printStackTrace();
+				return null;
+			}
+		}
+	}
+
 	public static class NotifyResponseTransformer implements ResponseTransformer<Response, String> {
 		@Override
 		public String transform(Response value) {

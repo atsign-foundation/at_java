@@ -1,13 +1,19 @@
 package org.atsign.common;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Date;
+import java.util.Map;
+import java.util.TimeZone;
 
+import org.atsign.client.api.Secondary;
+import org.atsign.client.util.DateUtil;
 import org.atsign.client.util.KeyStringUtil;
-import org.atsign.client.util.MetadataUtil;
 import org.atsign.client.util.KeyStringUtil.KeyType;
+import org.atsign.common.ResponseTransformers.LlookupMetadataResponseTransformer;
 
 @SuppressWarnings("unused")
 public abstract class Keys {
@@ -175,23 +181,24 @@ public abstract class Keys {
             return s;
         }
 
-        public static Metadata fromString(String rawLlookupString) {
+        public static Metadata fromString(Secondary.Response rawLlookupMetaResponse) throws ParseException {
             Metadata metadata = new Metadata();
-            MetadataUtil metadataUtil = new MetadataUtil(rawLlookupString);
-            if(metadataUtil.getTTL() != null) metadata.ttl = Integer.valueOf(metadataUtil.getTTL().intValue());
-            if(metadataUtil.getTTB() != null) metadata.ttb = Integer.valueOf(metadataUtil.getTTB().intValue());
-            if(metadataUtil.getTTR() != null) metadata.ttr = Integer.valueOf(metadataUtil.getTTR().intValue());
-            if(metadataUtil.isCCD() != null) metadata.ccd = Boolean.valueOf(metadataUtil.isCCD().booleanValue());            
-            metadata.availableAt = metadataUtil.getAvailableAt();
-            metadata.expiresAt = metadataUtil.getExpiresAt();
-            metadata.refreshAt = metadataUtil.getRefreshAt();
-            metadata.createdAt = metadataUtil.getCreatedAt();
-            metadata.updatedAt = metadataUtil.getUpdatedAt();
-            if(metadataUtil.isBinary() != null) metadata.isBinary = Boolean.valueOf(metadataUtil.isBinary());
-            if(metadataUtil.isEncrypted() != null) metadata.isEncrypted = Boolean.valueOf(metadataUtil.isEncrypted());
-            metadata.dataSignature = metadataUtil.getDataSignature();
-            metadata.sharedKeyEnc = metadataUtil.getSharedKeyEnc();
-            metadata.pubKeyCS = metadataUtil.getPubKeyCS();
+            LlookupMetadataResponseTransformer transformer = new LlookupMetadataResponseTransformer();
+            Map<String, Object> map = transformer.transform(rawLlookupMetaResponse);
+            metadata.ttl = (Integer) map.get("ttl");
+            metadata.ttb = (Integer) map.get("ttb");
+            metadata.ttr = (Integer) map.get("ttr");
+            metadata.ccd = (Boolean) map.get("ccd");        
+            metadata.availableAt = DateUtil.transformOffsetDateTime((String) map.get("availableAt"));
+            metadata.expiresAt = DateUtil.transformOffsetDateTime((String) map.get("expiresAt"));
+            metadata.refreshAt = DateUtil.transformOffsetDateTime((String) map.get("refreshAt"));
+            metadata.createdAt = DateUtil.transformOffsetDateTime((String) map.get("createdAt"));
+            metadata.updatedAt = DateUtil.transformOffsetDateTime((String) map.get("updatedAt"));
+            metadata.isBinary = (Boolean) map.get("isBinary");
+            metadata.isEncrypted = (Boolean) map.get("isEncrypted");
+            metadata.dataSignature = (String) map.get("dataSignature");
+            metadata.sharedKeyEnc = (String) map.get("sharedKeyEnc");
+            metadata.pubKeyCS = (String) map.get("pubKeyCS");
             return metadata;
         }
 
@@ -268,6 +275,12 @@ public abstract class Keys {
         }
     }
 
+    /**
+     * Generate an AtKey object from a given full key name.
+     * @param fullAtKeyName eg: @bob:phone@alice
+     * @return AtKey object
+     * @throws AtException
+     */
     public static AtKey fromString(String fullAtKeyName) throws AtException {
         KeyStringUtil keyStringUtil = new KeyStringUtil(fullAtKeyName);
         KeyType keyType = keyStringUtil.getKeyType();
@@ -298,6 +311,19 @@ public abstract class Keys {
         }
         atKey.setNamespace(namespace);
         atKey.metadata.isCached = isCached;
+        return atKey;
+    }
+
+    /**
+     * Generate an AtKey object whose metadata is populated from the given `llookup:meta:<keyName>` response.
+     * @param fullAtKeyName The full AtKey name, eg: `@bob:phone@alice`
+     * @param llookedUpMetadata `llookup:meta:<keyName>` rawResponse from secondary server
+     * @return AtKey whose metadata is populated from the llookup:meta:<keyName> rawResponse from secondary server
+     * @throws AtException
+     */
+    public static AtKey fromString(String fullAtKeyName, Secondary.Response llookedUpMetadata) throws AtException, ParseException {
+        AtKey atKey = fromString(fullAtKeyName);
+        atKey.metadata = Metadata.squash(atKey.metadata, Metadata.fromString(llookedUpMetadata));
         return atKey;
     }
 }

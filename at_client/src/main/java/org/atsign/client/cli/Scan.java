@@ -50,7 +50,7 @@ public class Scan {
             System.exit(1);
         }   
 
-        // initialize AtClient and connect to remote secondary (with pkam auth)
+        // initialize AtClient and connect to remote secondary (with pkam auth therefore must have keys to secondary)
         AtClient atClient = null;
         try {
             what = "initialize AtClient";
