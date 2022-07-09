@@ -181,6 +181,12 @@ public abstract class Keys {
             return s;
         }
 
+        /**
+         * Create metadata object from a Response
+         * @param rawLlookupMetaResponse Secondary.Response from executingVerb `llookup:meta:<keyName>`
+         * @return Metadata object
+         * @throws ParseException if dates from metadata llookup could not be parsed
+         */
         public static Metadata fromString(Secondary.Response rawLlookupMetaResponse) throws ParseException {
             Metadata metadata = new Metadata();
             LlookupMetadataResponseTransformer transformer = new LlookupMetadataResponseTransformer();
@@ -189,11 +195,11 @@ public abstract class Keys {
             metadata.ttb = (Integer) map.get("ttb");
             metadata.ttr = (Integer) map.get("ttr");
             metadata.ccd = (Boolean) map.get("ccd");        
-            metadata.availableAt = DateUtil.transformOffsetDateTime((String) map.get("availableAt"));
-            metadata.expiresAt = DateUtil.transformOffsetDateTime((String) map.get("expiresAt"));
-            metadata.refreshAt = DateUtil.transformOffsetDateTime((String) map.get("refreshAt"));
-            metadata.createdAt = DateUtil.transformOffsetDateTime((String) map.get("createdAt"));
-            metadata.updatedAt = DateUtil.transformOffsetDateTime((String) map.get("updatedAt"));
+            metadata.availableAt = DateUtil.parse((String) map.get("availableAt"));
+            metadata.expiresAt = DateUtil.parse((String) map.get("expiresAt"));
+            metadata.refreshAt = DateUtil.parse((String) map.get("refreshAt"));
+            metadata.createdAt = DateUtil.parse((String) map.get("createdAt"));
+            metadata.updatedAt = DateUtil.parse((String) map.get("updatedAt"));
             metadata.isBinary = (Boolean) map.get("isBinary");
             metadata.isEncrypted = (Boolean) map.get("isEncrypted");
             metadata.dataSignature = (String) map.get("dataSignature");
