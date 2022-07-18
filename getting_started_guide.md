@@ -38,5 +38,6 @@ Validating one-time-password
 Got response: Verified
 ```
 Congratulations you have sucessfully registered.
+
 5. The .atKeys file for this new atsign is stored in at_client/keys.
 Note: The default properties in config.yaml point to the testing environment. Information has been provided in the same file on how to use the production environment.
