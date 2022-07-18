@@ -86,7 +86,10 @@ public class KeyBuilders {
     /// Builder to build the public keys
     public static class PublicKeyBuilder extends CachedKeyBuilder implements KeyBuilder {
         public PublicKeyBuilder() {
-            _atKey = new PublicKey();
+            this(defaultAtSign);
+        }
+        public PublicKeyBuilder(AtSign sharedBy) {
+            _atKey = new PublicKey(sharedBy);
             _atKey.metadata.isPublic = true;
             _atKey.metadata.isHidden = false;
         }
@@ -194,7 +197,11 @@ public class KeyBuilders {
             this(defaultAtSign);
         }
         public SelfKeyBuilder(AtSign sharedBy) {
-            _atKey = new SelfKey(sharedBy);
+            this(sharedBy, null);
+        }
+
+        public SelfKeyBuilder(AtSign sharedBy, AtSign sharedWith) {
+            _atKey = new SelfKey(sharedBy, sharedWith);
             _atKey.metadata.isPublic = false;
             _atKey.metadata.isHidden = false;
         }
@@ -235,7 +242,7 @@ public class KeyBuilders {
             this(defaultAtSign);
         }
         public PrivateHiddenKeyBuilder(AtSign sharedBy) {
-            _atKey = new PrivateHiddenKey();
+            _atKey = new PrivateHiddenKey(sharedBy);
             _atKey.metadata.isHidden = true;
             _atKey.metadata.isPublic = false;
         }
