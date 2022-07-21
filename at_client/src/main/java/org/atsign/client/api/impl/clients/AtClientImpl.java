@@ -462,8 +462,16 @@ public class AtClientImpl implements AtClient {
         }
         return response.toString();
     }
-    private String _delete(SelfKey key) {
-        throw new RuntimeException("Not Implemented");
+
+    private String _delete(SelfKey key) throws AtException {
+        String command = "delete:" + key.toString();
+        Secondary.Response response = secondary.executeCommand(command, true);
+        if(response.isError) {
+            throw new AtException("Failed to run command " + command + " : " + response.error);
+        }
+        return response.toString();
+    }
+
     }
 
     private String _get(PublicKey key) throws AtException {throw new RuntimeException("Not Implemented");}
