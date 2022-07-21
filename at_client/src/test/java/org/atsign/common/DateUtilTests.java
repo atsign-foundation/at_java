@@ -12,15 +12,12 @@ import org.junit.Test;
 public class DateUtilTests {
     
     @Test
-    public void test1() {
+    public void test1() throws ParseException {
         String DATE_STR = "2022-06-18 21:27:26.875Z";
-        OffsetDateTime odt = null;
-        try {
-            odt = DateUtil.parse(DATE_STR);
-        } catch (ParseException e) {
-            System.err.println(e);
-            e.printStackTrace();
-        }
+        OffsetDateTime odt;
+
+        odt = DateUtil.parse(DATE_STR);
+
         assertEquals("2022-06-18T21:27:26.875Z", odt.toString());
         assertEquals(2022, odt.getYear());
         assertEquals(Month.JUNE, odt.getMonth());

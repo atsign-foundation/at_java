@@ -8,7 +8,6 @@ import org.atsign.client.util.ArgsUtil;
 import org.atsign.common.ResponseTransformers.LlookupMetadataResponseTransformer;
 
 public class ResponseTransformerTests {
-
     public static void main(String[] args) {
         String ATSIGN_STR = "@sportsunconscious";
         String HOST = "root.atsign.wtf";
