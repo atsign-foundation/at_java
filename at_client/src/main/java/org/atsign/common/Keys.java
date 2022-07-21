@@ -53,6 +53,9 @@ public abstract class Keys {
         @Override
         public String toString() {
             String s = "";
+            if(metadata.isCached) {
+                s += "cached:";
+            }
             if (metadata.isPublic) {
                 s += "public:";
             } else if (sharedWith != null) {
@@ -174,10 +177,12 @@ public abstract class Keys {
             if (ttb != null) s += ":ttb:" + ttb;
             if (ttr != null) s += ":ttr:" + ttr;
             if (ccd != null) s += ":ccd:" + ccd;
-            if (dataSignature != null) s += ":dataSignature:" + ccd;
+            if (dataSignature != null) s += ":dataSignature:" + dataSignature;
             if (sharedKeyStatus != null) s += ":sharedKeyStatus:" + sharedKeyStatus;
             if (sharedKeyEnc != null) s += ":sharedKeyEnc:" + sharedKeyEnc;
             if (pubKeyCS != null) s += ":pubKeyCS:" + pubKeyCS;
+            if (isBinary != null) s += ":isBinary:" + isBinary;
+            if (isEncrypted != null) s += ":isEncrypted:" + isEncrypted;
             return s;
         }
 

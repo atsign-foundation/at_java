@@ -69,6 +69,12 @@ public class EncryptionUtil {
         return Base64.getEncoder().encodeToString(encryptedMessageBytes);
     }
 
+    public static String signSHA256RSA(String value, String privateKeyBase64) throws Exception {
+        PrivateKey privateKey = _privateKeyFromBase64(privateKeyBase64);
+        String signed = _signSHA256RSA(value, privateKey);
+        return signed;
+    }
+
     // non-public methods
     static String _signSHA256RSA(String input, PrivateKey pk) throws Exception {
         Signature privateSignature = Signature.getInstance("SHA256withRSA");
