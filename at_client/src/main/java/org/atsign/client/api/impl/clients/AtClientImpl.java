@@ -9,6 +9,7 @@ import org.atsign.common.AtSign;
 import org.atsign.common.KeyBuilders;
 import org.atsign.common.Keys;
 import org.atsign.common.ResponseTransformers;
+import org.atsign.common.ResponseTransformers.LlookupMetadataResponseTransformer;
 import org.atsign.common.ResponseTransformers.ScanResponseTransformer;
 
 import static org.atsign.common.Keys.*;
@@ -19,11 +20,21 @@ import org.atsign.client.util.KeyStringUtil;
 import org.atsign.client.util.KeysUtil;
 import org.atsign.client.util.KeyStringUtil.KeyType;
 
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.SignatureException;
+import java.security.spec.InvalidKeySpecException;
 import java.text.ParseException;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 /**
  * @see org.atsign.client.api.AtClient
@@ -395,9 +406,25 @@ public class AtClientImpl implements AtClient {
         }
     }
 
-    private String _get(SelfKey key) throws AtException {throw new RuntimeException("Not Implemented");}
-    private String _put(SelfKey publicKey, String value) {
-        throw new RuntimeException("Not Implemented");
+    private String _put(SelfKey selfKey, String value) throws AtException {
+        // sign dataSignature
+        selfKey.metadata.dataSignature = generateSignature(value);
+
+        // encrypt data with self encryption key
+        String cipherText;
+        try {
+            cipherText = EncryptionUtil.aesEncryptToBase64(value, keys.get(KeysUtil.selfEncryptionKeyName));        
+        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException e) {
+            throw new AtException("Failed to encrypt value with self encryption key : " + e.getMessage(), e);
+        }
+
+        // update secondary
+        String command = "update" + selfKey.metadata.toString() + ":" + selfKey.toString() + " " + cipherText;
+        Secondary.Response response = secondary.executeCommand(command, true);
+        if(response.isError) {
+            throw new AtException("Failed to update " + selfKey + " : " + response.error);
+        }
+        return response.toString();
     }
     private String _delete(SelfKey key) {
         throw new RuntimeException("Not Implemented");
