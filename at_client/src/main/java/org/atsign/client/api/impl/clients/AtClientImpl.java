@@ -510,6 +510,19 @@ public class AtClientImpl implements AtClient {
 
         return rawResponse.data;
     }
+    
+    private String _put(PublicKey publicKey, String value) throws AtException {
+        // sign data
+        publicKey.metadata.dataSignature = generateSignature(value);
+        
+        // update
+        String command = "update" + publicKey.metadata.toString() + ":" + publicKey.toString() + " " + value;
+        Secondary.Response rawResponse = secondary.executeCommand(command, false);
+        if(rawResponse.isError) {
+            throw new AtException(rawResponse.error);
+        }
+        return rawResponse.toString();
+    }
 
     private String _get(PublicKey key) throws AtException {throw new RuntimeException("Not Implemented");}
     private String _put(PublicKey publicKey, String value) {throw new RuntimeException("Not Implemented");}
