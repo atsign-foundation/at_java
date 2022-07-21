@@ -1,0 +1,30 @@
+name: Java at_client CI
+
+on:
+  push:
+    branches:
+      - trunk
+    paths:
+      - at_client/**
+  pull_request:
+    branches:
+      - trunk
+    paths:
+      - at_client/**
+
+jobs:
+  build:
+    defaults:
+      run:
+        working-directory: at_client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 8
+        uses: actions/setup-java@v3
+        with:
+          java-version: '8'
+          distribution: 'adopt'
+          cache: maven
+      - name: Build with Maven
+        run: mvn --batch-mode --update-snapshots clean install
