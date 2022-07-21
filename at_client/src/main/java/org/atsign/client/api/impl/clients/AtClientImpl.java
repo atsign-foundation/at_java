@@ -695,7 +695,7 @@ public class AtClientImpl implements AtClient {
         String signature = null;
         try {
             signature = EncryptionUtil.signSHA256RSA(value, keys.get(KeysUtil.encryptionPrivateKeyName));
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | SignatureException e) {
+        } catch (Exception e) {
             throw new AtException("Failed to sign value: " + value);
         }
         return signature;
