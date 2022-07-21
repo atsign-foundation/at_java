@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
-import java.security.PublicKey;
 import java.text.ParseException;
 
 import org.atsign.client.api.AtClient;
@@ -12,7 +11,7 @@ import org.atsign.client.api.Secondary;
 import org.atsign.client.util.ArgsUtil;
 import org.atsign.common.Keys.AtKey;
 
-public class FromStringTests {
+public class FromStringTest {
 
     public static void main(String[] args) {
         String KEY_NAME_STR = "public:publickey@sportsunconscious";

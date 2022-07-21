@@ -9,7 +9,7 @@ import java.time.OffsetDateTime;
 import org.atsign.client.util.DateUtil;
 import org.junit.Test;
 
-public class DateUtilTests {
+public class DateUtilTest {
     
     @Test
     public void test1() throws ParseException {

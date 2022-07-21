@@ -7,7 +7,7 @@ import org.atsign.client.api.Secondary;
 import org.atsign.client.util.ArgsUtil;
 import org.atsign.common.ResponseTransformers.LlookupMetadataResponseTransformer;
 
-public class ResponseTransformerTests {
+public class ResponseTransformerTest {
     public static void main(String[] args) {
         String ATSIGN_STR = "@sportsunconscious";
         String HOST = "root.atsign.wtf";
@@ -16,7 +16,7 @@ public class ResponseTransformerTests {
         String KEY_NAME = "@farinataanxious:shared_key@sportsunconscious";
 
 
-        AtClient atClient = null;
+        AtClient atClient;
         try {
             AtSign atSign = new AtSign(ATSIGN_STR);
             Secondary.AddressFinder addressFinder = ArgsUtil.createAddressFinder(HOST + ":" + PORT);
