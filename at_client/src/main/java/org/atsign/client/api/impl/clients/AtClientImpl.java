@@ -548,7 +548,7 @@ public class AtClientImpl implements AtClient {
         List<AtKey> atKeys = new ArrayList<AtKey>(); 
         for(String atKeyRaw : rawArray) { // eg atKeyRaw == @bob:phone@alice
             AtKey atKey = Keys.fromString(atKeyRaw);
-            Secondary.Response llookupMetaRaw = executeCommand("llookup:meta:" + atKeyRaw, false);
+            Secondary.Response llookupMetaRaw = secondary.executeCommand("llookup:meta:" + atKeyRaw, false);
             atKey.metadata = Metadata.squash(atKey.metadata, Metadata.fromString(llookupMetaRaw)); // atKey.metadata has priority over llookupMetaRaw.data
             atKeys.add(atKey);
         }
