@@ -524,10 +524,13 @@ public class AtClientImpl implements AtClient {
         return rawResponse.toString();
     }
 
-    private String _get(PublicKey key) throws AtException {throw new RuntimeException("Not Implemented");}
-    private String _put(PublicKey publicKey, String value) {throw new RuntimeException("Not Implemented");}
-    private String _delete(PublicKey key) {
-        throw new RuntimeException("Not Implemented");
+    private String _delete(PublicKey key) throws AtException {
+        String command = "delete:" + key.toString();
+        Secondary.Response rawResponse = secondary.executeCommand(command, false);
+        if(rawResponse.isError) {
+            throw new AtException(rawResponse.error);
+        }
+        return rawResponse.toString();
     }
 
     private byte[] _getBinary(SharedKey sharedKey) throws AtException {throw new RuntimeException("Not Implemented");}
