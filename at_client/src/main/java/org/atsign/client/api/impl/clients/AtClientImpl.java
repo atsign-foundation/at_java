@@ -690,4 +690,14 @@ public class AtClientImpl implements AtClient {
             return rawResponse.data;
         }
     }
+
+    private String generateSignature(String value) throws AtException {
+        String signature = null;
+        try {
+            signature = EncryptionUtil.signSHA256RSA(value, keys.get(KeysUtil.encryptionPrivateKeyName));
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | SignatureException e) {
+            throw new AtException("Failed to sign value: " + value);
+        }
+        return signature;
+    }
 }
