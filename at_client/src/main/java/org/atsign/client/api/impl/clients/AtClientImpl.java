@@ -406,6 +406,42 @@ public class AtClientImpl implements AtClient {
         }
     }
 
+    private String _get(SelfKey key) throws AtException {
+        // 1. find out if data is encrypted
+        String metaLlookupCommand = "llookup:meta:" + key;
+        Secondary.Response rawResponseMeta = secondary.executeCommand(metaLlookupCommand, false);
+        if (rawResponseMeta.isError) {
+            throw new AtException("Failed to " + metaLlookupCommand + " : " + rawResponseMeta.error);
+        }
+        Metadata llookupMetadata = null;
+        try {
+            llookupMetadata = Metadata.fromString(rawResponseMeta);
+        } catch (ParseException e) {
+            throw new AtException("Failed to " + metaLlookupCommand + " : " + e.getMessage(), e);
+        }
+        key.metadata = Metadata.squash(key.metadata, llookupMetadata);        
+        boolean isEncrypted = llookupMetadata.isEncrypted;
+        
+        // 2. get the value
+        String value = null;
+        String command = "llookup:" + key;
+        Secondary.Response rawResponse = secondary.executeCommand(command, false);
+        if (rawResponse.isError) {
+            throw new AtException("Failed to " + command + " : " + rawResponse.error);
+        }
+        if(isEncrypted) {
+            // decrypt the value
+            String selfEncryptionKey = keys.get(KeysUtil.selfEncryptionKeyName);
+            try {
+                value = EncryptionUtil.aesDecryptFromBase64(rawResponse.data, selfEncryptionKey);
+            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException e) {
+                throw new AtException("Failed to " + command + " : " + e.getMessage(), e);
+            }
+        } else {
+            value = rawResponse.data;
+        }
+        return value;
+    }
     private String _put(SelfKey selfKey, String value) throws AtException {
         // sign dataSignature
         selfKey.metadata.dataSignature = generateSignature(value);
