@@ -13,7 +13,7 @@ on:
       - at_client/**
 
 jobs:
-  test-and-build:
+  build-and-test:
     defaults:
       run:
         working-directory: at_client
@@ -26,5 +26,10 @@ jobs:
           java-version: '8'
           distribution: 'adopt'
           cache: maven
-      - name: Test and Build with Maven
-        run: mvn --batch-mode --update-snapshots clean install
+      - name: Build clean and run unit tests
+        run: mvn --batch-mode --update-snapshots clean test -DskipIntegrationTests=true
+      - name: Run integration tests
+        run: mvn --batch-mode verify -DskipUnitTests=true
+      - name: Generate build outputs
+        run: mvn --batch-mode install -DskipTests=true
+      # TODO Artefact version management, publishing to maven central

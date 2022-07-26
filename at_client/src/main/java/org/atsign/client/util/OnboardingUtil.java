@@ -47,7 +47,7 @@ public class OnboardingUtil {
     }
 
     public void storePublicEncryptionKey(AtSecondaryConnection connection, AtSign atSign, Map<String, String> keys) throws IOException {
-        //	send update:public:publickey encryptionPublicKey
+        //	send update:public:publickey@atSign encryptionPublicKey
         connection.executeCommand("update:public:publickey" + atSign.toString() + " " + keys.get(KeysUtil.encryptionPublicKeyName));
     }
 
