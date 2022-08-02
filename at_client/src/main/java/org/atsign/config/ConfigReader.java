@@ -15,7 +15,7 @@ import org.yaml.snakeyaml.Yaml;
 public class ConfigReader {
     private Map<String, Object> config;
     private Map<String,String>propertyMap;
-
+    
     public String getProperty(String property, String subProperty) throws StreamReadException, DatabindException, FileNotFoundException{
         if (config == null){
             loadConfig();

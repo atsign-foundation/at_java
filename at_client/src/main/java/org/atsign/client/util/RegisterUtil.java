@@ -58,18 +58,18 @@ public class RegisterUtil {
         }
     }
 
-    public Map<String, String> getAtsignV3(String registrarUrl, String apiKey) throws IOException, AtException {
+    public Map<AtSign, String> getAtsignV3(String registrarUrl, String apiKey) throws IOException, AtException {
         AtSign atsign = new AtSign("");
         return getAtsignV3(registrarUrl, apiKey, atsign, "");
     }
 
     /// TO-DO - compensate for the possibility that activation key can be very long
     @SuppressWarnings("unchecked")
-    public Map<String, String> getAtsignV3(String registrarUrl, String apiKey, AtSign atsignObj, String activationKey)
+    public Map<AtSign, String> getAtsignV3(String registrarUrl, String apiKey, AtSign atsignObj, String activationKey)
             throws AtException, IOException {
         Map<String, String> paramsMap = new HashMap<String, String>();
         if (!atsignObj.atSign.isEmpty()) {
-            paramsMap.put("atsign", atsignObj.withoutPrefix());
+            paramsMap.put("atSign", atsignObj.withoutPrefix());
         }
         if (!activationKey.isEmpty()) {
             paramsMap.put("ActivationKey", activationKey);
@@ -85,9 +85,11 @@ public class RegisterUtil {
             Map<String, String> responseData = objectMapper.readValue(response, Map.class);
             if (responseData.get("status") == "success") {
                 responseData = objectMapper.readValue(responseData.get("value"), Map.class);
-                return responseData;
+                return (Map<AtSign, String>) Stream.of(
+                        new SimpleEntry<>(new AtSign(responseData.get("atSign")), responseData.get("ActivationKey")))
+                        .collect(toMap(SimpleEntry::getKey, SimpleEntry::getValue));
             } else {
-                throw new AtException(responseData.get("status"));
+                throw new AtException("Failed getting atsign. Response from API: " + responseData.get("status"));
             }
 
         } else {
@@ -252,12 +254,10 @@ public class RegisterUtil {
             String response = bufferedReader.readLine();
             Map<String, String> responseData = objectMapper.readValue(response, Map.class);
             if (responseData.get("status") == "success") {
-                responseData = objectMapper.readValue(responseData.get("value"), Map.class);
                 return responseData.get("cramkey");
             } else {
                 throw new AtException(responseData.get("status"));
             }
-
         } else {
             throw new AtException(httpsConnection.getResponseCode() + " " + httpsConnection.getResponseMessage());
         }
