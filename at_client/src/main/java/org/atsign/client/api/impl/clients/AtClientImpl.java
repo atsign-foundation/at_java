@@ -6,18 +6,14 @@ import static org.atsign.client.api.AtEvents.AtEventType.*;
 
 import org.atsign.client.api.Secondary;
 import org.atsign.common.AtSign;
-import org.atsign.common.KeyBuilders;
 import org.atsign.common.Keys;
 import org.atsign.common.ResponseTransformers;
-import org.atsign.common.ResponseTransformers.ScanResponseTransformer;
 
 import static org.atsign.common.Keys.*;
 
 import org.atsign.common.AtException;
 import org.atsign.client.util.EncryptionUtil;
-import org.atsign.client.util.KeyStringUtil;
 import org.atsign.client.util.KeysUtil;
-import org.atsign.client.util.KeyStringUtil.KeyType;
 
 import java.text.ParseException;
 import java.time.OffsetDateTime;
@@ -421,7 +417,7 @@ public class AtClientImpl implements AtClient {
         Response scanRawResponse = executeCommand("scan " + regex, false);
         ResponseTransformers.ScanResponseTransformer scanResponseTransformer = new ResponseTransformers.ScanResponseTransformer();
         List<String> rawArray = scanResponseTransformer.transform(scanRawResponse);
-        List<AtKey> atKeys = new ArrayList<AtKey>(); 
+        List<AtKey> atKeys = new ArrayList<>();
         for(String atKeyRaw : rawArray) { // eg atKeyRaw == @bob:phone@alice
             AtKey atKey = Keys.fromString(atKeyRaw);
             Secondary.Response llookupMetaRaw = executeCommand("llookup:meta:" + atKeyRaw, false);
