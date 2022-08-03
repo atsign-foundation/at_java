@@ -1,13 +1,8 @@
 package org.atsign.common;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.util.Date;
 import java.util.Map;
-import java.util.TimeZone;
 
 import org.atsign.client.api.Secondary;
 import org.atsign.client.util.DateUtil;
@@ -292,6 +287,7 @@ public abstract class Keys {
      * @return AtKey object
      * @throws AtException
      */
+    @SuppressWarnings("JavaDoc")
     public static AtKey fromString(String fullAtKeyName) throws AtException {
         KeyStringUtil keyStringUtil = new KeyStringUtil(fullAtKeyName);
         KeyType keyType = keyStringUtil.getKeyType();
@@ -304,7 +300,7 @@ public abstract class Keys {
         String namespace = keyStringUtil.getNamespace();
         boolean isCached = keyStringUtil.isCached();
         boolean isHidden = keyStringUtil.isHidden();
-        AtKey atKey = null;
+        AtKey atKey;
         switch(keyType) {
             case PUBLIC_KEY:
                 atKey = new KeyBuilders.PublicKeyBuilder(sharedBy).key(keyName).build();
@@ -333,7 +329,9 @@ public abstract class Keys {
      * @param llookedUpMetadata `llookup:meta:<keyName>` rawResponse from secondary server
      * @return AtKey whose metadata is populated from the llookup:meta:<keyName> rawResponse from secondary server
      * @throws AtException
+     * @throws ParseException
      */
+    @SuppressWarnings("JavaDoc")
     public static AtKey fromString(String fullAtKeyName, Secondary.Response llookedUpMetadata) throws AtException, ParseException {
         AtKey atKey = fromString(fullAtKeyName);
         atKey.metadata = Metadata.squash(atKey.metadata, Metadata.fromString(llookedUpMetadata));

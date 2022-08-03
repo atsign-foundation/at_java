@@ -80,20 +80,18 @@ public class REPL {
                     String[] parts = command.split(" ");
                     String verb = parts[0];
                     String key = "";
-                    if (! "scan".equals(verb)) {
+                    if ("get".equals(verb) || "put".equals(verb)) {
                         key = parts[1];
                     }
                     String value;
                     try {
                         if ("get".equals(verb)) {
-                            System.out.println("  => " + client.get(Keys.SharedKey.fromString(key)).get());
+                            System.out.println("  => \033[31m" + client.get(Keys.SharedKey.fromString(key)).get() + "\033[0m");
                         } else if ("put".equals(verb)) {
                             value = command.substring(verb.length() + key.length() + 2).trim();
-                            System.out.println("  => " + client.put(Keys.SharedKey.fromString(key), value).get());
-                        } else if ("delete".equals(verb)) {
-                            System.out.println("  => " + client.delete(Keys.SharedKey.fromString(key)));
+                            System.out.println("  => \033[31m" + client.put(Keys.SharedKey.fromString(key), value).get() + "\033[0m");
                         } else if ("scan".equals(verb)) {
-                            System.out.println("  => " + client.getAtKeys("").get());
+                            System.out.println("  => \033[31m" + client.getAtKeys("").get() + "\033[0m");
                         }
                     } catch (Exception e) {
                         System.out.println("ERROR: " + e.toString());
@@ -101,7 +99,7 @@ public class REPL {
                 } else {
                     try {
                         response = client.executeCommand(command, true);
-                        System.out.println("  => " + response.toString());
+                        System.out.println("  => \033[31m" + response.toString() + "\033[0m");
                     } catch (AtException e) {
                         // We can swallow syntax errors. Anything else, let's rethrow.
                         if (!e.toString().contains("AT0003-Invalid syntax")) {
@@ -153,7 +151,7 @@ public class REPL {
 //                                + " REPL Retrieved value [" + decryptedValue + "]"
 //                                + " for key [" + sharedKey + "]"
 //                                + " (encryptedValue was [" + value + "])");
-                        System.out.println("  => Notification ==> Key: [" + sharedKey + "]  ==> DecryptedValue [" + decryptedValue + "]");
+                        System.out.println("  => Notification ==> \033[31m Key: [" + sharedKey + "]  ==> DecryptedValue [" + decryptedValue + "]" + "\033[0m");
                     } catch (Exception e) {
                         System.err.println("Failed to retrieve " + sharedKey + " : " + e);
                     }
