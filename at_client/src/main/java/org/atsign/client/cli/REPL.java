@@ -72,13 +72,17 @@ public class REPL {
         while (cliScanner.hasNextLine()) {
             String command = cliScanner.nextLine() + "\n";
             if (! command.trim().isEmpty()) {
+                command = command.trim();
                 Secondary.Response response;
                 if (command.startsWith("_")) {
                     // simple repl for get / put /
                     command = command.substring(1);
                     String[] parts = command.split(" ");
                     String verb = parts[0];
-                    String key = parts[1];
+                    String key = "";
+                    if (! "scan".equals(verb)) {
+                        key = parts[1];
+                    }
                     String value;
                     try {
                         if ("get".equals(verb)) {
@@ -88,6 +92,8 @@ public class REPL {
                             System.out.println("  => " + client.put(Keys.SharedKey.fromString(key), value).get());
                         } else if ("delete".equals(verb)) {
                             System.out.println("  => " + client.delete(Keys.SharedKey.fromString(key)));
+                        } else if ("scan".equals(verb)) {
+                            System.out.println("  => " + client.getAtKeys("").get());
                         }
                     } catch (Exception e) {
                         System.out.println("ERROR: " + e.toString());
@@ -143,10 +149,11 @@ public class REPL {
                         sharedKey = Keys.SharedKey.fromString((String) eventData.get("key"));
                         value = (String) eventData.get("value");
                         decryptedValue = client.get(sharedKey).get();
-                        System.out.println("\t" + OffsetDateTime.now()
-                                + " REPL Retrieved value [" + decryptedValue + "]"
-                                + " for key [" + sharedKey + "]"
-                                + " (encryptedValue was [" + value + "])");
+//                        System.out.println("\t" + OffsetDateTime.now()
+//                                + " REPL Retrieved value [" + decryptedValue + "]"
+//                                + " for key [" + sharedKey + "]"
+//                                + " (encryptedValue was [" + value + "])");
+                        System.out.println("  => Notification ==> Key: [" + sharedKey + "]  ==> DecryptedValue [" + decryptedValue + "]");
                     } catch (Exception e) {
                         System.err.println("Failed to retrieve " + sharedKey + " : " + e);
                     }

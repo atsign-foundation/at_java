@@ -359,6 +359,9 @@ public class AtClientImpl implements AtClient {
     }
 
     private String _put(SharedKey sharedKey, String value) throws AtException {
+        if (! this.atSign.equals(sharedKey.sharedBy)) {
+            throw new AtException("sharedBy is [" + sharedKey.sharedBy + "] but should be this client's atSign [" + atSign + "]");
+        }
         String what = "";
         try {
             what = "fetch/create shared encryption key";
