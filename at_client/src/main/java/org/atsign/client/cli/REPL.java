@@ -92,9 +92,11 @@ public class REPL {
                             System.out.println("  => \033[31m" + client.put(Keys.SharedKey.fromString(key), value).get() + "\033[0m");
                         } else if ("scan".equals(verb)) {
                             System.out.println("  => \033[31m" + client.getAtKeys("").get() + "\033[0m");
+                        } else {
+                            System.err.println("ERROR: command not recognized: [" + verb + "]");
                         }
                     } catch (Exception e) {
-                        System.out.println("ERROR: " + e.toString());
+                        System.err.println("Exception: " + e.toString());
                     }
                 } else {
                     try {
@@ -110,7 +112,7 @@ public class REPL {
                     }
                 }
             }
-            System.out.print('@');
+            System.out.print(client.getAtSign() + "@ ");
         }
     }
 
@@ -140,6 +142,7 @@ public class REPL {
                 break;
                 case updateNotificationText: {
                     System.out.println(eventData);
+                    System.out.print(client.getAtSign() + "@ ");
                 }
                 break;
                 case updateNotification: {
@@ -152,6 +155,7 @@ public class REPL {
 //                                + " for key [" + sharedKey + "]"
 //                                + " (encryptedValue was [" + value + "])");
                         System.out.println("  => Notification ==> \033[31m Key: [" + sharedKey + "]  ==> DecryptedValue [" + decryptedValue + "]" + "\033[0m");
+                        System.out.print(client.getAtSign() + "@ ");
                     } catch (Exception e) {
                         System.err.println("Failed to retrieve " + sharedKey + " : " + e);
                     }
