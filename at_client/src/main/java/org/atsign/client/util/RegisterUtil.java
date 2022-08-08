@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -14,8 +13,9 @@ import java.util.stream.Stream;
 
 import javax.net.ssl.HttpsURLConnection;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ser.std.StdKeySerializers.Dynamic;
+
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
 
@@ -49,7 +49,6 @@ public class RegisterUtil {
                     connection.getInputStream()));
             String response = bufferedReader.readLine();
             System.out.println(response);
-            @SuppressWarnings("unchecked")
             Map<String, Map<String, String>> responseData = objectMapper.readValue(response, Map.class);
             Map<String, String> data = responseData.get("data");
             return data.get("atsign");
@@ -58,14 +57,14 @@ public class RegisterUtil {
         }
     }
 
-    public Map<AtSign, String> getAtsignV3(String registrarUrl, String apiKey) throws IOException, AtException {
+    public Map<String, String> getAtsignV3(String registrarUrl, String apiKey) throws IOException, AtException {
         AtSign atsign = new AtSign("");
         return getAtsignV3(registrarUrl, apiKey, atsign, "");
     }
 
     /// TO-DO - compensate for the possibility that activation key can be very long
     @SuppressWarnings("unchecked")
-    public Map<AtSign, String> getAtsignV3(String registrarUrl, String apiKey, AtSign atsignObj, String activationKey)
+    public Map<String, String> getAtsignV3(String registrarUrl, String apiKey, AtSign atsignObj, String activationKey)
             throws AtException, IOException {
         Map<String, String> paramsMap = new HashMap<String, String>();
         if (!atsignObj.atSign.isEmpty()) {
@@ -79,14 +78,21 @@ public class RegisterUtil {
 
         HttpsURLConnection httpsConnection = postRequestToAPI(new URL(registrarUrl + Constants.GET_ATSIGN_V3), apiKey,
                 paramsJson);
+        System.out.println(httpsConnection.getResponseCode());
         if (httpsConnection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(httpsConnection.getInputStream()));
-            String response = bufferedReader.readLine();
-            Map<String, String> responseData = objectMapper.readValue(response, Map.class);
-            if (responseData.get("status") == "success") {
-                responseData = objectMapper.readValue(responseData.get("value"), Map.class);
-                return (Map<AtSign, String>) Stream.of(
-                        new SimpleEntry<>(new AtSign(responseData.get("atSign")), responseData.get("ActivationKey")))
+            String responseRaw = bufferedReader.readLine();
+
+            System.out.println("Response from API: " + responseRaw);
+            Map<String, String> responseData = objectMapper.readValue(responseRaw, Map.class);
+            System.out.println(responseData.get("status"));
+            if (responseData.get("status").equals("success")) {
+                Map<String, Map<String, String>> responseDataMap = objectMapper.readValue(responseRaw,
+                        Map.class);
+                Map<String, String> responseProcessed = responseDataMap.get("value");
+                return (Map<String, String>) Stream.of(
+                        new SimpleEntry<>(responseProcessed.get("atSign"),
+                                responseProcessed.get("ActivationKey")))
                         .collect(toMap(SimpleEntry::getKey, SimpleEntry::getValue));
             } else {
                 throw new AtException("Failed getting atsign. Response from API: " + responseData.get("status"));
@@ -246,7 +252,7 @@ public class RegisterUtil {
                 .collect(toMap(SimpleEntry::getKey, SimpleEntry::getValue));
 
         String paramsJson = objectMapper.writeValueAsString(paramsMap);
-
+        System.out.println(paramsJson);
         HttpsURLConnection httpsConnection = postRequestToAPI(new URL(registrarUrl + Constants.REGISTER_ATSIGN), apiKey,
                 paramsJson);
         if (httpsConnection.getResponseCode() == HttpsURLConnection.HTTP_OK) {

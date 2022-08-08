@@ -2,35 +2,40 @@ package org.atsign.client.cli;
 
 import java.util.Map;
 import java.util.Scanner;
+import java.util.concurrent.Callable;
 
 import org.atsign.client.util.RegisterUtil;
 import org.atsign.common.AtSign;
 import org.atsign.config.ConfigReader;
+
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 /**
  * Command line interface to claim a free atsign. Requires one-time-password
  * received on the provided email to validate.
  * Registers the free atsign to provided email
  */
-public class Register {
-    public static void main(String[] args) throws Exception {
+@Command(name = "register", description = "Get an atsign and register")
+public class Register implements Callable<String> {
+    @Option(names = { "-e", "--email" }, description = "email to register a free atsign using otp-auth")
+    static String email = "";
 
-        String apiKey = "";
-        String email = "";
+    @Option(names = { "-k", "--api-key" }, description = "register an atsign using super-API key")
+    static String apiKey = "";
+
+    @Override
+    public String call() throws Exception {
         boolean isRegistrarV3 = false;
-
-        if (args.length == 2 && args[0].equals("-e")) {
-            email = args[1];
-        } else if (args.length == 2 && args[0].equals("-k")) {
-            apiKey = args[1];
+        // checks to ensure only either of email or super-API key are provided as args.
+        // if super-API key is provided uses registrar v3, otherwise uses registrar v2.
+        if (email.equals("") && !apiKey.equals("")) {
             isRegistrarV3 = true;
-        } else if (args.length == 1 && args[0].contains("@")) {
-            email = args[0];
-            System.out.println(
-                    "You are using an older version of providing args. Consider using the new syntax: \"Register -e <email@email.com>\"");
+        } else if (apiKey.equals("") && !email.equals("")) {
         } else {
             System.err.println(
-                    "Usage: Register -e <email@email.com> (or)\nRegister -k <Your API Key>\nNOTE: Use email if you prefer activating using OTP. Go for API key option if you have your own API key. You cannot use both.");
+                    "Usage: Register -e <email@email.com> (or)\nRegister -k <Your API Key>\nNOTE: Use email if you prefer activating using OTP. Go for API key option if you have your own SuperAPI key. You cannot use both.");
             System.exit(1);
         }
 
@@ -63,7 +68,7 @@ public class Register {
             registrarUrl = configReader.getProperty("REGISTRAR_URL");
         }
 
-        if (apiKey == null) {
+        if (!isRegistrarV3 && apiKey.equals("")) {
             try {
                 apiKey = configReader.getProperty("registrar", "apiKey");
             } catch (Exception e) {
@@ -119,18 +124,22 @@ public class Register {
                     Onboard.main(onboardArgs);
                 } else {
                     System.err.println(validationResponse);
+                    return "success";
                 }
             } else {
+
                 System.err.println("Error while sending OTP. Please retry the process");
+                scanner.close();
+                return "unsuccessful";
             }
         } else {
             String activationKey;
-            Map<AtSign, String> responseMap;
-            Map.Entry<AtSign, String> mapEntry;
+            Map<String, String> responseMap;
+            Map.Entry<String, String> mapEntry;
             System.out.println("Getting AtSign...");
             responseMap = registerUtil.getAtsignV3(registrarUrl, apiKey);
             mapEntry = responseMap.entrySet().iterator().next();
-            atsign = mapEntry.getKey();
+            atsign = new AtSign(mapEntry.getKey());
             System.out.println("Got AtSign: " + atsign);
             activationKey = mapEntry.getValue();
             System.out.println("Activating atsign using activationKey...");
@@ -146,6 +155,13 @@ public class Register {
             }
             scanner.close();
             System.out.println("Done.");
+            return "success";
         }
+        return "";
+    }
+
+    public static void main(String[] args) {
+        int status = new CommandLine(new Register()).execute(args);
+        System.exit(status);
     }
 }
