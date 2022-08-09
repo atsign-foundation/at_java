@@ -1,0 +1,3 @@
+#!/bin/bash
+
+java -cp "target/client-1.0-SNAPSHOT.jar:target/lib/*" org.atsign.client.cli.REPL vip.ve.atsign.zone:64 $1 true

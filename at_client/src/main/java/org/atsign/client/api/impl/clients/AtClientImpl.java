@@ -374,6 +374,9 @@ public class AtClientImpl implements AtClient {
     }
 
     private String _put(SharedKey sharedKey, String value) throws AtException {
+        if (! this.atSign.equals(sharedKey.sharedBy)) {
+            throw new AtException("sharedBy is [" + sharedKey.sharedBy + "] but should be this client's atSign [" + atSign + "]");
+        }
         String what = "";
         try {
             what = "fetch/create shared encryption key";
@@ -419,9 +422,9 @@ public class AtClientImpl implements AtClient {
         } catch (ParseException e) {
             throw new AtException("Failed to " + metaLlookupCommand + " : " + e.getMessage(), e);
         }
-        key.metadata = Metadata.squash(key.metadata, llookupMetadata);        
+        key.metadata = Metadata.squash(key.metadata, llookupMetadata);
         boolean isEncrypted = llookupMetadata.isEncrypted;
-        
+
         // 2. get the value
         String value = null;
         String command = "llookup:" + key;
@@ -449,7 +452,7 @@ public class AtClientImpl implements AtClient {
         // encrypt data with self encryption key
         String cipherText;
         try {
-            cipherText = EncryptionUtil.aesEncryptToBase64(value, keys.get(KeysUtil.selfEncryptionKeyName));        
+            cipherText = EncryptionUtil.aesEncryptToBase64(value, keys.get(KeysUtil.selfEncryptionKeyName));
         } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException e) {
             throw new AtException("Failed to encrypt value with self encryption key : " + e.getMessage(), e);
         }
@@ -478,7 +481,7 @@ public class AtClientImpl implements AtClient {
         // 2. look in another secondary server (via plookup)
 
         Secondary.Response rawResponse = null;
-        
+
         // 1. look in own secondary
         String command = "llookup:" + key.toString();
         String metaCommand = "llookup:meta:" + key.toString();
@@ -510,11 +513,11 @@ public class AtClientImpl implements AtClient {
 
         return rawResponse.data;
     }
-    
+
     private String _put(PublicKey publicKey, String value) throws AtException {
         // sign data
         publicKey.metadata.dataSignature = generateSignature(value);
-        
+
         // update
         String command = "update" + publicKey.metadata.toString() + ":" + publicKey.toString() + " " + value;
         Secondary.Response rawResponse = secondary.executeCommand(command, false);
@@ -545,7 +548,7 @@ public class AtClientImpl implements AtClient {
         Response scanRawResponse = executeCommand("scan " + regex, false);
         ResponseTransformers.ScanResponseTransformer scanResponseTransformer = new ResponseTransformers.ScanResponseTransformer();
         List<String> rawArray = scanResponseTransformer.transform(scanRawResponse);
-        List<AtKey> atKeys = new ArrayList<AtKey>(); 
+        List<AtKey> atKeys = new ArrayList<>();
         for(String atKeyRaw : rawArray) { // eg atKeyRaw == @bob:phone@alice
             AtKey atKey = Keys.fromString(atKeyRaw);
             Secondary.Response llookupMetaRaw = secondary.executeCommand("llookup:meta:" + atKeyRaw, false);

@@ -49,7 +49,7 @@ public class KeysUtil {
     }
 
     private static File getKeysFile(AtSign atSign) {
-        return new File(rootFolder + atSign + "_key.atKeys");
+        return new File(System.getProperty("user.home") + "/.atsign/keys/" + atSign + "_key.atKeys");
     }
 
     public static Map<String, String> loadKeys(AtSign atSign) throws Exception {
