@@ -19,4 +19,19 @@ public class AtSign {
     public String toString() {
         return atSign;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AtSign atSign1 = (AtSign) o;
+
+        return atSign.equals(atSign1.atSign);
+    }
+
+    @Override
+    public int hashCode() {
+        return atSign.hashCode();
+    }
 }

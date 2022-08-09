@@ -13,6 +13,7 @@ import org.atsign.common.Keys;
 
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * A command-line interface half-example half-utility which connects
@@ -35,7 +36,7 @@ public class REPL {
 
         AtClient atClient;
         try {
-            atClient = AtClient.withRemoteSecondary(atSign, ArgsUtil.createAddressFinder(rootUrl), true);
+            atClient = AtClient.withRemoteSecondary(atSign, ArgsUtil.createAddressFinder(rootUrl), false);
 
             System.out.println("org.atsign.client.core.Client connected OK");
 
@@ -71,20 +72,47 @@ public class REPL {
         while (cliScanner.hasNextLine()) {
             String command = cliScanner.nextLine() + "\n";
             if (! command.trim().isEmpty()) {
+                command = command.trim();
                 Secondary.Response response;
-                try {
-                    response = client.executeCommand(command, true);
-                    System.out.println("  => " + response.toString());
-                } catch (AtException e) {
-                    // We can swallow syntax errors. Anything else, let's rethrow.
-                    if (!e.toString().contains("AT0003-Invalid syntax")) {
-                        throw e;
-                    } else {
-                        System.err.println("*** " + e);
+                if (command.startsWith("_")) {
+                    // simple repl for get / put /
+                    command = command.substring(1);
+                    String[] parts = command.split(" ");
+                    String verb = parts[0];
+                    String key = "";
+                    if ("get".equals(verb) || "put".equals(verb)) {
+                        key = parts[1];
+                    }
+                    String value;
+                    try {
+                        if ("get".equals(verb)) {
+                            System.out.println("  => \033[31m" + client.get(Keys.SharedKey.fromString(key)).get() + "\033[0m");
+                        } else if ("put".equals(verb)) {
+                            value = command.substring(verb.length() + key.length() + 2).trim();
+                            System.out.println("  => \033[31m" + client.put(Keys.SharedKey.fromString(key), value).get() + "\033[0m");
+                        } else if ("scan".equals(verb)) {
+                            System.out.println("  => \033[31m" + client.getAtKeys("").get() + "\033[0m");
+                        } else {
+                            System.err.println("ERROR: command not recognized: [" + verb + "]");
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Exception: " + e.toString());
+                    }
+                } else {
+                    try {
+                        response = client.executeCommand(command, true);
+                        System.out.println("  => \033[31m" + response.toString() + "\033[0m");
+                    } catch (AtException e) {
+                        // We can swallow syntax errors. Anything else, let's rethrow.
+                        if (!e.toString().contains("AT0003-Invalid syntax")) {
+                            throw e;
+                        } else {
+                            System.err.println("*** " + e);
+                        }
                     }
                 }
             }
-            System.out.print('@');
+            System.out.print(client.getAtSign() + "@ ");
         }
     }
 
@@ -107,13 +135,14 @@ public class REPL {
                     value = (String) eventData.get("value");
                     decryptedValue = (String) eventData.get("decryptedValue");
                     System.out.println("\t" + OffsetDateTime.now()
-                            + " REPL NOTIFIED with already-decrypted value [" + decryptedValue + "]"
+                            + " REPL NOTIFIED with value [" + decryptedValue + "]"
                             + " for key [" + sharedKey + "]"
                             + " (encryptedValue was [" + value + "])");
                 }
                 break;
                 case updateNotificationText: {
                     System.out.println(eventData);
+                    System.out.print(client.getAtSign() + "@ ");
                 }
                 break;
                 case updateNotification: {
@@ -121,10 +150,12 @@ public class REPL {
                         sharedKey = Keys.SharedKey.fromString((String) eventData.get("key"));
                         value = (String) eventData.get("value");
                         decryptedValue = client.get(sharedKey).get();
-                        System.out.println("\t" + OffsetDateTime.now()
-                                + " REPL Retrieved value [" + decryptedValue + "]"
-                                + " for key [" + sharedKey + "]"
-                                + " (encryptedValue was [" + value + "])");
+//                        System.out.println("\t" + OffsetDateTime.now()
+//                                + " REPL Retrieved value [" + decryptedValue + "]"
+//                                + " for key [" + sharedKey + "]"
+//                                + " (encryptedValue was [" + value + "])");
+                        System.out.println("  => Notification ==> \033[31m Key: [" + sharedKey + "]  ==> DecryptedValue [" + decryptedValue + "]" + "\033[0m");
+                        System.out.print(client.getAtSign() + "@ ");
                     } catch (Exception e) {
                         System.err.println("Failed to retrieve " + sharedKey + " : " + e);
                     }
