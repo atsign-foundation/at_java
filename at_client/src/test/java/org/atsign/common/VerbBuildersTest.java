@@ -3,9 +3,15 @@ package org.atsign.common;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
+import org.atsign.common.VerbBuilders.CRAMVerbBuilder;
+import org.atsign.common.VerbBuilders.FromVerbBuilder;
+import org.atsign.common.VerbBuilders.LlookupVerbBuilder;
+import org.atsign.common.VerbBuilders.LookupVerbBuilder;
 import org.atsign.common.VerbBuilders.NotificationStatusVerbBuilder;
 import org.atsign.common.VerbBuilders.NotifyKeyChangeBuilder;
 import org.atsign.common.VerbBuilders.NotifyTextVerbBuilder;
+import org.atsign.common.VerbBuilders.PKAMVerbBuilder;
+import org.atsign.common.VerbBuilders.PlookupVerbBuilder;
 import org.atsign.common.VerbBuilders.ScanVerbBuilder;
 import org.junit.After;
 import org.junit.Before;
@@ -15,6 +21,89 @@ public class VerbBuildersTest {
 
 	@Before
 	public void setUp() {
+	}
+
+	@Test
+	public void fromVerbBuilderTest() {
+		FromVerbBuilder builder = new FromVerbBuilder("@bob");
+		String command = builder.build(); // "from:@bob"
+		assertEquals("from:@bob", command);
+	}
+
+	@Test
+	public void cramVerbBuilderTest() {
+		CRAMVerbBuilder builder = new CRAMVerbBuilder("digest");
+		String command = builder.build(); // "cram:digest"
+		assertEquals("cram:digest", command);
+	}
+
+	@Test
+	public void pkamVerbBuilderTest() {
+		PKAMVerbBuilder builder = new PKAMVerbBuilder("digest");
+		String command = builder.build(); // "pkam:digest"
+		assertEquals("pkam:digest", command);
+	}
+
+	@Test
+	public void llookupVerbBuilderTest() {
+		LlookupVerbBuilder builder;
+		String command;
+
+		// Type.NONE
+		builder = new LlookupVerbBuilder("test@alice");
+		command = builder.build(); // "llookup:test@alice"
+		assertEquals("llookup:test@alice", command);
+
+		// Type.METADATA
+		builder = new LlookupVerbBuilder("test@alice", LlookupVerbBuilder.Type.METADATA);
+		command = builder.build(); // "llookup:meta:test@alice"
+		assertEquals("llookup:meta:test@alice", command);
+
+		// Type.ALL
+		builder = new LlookupVerbBuilder("cached:public:publickey@alice", LlookupVerbBuilder.Type.ALL);
+		command = builder.build(); // "llookup:cached:public:publickey@alice:all"
+		assertEquals("llookup:all:cached:public:publickey@alice", command);
+	}
+
+	@Test
+	public void lookupVerbBuilderTest() {
+		LookupVerbBuilder builder;
+		String command;
+
+		// Type.NONE
+		builder = new LookupVerbBuilder("test@alice");
+		command = builder.build(); // "lookup:test@alice"
+		assertEquals("lookup:test@alice", command);
+
+		// Type.METADATA
+		builder = new LookupVerbBuilder("test@alice", LookupVerbBuilder.Type.METADATA);
+		command = builder.build(); // "lookup:meta:test@alice"
+		assertEquals("lookup:meta:test@alice", command);
+
+		// Type.ALL
+		builder = new LookupVerbBuilder("cached:public:publickey@alice", LookupVerbBuilder.Type.ALL);
+		command = builder.build(); // "lookup:cached:public:publickey@alice:all"
+		assertEquals("lookup:all:cached:public:publickey@alice", command);
+		
+	}
+
+	@Test
+	public void plookupVerbBuilderTest() {
+		PlookupVerbBuilder builder;
+		String command;
+
+		// Type.NONE
+		builder = new PlookupVerbBuilder("test@alice");
+		command = builder.build(); // "plookup:test@alice"
+		assertEquals("plookup:test@alice", command);
+
+		// Type.METADATA
+		builder = new PlookupVerbBuilder("test@alice", PlookupVerbBuilder.Type.METADATA);
+		command = builder.build(); // "plookup:meta:test@alice"
+
+		// Type.ALL
+		builder = new PlookupVerbBuilder("cached:public:publickey@alice", PlookupVerbBuilder.Type.ALL);
+		command = builder.build(); // "plookup:cached:public:publickey@alice:all"
 	}
 
 	@Test
@@ -37,12 +126,40 @@ public class VerbBuildersTest {
 		command = scanVerbBuilder.build();
 		assertEquals("Scan from another @sign", "scan:@other", command);
 
-		// Test setting both regex and fromAtSign
+		// Test seting just showHidden
+		scanVerbBuilder = new ScanVerbBuilder();
+		scanVerbBuilder.setShowHidden(true);
+		command = scanVerbBuilder.build();
+		assertEquals("Scan with showHidden", "scan:showHidden:true", command);
+
+		// Test setting regex & fromAtSign
 		scanVerbBuilder = new ScanVerbBuilder();
 		scanVerbBuilder.setRegex("*.public");
 		scanVerbBuilder.setFromAtSign("@other");
 		command = scanVerbBuilder.build();
 		assertEquals("Scan with regex from another @sign", "scan:@other *.public", command);
+
+		// Test setting regex & showHidden
+		scanVerbBuilder = new ScanVerbBuilder();
+		scanVerbBuilder.setRegex("*.public");
+		scanVerbBuilder.setShowHidden(true);
+		command = scanVerbBuilder.build();
+		assertEquals("Scan with regex & showHidden", "scan:showHidden:true *.public", command);
+
+		// Test setting fromAtSign & showHidden
+		scanVerbBuilder = new ScanVerbBuilder();
+		scanVerbBuilder.setFromAtSign("@other");
+		scanVerbBuilder.setShowHidden(true);
+		command = scanVerbBuilder.build();
+		assertEquals("Scan with fromAtSign & showHidden", "scan:showHidden:true:@other", command);
+
+		// Test setting regex & fromAtSign & showHidden
+		scanVerbBuilder = new ScanVerbBuilder();
+		scanVerbBuilder.setRegex("*.public");
+		scanVerbBuilder.setFromAtSign("@other");
+		scanVerbBuilder.setShowHidden(true);
+		command = scanVerbBuilder.build();
+		assertEquals("Scan with regex, fromAtSign & showHidden", "scan:showHidden:true:@other *.public", command);
 	}
 
 	@Test
