@@ -13,7 +13,193 @@ public class VerbBuilders {
 		/// Build the command to be sent to remote secondary for execution.
 		String build();
 	}
-	
+
+	public static class FromVerbBuilder implements VerbBuilder {
+		private String atSignStr;
+
+		public FromVerbBuilder(String atSignStr) {
+			this.atSignStr = atSignStr;
+		}
+
+		@Override
+		public String build() {
+			return "from:" + atSignStr;
+		}
+	}
+
+	public static class CRAMVerbBuilder implements VerbBuilder {
+
+		private String digest;
+
+		public CRAMVerbBuilder(String digest) {
+			this.digest = digest;
+		}
+
+		@Override
+		public String build() {
+			String s = "cram:" + digest;
+			return s;
+		}
+	}
+
+	public static class PKAMVerbBuilder implements VerbBuilder {
+
+		private String digest; // digest the challenge string given by the from verb
+
+		public PKAMVerbBuilder(String digest) {
+			this.digest = digest;
+		}
+
+		@Override
+		public String build() {
+			String s = "pkam:" + digest;
+			return s;
+		}
+
+	}
+
+	public static class LlookupVerbBuilder implements VerbBuilder {
+
+		public enum Type {
+			NONE, // llookup:<fullKeyName>
+			METADATA, // llookup:meta:<fullKeyName>
+			ALL, // llookup:all:<fullKeyName>
+		}
+
+		private String fullKeyName;
+
+		private Type type;
+
+		public LlookupVerbBuilder(String fullKeyName) {
+			this(fullKeyName, Type.NONE);
+		}
+
+		public LlookupVerbBuilder(String fullKeyName, Type type) {
+			this.fullKeyName = fullKeyName; // eg: "cached:public:test@bob"
+			this.type = type;	
+		}
+
+		public void setFullKeyName(String fullKeyName) {
+			this.fullKeyName = fullKeyName;
+		}
+
+		public void setType(Type type) {
+			this.type = type;
+		}
+
+		@Override
+		public String build() {
+			String s = "llookup:";
+			switch (type) {
+				case METADATA:
+					s += "meta:";
+					break;
+				case ALL:
+					s += "all:";
+					break;
+				default:
+					break;
+			}
+			s += this.fullKeyName;
+			return s; // eg: "llookup:meta:cached:public:test@bob"
+			
+		}
+
+	}
+
+	public static class LookupVerbBuilder implements VerbBuilder {
+		
+		public enum Type {
+			NONE, // lookup:<fullKeyName>
+			METADATA, // lookup:meta:<fullKeyName>
+			ALL, // lookup:all:<fullKeyName>
+		}
+		
+		private String fullKeyName; // eg: "cached:public:test@bob"
+		private Type type;
+		
+		public LookupVerbBuilder(String fullKeyName) {
+			this(fullKeyName, Type.NONE);
+		}
+		
+		public LookupVerbBuilder(String fullKeyName, Type type) {
+			this.fullKeyName = fullKeyName;
+			this.type = type;	
+		}
+		
+		public void setFullKeyName(String fullKeyName) {
+			this.fullKeyName = fullKeyName;
+		}
+		
+		public void setType(Type type) {
+			this.type = type;
+		}
+		
+		@Override
+		public String build() {
+			String s = "lookup:";
+			switch (type) {
+				case METADATA:
+					s += "meta:";
+					break;
+				case ALL:
+					s += "all:";
+					break;
+				default:
+					break;
+			}
+			s += this.fullKeyName;
+			return s; // eg: "lookup:meta:cached:public:test@bob"
+		}
+	}
+
+	public static class PlookupVerbBuilder implements VerbBuilder {
+
+		public enum Type {
+			NONE, // just get the data
+			METADATA, // get the metadata but no data
+			ALL, // get the data and metadata
+		}
+		
+		private String fullKeyName;
+		private Type type;
+
+		public PlookupVerbBuilder(String fullKeyName) {
+			this(fullKeyName, Type.NONE);
+		}
+
+		public PlookupVerbBuilder(String fullKeyName, Type type) {
+			this.fullKeyName = fullKeyName;
+			this.type = type;
+		}
+
+		public void setFullKeyName(String fullKeyName) {
+			this.fullKeyName = fullKeyName;
+		}
+
+		public void setType(Type type) {
+			this.type = type;
+		}
+
+		@Override
+		public String build() {
+			String s = "plookup:";
+			switch(type) {
+				case METADATA:
+					s += "meta:";
+					break;
+				case ALL:
+					s += "all:";
+					break;
+				default:
+					break;
+			}
+			s += this.fullKeyName;
+			return s; // e.g: "plookup:meta:@alice:test@bob"
+		}
+
+	}
+
 	public static class ScanVerbBuilder implements VerbBuilder {
 		
 		// Regex to filter the keys
@@ -21,23 +207,68 @@ public class VerbBuilders {
 		
 		// Scans the keys shared by <code>forAtSign</code>
 		private String fromAtSign;
-		
-		
+
+		// Scans for hidden keys (showHidden:true)
+		private boolean showHidden;
+
+		// regex: no
+		// fromAtSign: no
+		// showHidden: no
+		public ScanVerbBuilder() {
+			this("", "", false);
+		}
+
+		// regex: yes
+		// fromAtSign: yes
+		// showHidden: no
+		public ScanVerbBuilder(String regex, String fromAtSign) {
+			this(regex, fromAtSign, false);
+		}
+
+		// regex: yes
+		// fromAtSign: no
+		// showHidden: yes
+		public ScanVerbBuilder(String regex, boolean showHidden) {
+			this(regex, "", showHidden);
+		}
+
+		// regex: no
+		// fromAtSign: no
+		// showHidden: yes
+		public ScanVerbBuilder(boolean showHidden) {
+			this("", "", showHidden);
+		}
+
+		// regex: yes
+		// fromAtSign: yes
+		// showHidden: yes
+		public ScanVerbBuilder(String regex, String fromAtSign, boolean showHidden) {
+			this.regex = regex;
+			this.fromAtSign = fromAtSign;
+			this.showHidden = showHidden;
+		}
+
 	    public void setRegex(String regex) {
 			this.regex = regex;
 		}
-
 
 		public void setFromAtSign(String fromAtSign) {
 			this.fromAtSign = fromAtSign;
 		}
 
+		public void setShowHidden(boolean showHidden) {
+			this.showHidden = showHidden;
+		}
 
 		// r'^scan$|scan(:(?<forAtSign>@[^:@\s]+))?(:page:(?<page>\d+))?( (?<regex>\S+))?$';
 		public String build() {
 			
 			String command = "scan";
 			
+			if(showHidden) {
+				command += ":showHidden:true";
+			}
+
 			if(fromAtSign != null && !StringUtils.isBlank(fromAtSign)) {
 				command += ":" + fromAtSign;
 			}
