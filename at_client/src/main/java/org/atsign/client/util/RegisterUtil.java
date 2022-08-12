@@ -14,8 +14,6 @@ import java.util.stream.Stream;
 import javax.net.ssl.HttpsURLConnection;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ser.std.StdKeySerializers.Dynamic;
-
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
 
@@ -36,7 +34,6 @@ public class RegisterUtil {
      * @throws IOException if anything goes wrong while using the HttpsURLConnection
      */
 
-    @SuppressWarnings("unchecked")
     public String getFreeAtsign(String registrarUrl, String apiKey)
             throws AtException, IOException {
         URL urlObject = new URL(registrarUrl + Constants.GET_FREE_ATSIGN);
@@ -48,7 +45,7 @@ public class RegisterUtil {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(
                     connection.getInputStream()));
             String response = bufferedReader.readLine();
-            System.out.println(response);
+            @SuppressWarnings("unchecked")
             Map<String, Map<String, String>> responseData = objectMapper.readValue(response, Map.class);
             Map<String, String> data = responseData.get("data");
             return data.get("atsign");
@@ -57,13 +54,39 @@ public class RegisterUtil {
         }
     }
 
+    /**
+     * 
+     * @param registrarUrl - URL of the atsign registrar API
+     * @param apiKey       - Super API belonging to the user that has suitable
+     *                     access to the registrar API
+     * @return Map containing atSign and ActivationKey as separate entries.
+     *         Ex: {"atSign": "randomAtsign", "ActivationKey": "valueActivationKey"}
+     * @throws AtException - thrown if invalid method parameters provided
+     * @throws IOException - thrown if anything goes wrong while using the
+     *                     HttpsURLConnection.
+     */
     public Map<String, String> getAtsignV3(String registrarUrl, String apiKey) throws IOException, AtException {
         AtSign atsign = new AtSign("");
         return getAtsignV3(registrarUrl, apiKey, atsign, "");
     }
 
-    /// TO-DO - compensate for the possibility that activation key can be very long
-    @SuppressWarnings("unchecked")
+    /**
+     * 
+     * @param registrarUrl  - URL of the atsign registrar API
+     * @param apiKey        - Super API belonging to the user that has suitable
+     *                      access to the registrar API
+     * @param atsignObj     - [Optional] User can choose to provide atsign. Note:
+     *                      The final atsign will be in the following format:
+     *                      SuperApi prefix + atsign + SuperApi postfix
+     * @param activationKey - [Optional] User can choose to provide an ActivationKey
+     *                      which will be set as activationKey for the corresponding
+     *                      atsign.
+     * @return Map containing atSign and ActivationKey as separate entries.
+     *         Ex: {"atSign": "randomAtsign", "ActivationKey": "valueActivationKey"}
+     * @throws AtException - thrown if invalid method parameters provided
+     * @throws IOException - thrown if anything goes wrong while using the
+     *                     HttpsURLConnection.
+     */
     public Map<String, String> getAtsignV3(String registrarUrl, String apiKey, AtSign atsignObj, String activationKey)
             throws AtException, IOException {
         Map<String, String> paramsMap = new HashMap<String, String>();
@@ -73,27 +96,22 @@ public class RegisterUtil {
         if (!activationKey.isEmpty()) {
             paramsMap.put("ActivationKey", activationKey);
         }
-
         String paramsJson = objectMapper.writeValueAsString(paramsMap);
-
         HttpsURLConnection httpsConnection = postRequestToAPI(new URL(registrarUrl + Constants.GET_ATSIGN_V3), apiKey,
                 paramsJson);
-        System.out.println(httpsConnection.getResponseCode());
         if (httpsConnection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(httpsConnection.getInputStream()));
             String responseRaw = bufferedReader.readLine();
-
-            System.out.println("Response from API: " + responseRaw);
+            @SuppressWarnings("unchecked")
             Map<String, String> responseData = objectMapper.readValue(responseRaw, Map.class);
-            System.out.println(responseData.get("status"));
             if (responseData.get("status").equals("success")) {
+                @SuppressWarnings("unchecked")
                 Map<String, Map<String, String>> responseDataMap = objectMapper.readValue(responseRaw,
                         Map.class);
                 Map<String, String> responseProcessed = responseDataMap.get("value");
-                return (Map<String, String>) Stream.of(
-                        new SimpleEntry<>(responseProcessed.get("atSign"),
-                                responseProcessed.get("ActivationKey")))
-                        .collect(toMap(SimpleEntry::getKey, SimpleEntry::getValue));
+                System.out.println(responseProcessed);
+                System.exit(1);
+                return responseProcessed;
             } else {
                 throw new AtException("Failed getting atsign. Response from API: " + responseData.get("status"));
             }
@@ -222,7 +240,6 @@ public class RegisterUtil {
                             + responseDataArrayListObject.get("data").get("atsigns").toString());
                 }
             }
-            System.out.println("Got response: " + responseDataStringObject.get("message"));
             if (responseDataStringObject.containsKey("message")
                     && "Verified".equals(responseDataStringObject.get("message"))) {
                 return responseDataStringObject.get("cramkey");
@@ -243,23 +260,38 @@ public class RegisterUtil {
         }
     }
 
-    @SuppressWarnings("unchecked")
+    /**
+     * Activates the atsign provided using activationKey provided through method
+     * parameters
+     * 
+     * @param registrarUrl  - URL of the atsign registrar API
+     * @param apiKey        - Super API belonging to the user that has suitable
+     *                      access to the registrar API
+     * @param atsign        - atsign received as a response from GetAtsignV3
+     * @param activationKey - activationKey corresponding to the atsign being
+     *                      provided
+     * @return cram secret for the atsign
+     * @throws AtException - thrown if invalid method parameters rovided
+     * @throws IOException - thrown if anything goes wrong while using the
+     *                     HttpsURLConnection.
+     */
     public String activateAtsign(String registrarUrl, String apiKey, AtSign atsign, String activationKey)
             throws AtException, IOException {
         Map<String, String> paramsMap = Stream.of(
-                new SimpleEntry<>("atsign", atsign.withoutPrefix()),
+                new SimpleEntry<>("atSign", atsign.withoutPrefix()),
                 new SimpleEntry<>("ActivationKey", activationKey))
                 .collect(toMap(SimpleEntry::getKey, SimpleEntry::getValue));
 
         String paramsJson = objectMapper.writeValueAsString(paramsMap);
-        System.out.println(paramsJson);
-        HttpsURLConnection httpsConnection = postRequestToAPI(new URL(registrarUrl + Constants.REGISTER_ATSIGN), apiKey,
+        HttpsURLConnection httpsConnection = postRequestToAPI(new URL(registrarUrl + Constants.ACTIVATE_ATSIGN), apiKey,
                 paramsJson);
         if (httpsConnection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(httpsConnection.getInputStream()));
             String response = bufferedReader.readLine();
+
+            @SuppressWarnings("unchecked")
             Map<String, String> responseData = objectMapper.readValue(response, Map.class);
-            if (responseData.get("status") == "success") {
+            if (responseData.get("status").equals("success")) {
                 return responseData.get("cramkey");
             } else {
                 throw new AtException(responseData.get("status"));
@@ -271,7 +303,7 @@ public class RegisterUtil {
     }
 
     /**
-     * @deprecated method remains for backwards compatability. will be removed in
+     * @deprecated method remains for backwards compatibility. will be removed in
      *             future minor updates
      *             <p>
      *             <p>

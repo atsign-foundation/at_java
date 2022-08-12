@@ -1,12 +1,23 @@
 package org.atsign.client.cli;
 
-import java.util.Map;
-import java.util.Scanner;
-import java.util.concurrent.Callable;
+import com.fasterxml.jackson.core.exc.StreamReadException;
+import com.fasterxml.jackson.databind.DatabindException;
 
 import org.atsign.client.util.RegisterUtil;
+import org.atsign.common.ApiCallStatus;
 import org.atsign.common.AtSign;
+import org.atsign.common.Result;
+import org.atsign.common.Task;
 import org.atsign.config.ConfigReader;
+
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Scanner;
+import java.util.concurrent.Callable;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -25,143 +36,246 @@ public class Register implements Callable<String> {
     @Option(names = { "-k", "--api-key" }, description = "register an atsign using super-API key")
     static String apiKey = "";
 
+    Map<String, String> params = new HashMap<String, String>();
+    ConfigReader configReader = new ConfigReader();
+    boolean isRegistrarV3 = false;
+
+    public static void main(String[] args) {
+        int status = new CommandLine(new Register()).execute(args);
+        System.exit(status);
+    }
+
     @Override
+    // contains actual register logic. main() calls this method with args passed
+    // through CLI
     public String call() throws Exception {
-        boolean isRegistrarV3 = false;
+
+        readParameters();
+        if (isRegistrarV3) {
+            GetAtsignV3 getAtsignV3 = new GetAtsignV3();
+            ActivateAtsignV3 activateAtsignV3 = new ActivateAtsignV3();
+            RegistrationFlow registrationFlow = new RegistrationFlow(params);
+
+            registrationFlow.add(getAtsignV3);
+            registrationFlow.add(activateAtsignV3);
+
+            registrationFlow.start();
+
+        } else {
+            GetFreeAtsign getFreeAtsign = new GetFreeAtsign();
+            RegisterAtsign registerAtsign = new RegisterAtsign();
+            ValidateOtp validateOtp = new ValidateOtp();
+
+            params.put("confirmation", "false");
+            RegistrationFlow registrationFlow = new RegistrationFlow(params);
+            registrationFlow.add(getFreeAtsign);
+            registrationFlow.add(registerAtsign);
+            registrationFlow.add(validateOtp);
+
+            registrationFlow.start();
+        }
+        return "Done.";
+
+        //TODO call the onboarding class
+    }
+
+    void readParameters() throws StreamReadException, DatabindException, FileNotFoundException {
+
         // checks to ensure only either of email or super-API key are provided as args.
         // if super-API key is provided uses registrar v3, otherwise uses registrar v2.
         if (email.equals("") && !apiKey.equals("")) {
             isRegistrarV3 = true;
         } else if (apiKey.equals("") && !email.equals("")) {
+            // do nothing isRegistrarV3 already set to false
         } else {
             System.err.println(
                     "Usage: Register -e <email@email.com> (or)\nRegister -k <Your API Key>\nNOTE: Use email if you prefer activating using OTP. Go for API key option if you have your own SuperAPI key. You cannot use both.");
             System.exit(1);
         }
 
-        ConfigReader configReader = new ConfigReader();
-        RegisterUtil registerUtil = new RegisterUtil();
-        String cramSecret;
-        String rootDomain;
-        String rootPort;
-        String registrarUrl;
-        String otp;
-        String validationResponse;
-        AtSign atsign;
-
-        rootDomain = configReader.getProperty("rootServer", "domain");
-        if (rootDomain == null) {
+        params.put("rootDomain", configReader.getProperty("rootServer", "domain"));
+        if (params.get("rootDomain") == null) {
             // reading config from older configuration syntax for backwards compatability
-            rootDomain = configReader.getProperty("ROOT_DOMAIN");
+            params.put("rootDomain", configReader.getProperty("ROOT_DOMAIN"));
         }
 
-        rootPort = configReader.getProperty("rootServer", "port");
-        if (rootPort == null) {
+        params.put("rootPort", configReader.getProperty("rootServer", "port"));
+        if (params.get("rootPort") == null) {
             // reading config from older configuration syntax for backwards compatability
-            rootPort = configReader.getProperty("ROOT_PORT");
+            params.put("rootPort", configReader.getProperty("ROOT_PORT"));
         }
 
-        registrarUrl = isRegistrarV3 ? configReader.getProperty("registrarV3", "url")
-                : configReader.getProperty("registrar", "url");
-        if (registrarUrl == null) {
+        params.put("registrarUrl", isRegistrarV3 ? configReader.getProperty("registrarV3", "url")
+                : configReader.getProperty("registrar", "url"));
+        if (params.get("registrarUrl") == null) {
             // reading config from older configuration syntax for backwards compatability
-            registrarUrl = configReader.getProperty("REGISTRAR_URL");
+            params.put("registrarUrl", configReader.getProperty("REGISTRAR_URL"));
         }
 
         if (!isRegistrarV3 && apiKey.equals("")) {
-            try {
-                apiKey = configReader.getProperty("registrar", "apiKey");
-            } catch (Exception e) {
+            params.put("apiKey", configReader.getProperty("registrar", "apiKey"));
+            if (params.get("apiKey") == null) {
                 // reading config from older configuration syntax for backwards compatability
-                apiKey = configReader.getProperty("API_KEY");
+                params.put("apiKey", configReader.getProperty("API_KEY"));
             }
         }
 
-        if (rootDomain == null || rootPort == null || registrarUrl == null || apiKey == null) {
+        // adding email/apiKey to params whichevr is passed through command line args
+        if (!isRegistrarV3) {
+            params.put("email", email);
+        } else {
+            params.put("apiKey", apiKey);
+        }
+
+        // ensure all required params have been set
+        if (!params.containsKey("rootDomain") || !params.containsKey("rootPort") || !params.containsKey("registrarUrl")
+                || !params.containsKey("apiKey")) {
             System.err.println(
                     "Please make sure to set all relevant configuration in src/main/resources/config.yaml");
             System.exit(1);
         }
+    }
+}
 
-        if (!isRegistrarV3) {
-            Scanner scanner = new Scanner(System.in);
-            System.out.println("Getting free atsign");
-            atsign = new AtSign(registerUtil.getFreeAtsign(registrarUrl, apiKey));
-            System.out.println("Got atsign: " + atsign);
+class RegistrationFlow {
+    List<Task<Result<Map<String, String>>>> processFlow = new ArrayList<Task<Result<Map<String, String>>>>();
+    Result<Map<String, String>> result;
+    Map<String, String> params;
+    RegisterUtil registerUtil = new RegisterUtil();
 
-            System.out.println("Sending one-time-password to :" + email);
-            if (registerUtil.registerAtsign(email, atsign, registrarUrl, apiKey)) {
-                System.out.println("Enter OTP received on: " + email);
+    RegistrationFlow(Map<String, String> params) {
+        this.params = params;
+    }
 
-                otp = scanner.nextLine();
-                System.out.println("Validating one-time-password");
-                validationResponse = registerUtil.validateOtp(email, atsign, otp, registrarUrl, apiKey, false);
-                // if validationResponse is retry, the OTP entered is incorrect. Ask user to
-                // re-enter correct OTP
-                if ("retry".equals(validationResponse)) {
-                    while ("retry".equals(validationResponse)) {
-                        System.out.println("Incorrect OTP entered. Re-enter the OTP: ");
-                        otp = scanner.nextLine();
-                        validationResponse = registerUtil.validateOtp(email, atsign, otp, registrarUrl, apiKey, false);
-                    }
-                    scanner.close();
+    void add(Task<Result<Map<String, String>>> task) {
+        processFlow.add(task);
+    }
+
+    boolean isRetryAllowed(int maxRetries, int retryCount) {
+        return retryCount < maxRetries;
+    }
+
+    void start() throws Exception {
+        for (Task<Result<Map<String, String>>> task : processFlow) {
+            task.init(params, registerUtil);
+            result = task.run();
+            if (result.apiCallStatus.equals(ApiCallStatus.retry)) {
+                while (isRetryAllowed(Task.maxRetries, task.retryCount)) {
+                    result = task.retry();
                 }
-                // if validationResponse is follow-up, the atsign has been regstered to email.
-                // Again call the API with "confirmation"=true to get the cram key
-                if ("follow-up".equals(validationResponse)) {
-                    validationResponse = registerUtil.validateOtp(email, atsign, otp, registrarUrl, apiKey, true);
-                }
-                // if validation response starts with @, that represents that validationResponse
-                // contains cram
-                if (validationResponse.startsWith("@")) {
-                    System.out.println("One-time-password verified. OK");
-                    // extract cram from response
-                    cramSecret = validationResponse.split(":")[1];
-                    System.out.println("Got cram secret for " + atsign + ": " + cramSecret);
-
-                    String[] onboardArgs = new String[] { rootDomain + ":" + rootPort,
-                            atsign.toString(), cramSecret };
-                    Onboard.main(onboardArgs);
-                } else {
-                    System.err.println(validationResponse);
-                    return "success";
+            } else if (result.apiCallStatus.equals(ApiCallStatus.success)) {
+                for (Entry<String, String> entry : result.data.entrySet()) {
+                    params.put(entry.getKey(), entry.getValue());
                 }
             } else {
-
-                System.err.println("Error while sending OTP. Please retry the process");
-                scanner.close();
-                return "unsuccessful";
+                throw result.exception;
             }
-        } else {
-            String activationKey;
-            Map<String, String> responseMap;
-            Map.Entry<String, String> mapEntry;
-            System.out.println("Getting AtSign...");
-            responseMap = registerUtil.getAtsignV3(registrarUrl, apiKey);
-            mapEntry = responseMap.entrySet().iterator().next();
-            atsign = new AtSign(mapEntry.getKey());
-            System.out.println("Got AtSign: " + atsign);
-            activationKey = mapEntry.getValue();
-            System.out.println("Activating atsign using activationKey...");
-            cramSecret = registerUtil.activateAtsign(registrarUrl, apiKey, atsign, activationKey);
-            cramSecret = cramSecret.split(":")[1];
-            System.out.println("Your cramSecret is: " + cramSecret);
-            System.out.println("Do you want to activate the atsign? [y/n] " + atsign);
-            Scanner scanner = new Scanner(System.in);
-            if (scanner.next() == "y") {
-                String[] onboardArgs = new String[] { rootDomain + ":" + rootPort,
-                        atsign.toString(), cramSecret };
-                Onboard.main(onboardArgs);
-            }
-            scanner.close();
-            System.out.println("Done.");
-            return "success";
         }
-        return "";
+    }
+}
+
+class GetFreeAtsign extends Task<Result<Map<String, String>>> {
+
+    @Override
+    public Result<Map<String, String>> run() {
+        System.out.println("Getting free atsign");
+        try {
+            result.data.put("atSign",
+                    registerUtil.getFreeAtsign(params.get("registrarUrl"), params.get("apiKey")));
+            result.apiCallStatus = ApiCallStatus.success;
+            // System.out.println("Got atsign: " + result.data.get("atSign"));
+        } catch (Exception e) {
+            System.out.println("retrying get atsign");
+            result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
+            result.exception = e;
+        }
+        return result;
+    }
+}
+
+class RegisterAtsign extends Task<Result<Map<String, String>>> {
+
+    @Override
+    public Result<Map<String, String>> run() {
+        System.out.println("Sending one-time-password to :" + params.get("email"));
+        try {
+            result.data.put("otpSent",
+                    registerUtil.registerAtsign(params.get("email"), new AtSign(params.get("atSign")),
+                            params.get("registrarUrl"), params.get("apiKey")).toString());
+            result.apiCallStatus = ApiCallStatus.success;
+            System.out.println("OTP sent successfully");
+        } catch (Exception e) {
+            result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
+            result.exception = e;
+        }
+        return result;
+    }
+}
+
+class ValidateOtp extends Task<Result<Map<String, String>>> {
+    String otp;
+    Scanner scanner = new Scanner(System.in);
+
+    @Override
+    public Result<Map<String, String>> run() {
+        System.out.println("Enter OTP received on " + params.get("email"));
+        try {
+            otp = scanner.nextLine();
+            System.out.println("Validating OTP");
+            String apiResponse = registerUtil.validateOtp(params.get("email"), new AtSign(params.get("atSign")), otp,
+                    params.get("registrarUrl"), params.get("apiKey"),
+                    Boolean.parseBoolean(params.get("confirmation")));
+            if (apiResponse.equals("retry")) {
+                result.apiCallStatus = ApiCallStatus.retry;
+                System.out.println("Incorrect OTP. Please re-enter your OTP\n");
+            } else if (apiResponse.equals("follow-up")) {
+                params.put("confirmation", "true");
+                result.apiCallStatus = ApiCallStatus.retry;
+            } else if (apiResponse.startsWith("@")) {
+                result.apiCallStatus = ApiCallStatus.success;
+                result.data.put("cram", apiResponse.split(":")[1]);
+                System.out.println("Done.");
+                System.out.println("your cram secret: " + params.get("cram"));
+            }
+        } catch (Exception e) {
+            result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
+            result.exception = e;
+        }
+
+        scanner.close();
+        return result;
+    }
+}
+
+class GetAtsignV3 extends Task<Result<Map<String, String>>> {
+    @Override
+    public Result<Map<String, String>> run() {
+        System.out.println("Getting atSign]");
+        try {
+            result.data.putAll(registerUtil.getAtsignV3(params.get("registrarUrl"), params.get("apiKey")));
+            result.apiCallStatus = ApiCallStatus.success;
+            System.out.println("Got atsign: " + result.data.get("atSign"));
+        } catch (Exception e) {
+            result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
+            result.exception = e;
+        }
+        return result;
+    }
+}
+
+class ActivateAtsignV3 extends Task<Result<Map<String, String>>> {
+    @Override
+    public Result<Map<String, String>> run() {
+        try {
+            result.data.put("cram", registerUtil.activateAtsign(params.get("registrarUrl"), params.get("apiKey"),
+                    new AtSign(params.get("atSign")), params.get("ActivationKey")));
+            result.apiCallStatus = ApiCallStatus.success;
+            System.out.println("Your cram secret: " + result.data.get("cram"));
+        } catch (Exception e) {
+            result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
+            result.exception = e;
+        }
+        return result;
     }
 
-    public static void main(String[] args) {
-        int status = new CommandLine(new Register()).execute(args);
-        System.exit(status);
-    }
 }
