@@ -77,6 +77,147 @@ public class VerbBuilders {
 
 	}
 
+	public static class UpdateVerbBuilder implements VerbBuilder {
+
+		/// Update the value (and metadata optionally) of a key.
+
+		// =======================================
+		// AtKey name details
+		// =======================================
+		private String key; // e.g. "test", "location", "email" [required]
+		private String sharedBy; // e.g. "@alice" [required]
+		private String sharedWith = ""; // e.g. "@bob" 
+		private Boolean isHidden = false; // if true, adds _ at the beginning of the fullKeyName
+		private Boolean isPublic = false; //   /// if [isPublic] is true, then [atKey] is accessible by all atSigns, if [isPublic] is false, then [atKey] is accessible either by [sharedWith] or [sharedBy]
+		private Boolean isCached = false; // if true, will add "cached:" to the fullKeyName
+		private Integer ttl = 0; // time to live in milliseconds (how long AtKey will exist)
+		private Integer ttb = 0; // time to birth in milliseconds (how long it will take for AtKey to exist)
+		private Integer ttr = null; // time to refresh in milliseconds (how long it will take for AtKey to refresh)
+		private Boolean ccd = null; // if true, cached keys will be deleted if the original key is deleted
+		private boolean isBinary = false; // if true, the value contains binary data
+		private boolean isEncrypted = false; // if true, the value is encrypted with some encryption key
+		private String dataSignature = null; // usually public data is signed with the private key to prove that the data is authentic
+		private String sharedKeyEnc = null; // will be set only when [sharedWith] is set. Will be encrypted using the public key of [sharedWith] atsign
+		private String pubKeyCS = null; // checksum of the public of of [sharedWith] atSign. Will be set only when [sharedWith] is set.
+		private String encoding = null; // indicates if public data is encoded. If the public data contains a new line character, the data will be encoded and the encoding will be set to given type of encoding
+
+		private Object value; // the value to set [required]
+
+		public void setKeyName(String keyName) {
+			this.key = keyName;
+		}
+
+		public void setSharedBy(String sharedBy) {
+			this.sharedBy = sharedBy;
+		}
+
+		public void setSharedWith(String sharedWith) {
+			this.sharedWith = sharedWith;
+		}
+
+		public void setIsHidden(Boolean isHidden) {
+			this.isHidden = isHidden;
+		}
+
+		public void setIsPublic(Boolean isPublic) {
+			this.isPublic = isPublic;
+		}
+
+		public void setIsCached(Boolean isCached) {
+			this.isCached = isCached;
+		}
+
+		public void setTtl(Integer ttl) {
+			this.ttl = ttl;
+		}
+
+		public void setTtb(Integer ttb) {
+			this.ttb = ttb;
+		}
+
+		public void setTtr(Integer ttr) {
+			this.ttr = ttr;
+		}
+
+		public void setCcd(Boolean ccd) {
+			this.ccd = ccd;
+		}
+
+		public void setIsBinary(boolean isBinary) {
+			this.isBinary = isBinary;
+		}
+
+		public void setIsEncrypted(boolean isEncrypted) {
+			this.isEncrypted = isEncrypted;
+		}
+
+		public void setDataSignature(String dataSignature) {
+			this.dataSignature = dataSignature;
+		}
+
+		public void setSharedKeyEnc(String sharedKeyEnc) {
+			this.sharedKeyEnc = sharedKeyEnc;
+		}
+
+		public void setPubKeyCS(String pubKeyCS) {
+			this.pubKeyCS = pubKeyCS;
+		}
+
+		public void setEncoding(String encoding) {
+			this.encoding = encoding;
+		}
+
+		public void setValue(Object value) {
+			this.value = value;
+		}
+
+		@Override
+		public String build() {
+			if(key == null || key.isEmpty() || sharedBy == null || sharedBy.isEmpty() || value == null || value.toString().isEmpty()) {
+				throw new IllegalArgumentException("keyName, sharedBy, and value cannot be null or empty");
+			}
+			String fullKeyName = buildAtKeyStr();
+			String metadata = buildMetadataStr();
+			String s = "update:" + metadata + ":" + fullKeyName + " " + value.toString();
+			return s;
+		}
+
+		private String buildAtKeyStr() {
+			String s = "";
+			if(isHidden) {
+				s += "_";
+			}
+			if(isCached) {
+				s += "cached:";
+			}
+			if(isPublic) {
+				s += "public:";
+			}
+			if(sharedWith != null) {
+				s += AtSign.formatAtSign(sharedWith) + ":";
+			}
+			s += key;
+			s += AtSign.formatAtSign(sharedBy);
+			return s;
+		}
+
+		private String buildMetadataStr() {
+			Metadata metadata = new Metadata();
+			metadata.ttl = ttl;
+			metadata.ttb = ttb;
+			metadata.ttr = ttr;
+			metadata.ccd = ccd;
+			metadata.isBinary = isBinary;
+			metadata.isEncrypted = isEncrypted;
+			metadata.dataSignature = dataSignature;
+			metadata.sharedKeyEnc = sharedKeyEnc;
+			metadata.pubKeyCS = pubKeyCS;
+			// metadata.encoding = encoding;
+			return metadata.toString();
+		}
+		
+	}
+
 	public static class ScanVerbBuilder implements VerbBuilder {
 		
 		// Regex to filter the keys
