@@ -36,6 +36,18 @@ public class VerbBuildersTest {
 		command = builder.build(); // "from:@bob"
 		assertEquals("from:@bob", command);
 	}
+
+	@Test
+	public void cramVerbBuilderTest() {
+		CRAMVerbBuilder builder;
+		String command;
+
+		builder = new CRAMVerbBuilder();
+		builder.setDigest("digest");
+		command = builder.build(); // "cram:digest"
+		assertEquals("cram:digest", command);
+	}
+
 	@Test
 	public void scanVerbBuilderTest() {
 
