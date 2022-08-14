@@ -133,6 +133,57 @@ public class VerbBuildersTest {
 	}
 
 	@Test
+	public void lookupVerbBuilderTest() {
+		LookupVerbBuilder builder;
+		String command;
+
+		// Type.NONE
+		builder = new LookupVerbBuilder();
+		builder.setKeyName("test");
+		builder.setSharedWith("@alice");
+		command = builder.build(); // "lookup:test@alice"
+		assertEquals("lookup:test@alice", command);
+
+		// Type.METADATA
+		builder = new LookupVerbBuilder();
+		builder.setKeyName("test");
+		builder.setSharedWith("@alice");
+		builder.setType(LookupVerbBuilder.Type.METADATA);
+		command = builder.build(); // "lookup:meta:test@alice"
+		assertEquals("lookup:meta:test@alice", command);
+
+		// Type.ALL
+		builder = new LookupVerbBuilder();
+		builder.setKeyName("test");
+		builder.setSharedWith("@alice");
+		builder.setType(LookupVerbBuilder.Type.ALL);
+		command = builder.build(); // "lookup:test@alice"
+		assertEquals("lookup:all:test@alice", command);
+		
+		// no key name
+		assertThrows(IllegalArgumentException.class, () -> {
+			LookupVerbBuilder b = new LookupVerbBuilder();
+			b = new LookupVerbBuilder();
+			b.setSharedWith("@alice");
+			b.build();
+		});
+
+		// no sharedWith
+		assertThrows(IllegalArgumentException.class, () -> {
+			LookupVerbBuilder b = new LookupVerbBuilder();
+			b = new LookupVerbBuilder();
+			b.setKeyName("test");
+			b.build();
+		});
+
+		// no key name and no shared with
+		assertThrows(IllegalArgumentException.class, () -> {
+			LookupVerbBuilder b = new LookupVerbBuilder();
+			b.build();
+		});
+	}
+
+	@Test
 	public void scanVerbBuilderTest() {
 
 		// Test not setting any parameters
