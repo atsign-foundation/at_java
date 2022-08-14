@@ -31,6 +31,24 @@ public class VerbBuilders {
 			return "from:" + atSignStr;
 		}
 	}
+
+	public static class CRAMVerbBuilder implements VerbBuilder {
+
+		// chlallenge response authentication method
+
+		private String digest; // the digest to use for authentication, encrypt the challenge (given by the from verb) to get the digest [required]
+
+		public void setDigest(String digest) {
+			this.digest = digest;
+		}
+
+		@Override
+		public String build() {
+			String s = "cram:" + digest;
+			return s;
+		}
+	}
+
 	public static class ScanVerbBuilder implements VerbBuilder {
 		
 		// Regex to filter the keys
