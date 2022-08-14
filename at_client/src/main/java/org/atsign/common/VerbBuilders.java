@@ -299,6 +299,57 @@ public class VerbBuilders {
 
 	}
 
+	public static class LookupVerbBuilder implements VerbBuilder {
+		
+		// look up a key shared with you in another atSign's secondary
+		// the sender atSign (other person) is the sharedBy atSign, while you are the sharedWith atSign.
+		
+		// Type of Lookup
+		public enum Type {
+			NONE, // lookup:<fullKeyName>
+			METADATA, // lookup:meta:<fullKeyName>
+			ALL, // lookup:all:<fullKeyName>
+		}
+		
+		private String key; // key name e.g. "test", "location", "email" [required]
+		private String sharedWith; // sharedBy atSign e.g. "@alice" [required] (not your atSign, the atSign of another secondary, get)
+
+		private Type type = Type.NONE;
+		
+		public void setKeyName(String key) {
+			this.key = key;
+		}
+
+		public void setSharedWith(String sharedWith) {
+			this.sharedWith = sharedWith;
+		}
+
+		public void setType(Type type) {
+			this.type = type;
+		}
+		
+		@Override
+		public String build() {
+			if(key == null || key.isEmpty() || sharedWith == null || sharedWith.isEmpty()) {
+				throw new IllegalArgumentException("keyName and sharedWith cannot be null or empty");
+			}
+			String s = "lookup:";
+			switch (type) {
+				case METADATA:
+					s += "meta:";
+					break;
+				case ALL:
+					s += "all:";
+					break;
+				default:
+					break;
+			}
+			s += this.key;
+			s += AtSign.formatAtSign(this.sharedWith);
+			return s; // eg: "lookup:meta:test@bob"
+		}
+	}
+
 	public static class ScanVerbBuilder implements VerbBuilder {
 		
 		// Regex to filter the keys
