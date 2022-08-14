@@ -350,6 +350,69 @@ public class VerbBuilders {
 		}
 	}
 
+	public static class PlookupVerbBuilder implements VerbBuilder {
+
+		// look up a public key in another atSign's secondary
+		// e.g. "plookup:publickey@bob" will return the data of the key "public:publickey@bob" in @bob's secondary server (you are @alice, @bob is not you)
+		
+		// Type of plookup
+		public enum Type {
+			NONE, // just get the data
+			METADATA, // get the metadata but no data (plookup:meta:)
+			ALL, // get the data and metadata (plookup:all:)
+		}
+		
+		// AtKey details
+		private String key; // key name (e.g. location, test) [required]
+		private String sharedBy; // sharedBy atSign ("@bob") [required]
+
+		private Boolean isCached = false; // if true, will add "cached:" to the fullKeyName
+
+		private Type type = Type.NONE;
+
+		public void setKeyName(String key) {
+			this.key = key;
+		}
+
+		public void setSharedBy(String sharedBy) {
+			this.sharedBy = sharedBy;
+		}
+
+		public void setIsCached(Boolean isCached) {
+			this.isCached = isCached;
+		}
+
+		public void setType(Type type) {
+			this.type = type;
+		}
+
+		@Override
+		public String build() {
+			if(this.key == null || this.sharedBy == null) {
+				throw new IllegalArgumentException("key or sharedBy is null");
+			}
+			String s = "plookup:";
+			switch(type) {
+				case METADATA:
+					s += "meta:";
+					break;
+				case ALL:
+					s += "all:";
+					break;
+				default:
+					break;
+			}
+			if(isCached) {
+				s += "cached:";
+			}
+			s += this.key;
+			s += AtSign.formatAtSign(this.sharedBy);
+
+			return s; // e.g: "plookup:meta:@alice:test@bob"
+		}
+
+	}
+
 	public static class ScanVerbBuilder implements VerbBuilder {
 		
 		// Regex to filter the keys
