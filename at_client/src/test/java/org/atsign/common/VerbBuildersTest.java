@@ -332,12 +332,40 @@ public class VerbBuildersTest {
 		command = scanVerbBuilder.build();
 		assertEquals("Scan from another @sign", "scan:@other", command);
 
-		// Test setting both regex and fromAtSign
+		// Test seting just showHidden
+		scanVerbBuilder = new ScanVerbBuilder();
+		scanVerbBuilder.setShowHidden(true);
+		command = scanVerbBuilder.build();
+		assertEquals("Scan with showHidden", "scan:showHidden:true", command);
+
+		// Test setting regex & fromAtSign
 		scanVerbBuilder = new ScanVerbBuilder();
 		scanVerbBuilder.setRegex("*.public");
 		scanVerbBuilder.setFromAtSign("@other");
 		command = scanVerbBuilder.build();
 		assertEquals("Scan with regex from another @sign", "scan:@other *.public", command);
+
+		// Test setting regex & showHidden
+		scanVerbBuilder = new ScanVerbBuilder();
+		scanVerbBuilder.setRegex("*.public");
+		scanVerbBuilder.setShowHidden(true);
+		command = scanVerbBuilder.build();
+		assertEquals("Scan with regex & showHidden", "scan:showHidden:true *.public", command);
+
+		// Test setting fromAtSign & showHidden
+		scanVerbBuilder = new ScanVerbBuilder();
+		scanVerbBuilder.setFromAtSign("@other");
+		scanVerbBuilder.setShowHidden(true);
+		command = scanVerbBuilder.build();
+		assertEquals("Scan with fromAtSign & showHidden", "scan:showHidden:true:@other", command);
+
+		// Test setting regex & fromAtSign & showHidden
+		scanVerbBuilder = new ScanVerbBuilder();
+		scanVerbBuilder.setRegex("*.public");
+		scanVerbBuilder.setFromAtSign("@other");
+		scanVerbBuilder.setShowHidden(true);
+		command = scanVerbBuilder.build();
+		assertEquals("Scan with regex, fromAtSign & showHidden", "scan:showHidden:true:@other *.public", command);
 	}
 
 	@Test
