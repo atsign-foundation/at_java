@@ -59,6 +59,17 @@ public class VerbBuildersTest {
 	}
 
 	@Test
+	public void pkamVerbBuilderTest() {
+		PKAMVerbBuilder builder;
+		String command;
+
+		builder = new PKAMVerbBuilder();
+		builder.setDigest("digest");
+		command = builder.build(); // "pkam:digest"
+		assertEquals("pkam:digest", command);
+	}
+
+	@Test
 	public void scanVerbBuilderTest() {
 
 		// Test not setting any parameters
