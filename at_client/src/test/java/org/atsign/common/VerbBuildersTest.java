@@ -49,6 +49,16 @@ public class VerbBuildersTest {
 	}
 
 	@Test
+	public void polVerbBuilderTest() {
+		POLVerbBuilder builder;
+		String command;
+
+		builder = new POLVerbBuilder();
+		command = builder.build(); // "pol"
+		assertEquals("pol", command);
+	}
+
+	@Test
 	public void scanVerbBuilderTest() {
 
 		// Test not setting any parameters
