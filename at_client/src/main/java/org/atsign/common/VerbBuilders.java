@@ -49,6 +49,16 @@ public class VerbBuilders {
 		}
 	}
 
+	public static class POLVerbBuilder implements VerbBuilder {
+
+		// proof of life
+
+		@Override
+		public String build() {
+			return "pol";
+		}
+	}
+
 	public static class ScanVerbBuilder implements VerbBuilder {
 		
 		// Regex to filter the keys
