@@ -477,25 +477,33 @@ public class VerbBuilders {
 		// Regex to filter the keys
 		private String regex;
 		
-		// Scans the keys shared by <code>forAtSign</code>
+		// Scans the keys shared by forAtSign
 		private String fromAtSign;
 		
+		// Scans for hidden keys (showHidden:true)
+		private boolean showHidden = false;
 		
 	    public void setRegex(String regex) {
 			this.regex = regex;
 		}
 
-
 		public void setFromAtSign(String fromAtSign) {
 			this.fromAtSign = fromAtSign;
 		}
 
+		public void setShowHidden(boolean showHidden) {
+			this.showHidden = showHidden;
+		}
 
 		// r'^scan$|scan(:(?<forAtSign>@[^:@\s]+))?(:page:(?<page>\d+))?( (?<regex>\S+))?$';
 		public String build() {
 			
 			String command = "scan";
 			
+			if(showHidden) {
+				command += ":showHidden:true";
+			}
+
 			if(fromAtSign != null && !StringUtils.isBlank(fromAtSign)) {
 				command += ":" + fromAtSign;
 			}
