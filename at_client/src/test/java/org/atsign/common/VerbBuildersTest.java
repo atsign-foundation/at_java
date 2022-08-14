@@ -3,10 +3,19 @@ package org.atsign.common;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
+import org.atsign.common.VerbBuilders.CRAMVerbBuilder;
+import org.atsign.common.VerbBuilders.DeleteVerbBuilder;
+import org.atsign.common.VerbBuilders.FromVerbBuilder;
+import org.atsign.common.VerbBuilders.LlookupVerbBuilder;
+import org.atsign.common.VerbBuilders.LookupVerbBuilder;
 import org.atsign.common.VerbBuilders.NotificationStatusVerbBuilder;
 import org.atsign.common.VerbBuilders.NotifyKeyChangeBuilder;
 import org.atsign.common.VerbBuilders.NotifyTextVerbBuilder;
+import org.atsign.common.VerbBuilders.PKAMVerbBuilder;
+import org.atsign.common.VerbBuilders.POLVerbBuilder;
+import org.atsign.common.VerbBuilders.PlookupVerbBuilder;
 import org.atsign.common.VerbBuilders.ScanVerbBuilder;
+import org.atsign.common.VerbBuilders.PlookupVerbBuilder.Type;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,6 +26,16 @@ public class VerbBuildersTest {
 	public void setUp() {
 	}
 
+	@Test
+	public void fromVerbBuilderTest() {
+		FromVerbBuilder builder;
+		String command;
+
+		builder = new FromVerbBuilder();
+		builder.setAtSign("@bob");
+		command = builder.build(); // "from:@bob"
+		assertEquals("from:@bob", command);
+	}
 	@Test
 	public void scanVerbBuilderTest() {
 
