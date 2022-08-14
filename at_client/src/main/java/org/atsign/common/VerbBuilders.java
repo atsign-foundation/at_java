@@ -59,6 +59,24 @@ public class VerbBuilders {
 		}
 	}
 
+	public static class PKAMVerbBuilder implements VerbBuilder {
+		
+		// public key authentication method
+
+		private String digest; // digest the challenge string given by the from verb [required]
+
+		public void setDigest(String digest) {
+			this.digest = digest;
+		}
+
+		@Override
+		public String build() {
+			String s = "pkam:" + digest;
+			return s;
+		}
+
+	}
+
 	public static class ScanVerbBuilder implements VerbBuilder {
 		
 		// Regex to filter the keys
