@@ -218,6 +218,87 @@ public class VerbBuilders {
 		
 	}
 
+	public static class LlookupVerbBuilder implements VerbBuilder {
+
+		public enum Type {
+			NONE, // llookup:<fullKeyName>
+			METADATA, // llookup:meta:<fullKeyName>
+			ALL, // llookup:all:<fullKeyName>
+		}
+
+		private String key; // e.g. "test", "location", "email" [required]
+		private String sharedBy; // e.g. sharedBy atSign "@alice" [required]
+		private String sharedWith = ""; // e.g. sharedWith atSign "@bob"
+		private Boolean isHidden = false; // if true, adds _ at the beginning of the fullKeyName
+		private Boolean isPublic = false; // if [isPublic] is true, then [atKey] is accessible by all atSigns and "public:" will be added to the fullKeyName, if [isPublic] is false, then [atKey] is accessible either by [sharedWith] or [sharedBy]
+		private Boolean isCached = false; // if true, will add "cached:" to the fullKeyName
+
+		private Type type = Type.NONE;
+
+		public void setKeyName(String key) {
+			this.key = key;
+		}
+
+		public void setSharedBy(String sharedBy) {
+			this.sharedBy = sharedBy;
+		}
+
+		public void setSharedWith(String sharedWith) {
+			this.sharedWith = sharedWith;
+		}
+
+		public void setIsHidden(Boolean isHidden) {
+			this.isHidden = isHidden;
+		}
+
+		public void setIsPublic(Boolean isPublic) {
+			this.isPublic = isPublic;
+		}
+
+		public void setIsCached(Boolean isCached) {
+			this.isCached = isCached;
+		}
+
+		public void setType(Type type) {
+			this.type = type;
+		}
+
+		@Override
+		public String build() {
+			if(key == null || key.isEmpty() || sharedBy == null || sharedBy.isEmpty()) {
+				throw new IllegalArgumentException("keyName and sharedBy cannot be null or empty");
+			}
+			String s = "llookup:";
+			switch (type) {
+				case METADATA:
+					s += "meta:";
+					break;
+				case ALL:
+					s += "all:";
+					break;
+				default:
+					break;
+			}
+			if(isHidden) {
+				s += "_";
+			}
+			if(isCached) {
+				s += "cached:";
+			}
+			if(isPublic) {
+				s += "public:";
+			}
+			if(sharedWith != null && !sharedWith.isEmpty()) {
+				s += AtSign.formatAtSign(sharedWith) + ":";
+			}
+			s += key;
+			s += AtSign.formatAtSign(sharedBy);
+			return s; // eg: "llookup:meta:cached:public:test@bob"
+			
+		}
+
+	}
+
 	public static class ScanVerbBuilder implements VerbBuilder {
 		
 		// Regex to filter the keys
