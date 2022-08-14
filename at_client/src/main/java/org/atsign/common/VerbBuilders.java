@@ -413,6 +413,65 @@ public class VerbBuilders {
 
 	}
 
+	public static class DeleteVerbBuilder implements VerbBuilder {
+
+		private String key; // e.g. "test", "location", "email" [required]
+		private String sharedBy; // e.g. sharedBy atSign "@alice" [required]
+		private String sharedWith = ""; // e.g. sharedWith atSign "@bob"
+		private Boolean isHidden = false;
+		private Boolean isPublic = false; // if [isPublic] is true, then [atKey] is accessible by all atSigns and "public:" will be added to the fullKeyName, if [isPublic] is false, then [atKey] is accessible either by [sharedWith] or [sharedBy]
+		private Boolean isCached = false; // if true, will add "cached:" to the fullKeyName
+
+		public void setKeyName(String keyName) {
+			this.key = keyName;
+		}
+
+		public void setSharedBy(String sharedBy) {
+			this.sharedBy = sharedBy;
+		}
+
+		public void setSharedWith(String sharedWith) {
+			this.sharedWith = sharedWith;
+		}
+
+		public void setIsHidden(Boolean isHidden) {
+			this.isHidden = isHidden;
+		}
+
+		public void setIsPublic(Boolean isPublic) {
+			this.isPublic = isPublic;
+		}
+
+		public void setIsCached(Boolean isCached) {
+			this.isCached = isCached;
+		}
+
+		@Override
+		public String build() {
+			if(key == null || sharedBy == null) {
+				throw new IllegalArgumentException("key or sharedBy is null. These are required fields");
+			}
+
+			String s = "delete:";
+			if(isHidden) {
+				s += "_";
+			}
+			if(isCached) {
+				s += "cached:";
+			}
+			if(isPublic) {
+				s += "public:";
+			}
+			if(sharedWith != null && !sharedWith.isEmpty()) {
+				s += AtSign.formatAtSign(sharedWith) + ":";
+			}
+			s += key;
+			s += AtSign.formatAtSign(sharedBy);
+			return s; // eg: "delete:cached:public:test@bob"
+		}
+
+	}
+
 	public static class ScanVerbBuilder implements VerbBuilder {
 		
 		// Regex to filter the keys
