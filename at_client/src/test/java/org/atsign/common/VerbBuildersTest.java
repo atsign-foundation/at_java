@@ -184,6 +184,59 @@ public class VerbBuildersTest {
 	}
 
 	@Test
+	public void plookupVerbBuilderTest() {
+		PlookupVerbBuilder builder;
+		String command;
+
+		// Type.NONE
+		builder = new PlookupVerbBuilder();
+		builder.setKeyName("publickey");
+		builder.setSharedBy("@alice");
+		command = builder.build(); // "plookup:publickey@alice"
+		assertEquals("plookup:publickey@alice", command);
+
+		// Type.METADATA
+		builder = new PlookupVerbBuilder();
+		builder.setKeyName("publickey");
+		builder.setSharedBy("@alice");
+		builder.setType(PlookupVerbBuilder.Type.METADATA);
+		command = builder.build(); // "plookup:meta:publickey@alice"
+		assertEquals("plookup:meta:publickey@alice", command);
+
+		// Type.ALL
+		builder = new PlookupVerbBuilder();
+		builder.setKeyName("publickey");
+		builder.setSharedBy("@alice");
+		builder.setType(PlookupVerbBuilder.Type.ALL);
+		builder.setIsCached(true);
+		command = builder.build(); // "plookup:cached:public:publickey@alice:all"
+		assertEquals("plookup:all:cached:publickey@alice", command);
+
+		// no key
+		assertThrows(IllegalArgumentException.class, () -> {
+			PlookupVerbBuilder b = new PlookupVerbBuilder();
+			b.setSharedBy("@alice");
+			b.setType(Type.ALL);
+			b.build();
+		});
+
+		// no shared by
+		assertThrows(IllegalArgumentException.class, () -> {
+			PlookupVerbBuilder b = new PlookupVerbBuilder();
+			b.setKeyName("publickey");
+			b.setType(Type.ALL);
+			b.build();
+		});
+
+		// no key and no shared by
+		assertThrows(IllegalArgumentException.class, () -> {
+			PlookupVerbBuilder b = new PlookupVerbBuilder();
+			b.setType(Type.ALL);
+			b.build();
+		});
+	}
+
+	@Test
 	public void scanVerbBuilderTest() {
 
 		// Test not setting any parameters
