@@ -9,12 +9,12 @@ import org.atsign.common.Keys.Metadata;
  *
  */
 public class VerbBuilders {
-	
+
 	public interface VerbBuilder {
 		/// Build the command to be sent to remote secondary for execution.
 		String build();
 	}
-	
+
 	public static class FromVerbBuilder implements VerbBuilder {
 		private String atSignStr; // the atSign that we are authenticating with (e.g. atSignStr.equals("@alice") <=> true) [required]
 
@@ -479,10 +479,10 @@ public class VerbBuilders {
 		
 		// Scans the keys shared by forAtSign
 		private String fromAtSign;
-		
+
 		// Scans for hidden keys (showHidden:true)
 		private boolean showHidden = false;
-		
+
 	    public void setRegex(String regex) {
 			this.regex = regex;
 		}
