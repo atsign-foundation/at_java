@@ -70,6 +70,69 @@ public class VerbBuildersTest {
 	}
 
 	@Test
+	public void llookupVerbBuilderTest() {
+		LlookupVerbBuilder builder;
+		String command;
+
+		// Type.NONE self key
+		builder = new LlookupVerbBuilder();
+		builder.setKeyName("test");
+		builder.setSharedBy("@alice");
+		command = builder.build(); // "llookup:test@alice"
+		assertEquals("llookup:test@alice", command);
+
+		// Type.METADATA self key
+		builder = new LlookupVerbBuilder();
+		builder.setKeyName("test");
+		builder.setSharedBy("@alice");
+		builder.setType(LlookupVerbBuilder.Type.METADATA);
+		command = builder.build(); // "llookup:meta:test@alice"
+		assertEquals("llookup:meta:test@alice", command);
+
+		// hidden self key, meta
+		builder = new LlookupVerbBuilder();
+		builder.setKeyName("test");
+		builder.setSharedBy("@alice");
+		builder.setType(LlookupVerbBuilder.Type.METADATA);
+		builder.setIsHidden(true);
+		command = builder.build(); // "llookup:meta:_test@alice"
+		assertEquals("llookup:meta:_test@alice", command);
+		
+		// Type.ALL public cached key
+		builder = new LlookupVerbBuilder();
+		builder.setKeyName("publickey");
+		builder.setSharedBy("@alice");
+		builder.setIsCached(true);
+		builder.setIsPublic(true);
+		builder.setType(LlookupVerbBuilder.Type.ALL);
+		command = builder.build(); // "llookup:cached:public:publickey@alice:all"
+		assertEquals("llookup:all:cached:public:publickey@alice", command);
+
+		// no key name
+		assertThrows(IllegalArgumentException.class, () -> {
+			LlookupVerbBuilder b = new LlookupVerbBuilder();
+			b = new LlookupVerbBuilder();
+			b.setSharedBy("@alice");
+			b.build();
+		});
+		
+		// no shared by
+		assertThrows(IllegalArgumentException.class, () -> {
+			LlookupVerbBuilder b = new LlookupVerbBuilder();
+			b = new LlookupVerbBuilder();
+			b.setKeyName("test");
+			b.build();
+		});
+
+		// no key name and no shared by
+		assertThrows(IllegalArgumentException.class, () -> {
+			LlookupVerbBuilder b = new LlookupVerbBuilder();
+			b.build();
+		});
+
+	}
+
+	@Test
 	public void scanVerbBuilderTest() {
 
 		// Test not setting any parameters
