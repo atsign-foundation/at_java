@@ -1,6 +1,7 @@
 package org.atsign.common;
 
 import org.apache.commons.lang3.StringUtils;
+import org.atsign.common.Keys.Metadata;
 
 /**
  * 
@@ -14,6 +15,22 @@ public class VerbBuilders {
 		String build();
 	}
 	
+	public static class FromVerbBuilder implements VerbBuilder {
+		private String atSignStr; // the atSign that we are authenticating with (e.g. atSignStr.equals("@alice") <=> true) [required]
+
+		public void setAtSign(String atSignStr) {
+			this.atSignStr = atSignStr;
+		}
+
+		@Override
+		public String build() {
+			atSignStr = AtSign.formatAtSign(atSignStr);
+			if(atSignStr == null || atSignStr.isEmpty()) {
+				throw new IllegalArgumentException("atSignStr cannot be null or empty");
+			}
+			return "from:" + atSignStr;
+		}
+	}
 	public static class ScanVerbBuilder implements VerbBuilder {
 		
 		// Regex to filter the keys
