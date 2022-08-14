@@ -237,6 +237,82 @@ public class VerbBuildersTest {
 	}
 
 	@Test
+	public void deleteVerbBuilderTest() {
+		DeleteVerbBuilder builder;
+		String command;
+
+		// delete a public key
+		builder = new DeleteVerbBuilder();
+		builder.setIsPublic(true);
+		builder.setKeyName("publickey");
+		builder.setSharedBy("@alice");
+		command = builder.build();
+		assertEquals("delete:public:publickey@alice", command);
+
+		// delete a cached public key
+		builder = new DeleteVerbBuilder();
+		builder.setIsCached(true);
+		builder.setIsPublic(true);
+		builder.setKeyName("publickey");
+		builder.setSharedBy("@bob");
+		command = builder.build();
+		assertEquals("delete:cached:public:publickey@bob", command);
+
+		// delete a self key
+		builder = new DeleteVerbBuilder();
+		builder.setKeyName("test");
+		builder.setSharedBy("@alice");
+		command = builder.build();
+		assertEquals("delete:test@alice", command);
+		
+		// delete a hidden self key
+		builder = new DeleteVerbBuilder();
+		builder.setIsHidden(true);
+		builder.setKeyName("test");
+		builder.setSharedBy("@alice");
+		command = builder.build();
+		assertEquals("delete:_test@alice", command);
+
+		// delete a shared key
+		builder = new DeleteVerbBuilder();
+		builder.setKeyName("test");
+		builder.setSharedBy("@alice");
+		builder.setSharedWith("@bob");
+		command = builder.build();
+		assertEquals("delete:@bob:test@alice", command);
+
+		// delete a cached shared key
+		builder = new DeleteVerbBuilder();
+		builder.setIsCached(true);
+		builder.setKeyName("test");
+		builder.setSharedBy("@alice");
+		builder.setSharedWith("@bob");
+		command = builder.build();
+		assertEquals("delete:cached:@bob:test@alice", command);
+
+		// missing key name
+		assertThrows(IllegalArgumentException.class, () -> {
+			DeleteVerbBuilder b = new DeleteVerbBuilder();
+			b.setSharedBy("@alice");
+			b.setSharedWith("@bob");
+			b.build();
+		});
+
+		// missing shared by
+		assertThrows(IllegalArgumentException.class, () -> {
+			DeleteVerbBuilder b = new DeleteVerbBuilder();
+			b.setKeyName("test");
+			b.build();
+		});
+
+		// missing key name and shared by
+		assertThrows(IllegalArgumentException.class, () -> {
+			DeleteVerbBuilder b = new DeleteVerbBuilder();
+			b.build();
+		});
+	}
+
+	@Test
 	public void scanVerbBuilderTest() {
 
 		// Test not setting any parameters
