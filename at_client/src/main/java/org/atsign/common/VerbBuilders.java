@@ -1,7 +1,10 @@
 package org.atsign.common;
 
 import org.apache.commons.lang3.StringUtils;
+import org.atsign.common.Keys.AtKey;
 import org.atsign.common.Keys.Metadata;
+import org.atsign.common.Keys.PublicKey;
+import org.atsign.common.Keys.SharedKey;
 
 /**
  * 
@@ -86,16 +89,16 @@ public class VerbBuilders {
 		// =======================================
 		private String key; // e.g. "test", "location", "email" [required]
 		private String sharedBy; // e.g. "@alice" [required]
-		private String sharedWith = ""; // e.g. "@bob" 
-		private Boolean isHidden = false; // if true, adds _ at the beginning of the fullKeyName
-		private Boolean isPublic = false; //   /// if [isPublic] is true, then [atKey] is accessible by all atSigns, if [isPublic] is false, then [atKey] is accessible either by [sharedWith] or [sharedBy]
+		private String sharedWith = null; // e.g. "@bob" 
+		private Boolean isHidden = null; // if true, adds _ at the beginning of the fullKeyName
+		private Boolean isPublic = null; //   /// if [isPublic] is true, then [atKey] is accessible by all atSigns, if [isPublic] is false, then [atKey] is accessible either by [sharedWith] or [sharedBy]
 		private Boolean isCached = false; // if true, will add "cached:" to the fullKeyName
-		private Integer ttl = 0; // time to live in milliseconds (how long AtKey will exist)
-		private Integer ttb = 0; // time to birth in milliseconds (how long it will take for AtKey to exist)
+		private Integer ttl = null; // time to live in milliseconds (how long AtKey will exist) (0 by default)
+		private Integer ttb = null; // time to birth in milliseconds (how long it will take for AtKey to exist) (0 by default)
 		private Integer ttr = null; // time to refresh in milliseconds (how long it will take for AtKey to refresh)
 		private Boolean ccd = null; // if true, cached keys will be deleted if the original key is deleted
-		private boolean isBinary = false; // if true, the value contains binary data
-		private boolean isEncrypted = false; // if true, the value is encrypted with some encryption key
+		private Boolean isBinary = null; // if true, the value contains binary data
+		private Boolean isEncrypted = null; // if true, the value is encrypted with some encryption key
 		private String dataSignature = null; // usually public data is signed with the private key to prove that the data is authentic
 		private String sharedKeyEnc = null; // will be set only when [sharedWith] is set. Will be encrypted using the public key of [sharedWith] atsign
 		private String pubKeyCS = null; // checksum of the public of of [sharedWith] atSign. Will be set only when [sharedWith] is set.
