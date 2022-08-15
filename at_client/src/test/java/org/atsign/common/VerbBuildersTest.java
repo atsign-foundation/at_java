@@ -356,9 +356,8 @@ public class VerbBuildersTest {
 		builder.setKeyName("publickey");
 		builder.setSharedBy("@alice");
 		builder.setType(PlookupVerbBuilder.Type.ALL);
-		builder.setIsCached(true);
-		command = builder.build(); // "plookup:cached:public:publickey@alice:all"
-		assertEquals("plookup:all:cached:publickey@alice", command);
+		command = builder.build(); // "plookup:all:publickey@alice"
+		assertEquals("plookup:all:publickey@alice", command);
 
 		// no key
 		assertThrows(IllegalArgumentException.class, () -> {
@@ -382,6 +381,13 @@ public class VerbBuildersTest {
 			b.setType(Type.ALL);
 			b.build();
 		});
+
+		// with
+		builder = new PlookupVerbBuilder();
+		PublicKey pk = new KeyBuilders.PublicKeyBuilder(new AtSign("@bob")).key("publickey").build();
+		builder.with(pk, Type.ALL);
+		command = builder.build(); // "plookup:all:publickey@bob"
+		assertEquals("plookup:all:publickey@bob", command);
 	}
 
 	@Test
