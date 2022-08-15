@@ -293,6 +293,16 @@ public class VerbBuilders {
 			this.type = type;
 		}
 
+		public void with(AtKey atKey, LlookupVerbBuilder.Type type) {
+			setKeyName(atKey.name);
+			setSharedBy(atKey.sharedBy.toString());
+			if(atKey.sharedWith != null && !atKey.sharedWith.toString().isEmpty()) setSharedWith(atKey.sharedWith.toString());
+			setIsHidden(atKey.metadata.isHidden);
+			setIsPublic(atKey.metadata.isPublic);
+			setIsCached(atKey.metadata.isCached);
+			setType(type);
+		}
+
 		@Override
 		public String build() {
 			if(key == null || key.isEmpty() || sharedBy == null || sharedBy.isEmpty()) {
