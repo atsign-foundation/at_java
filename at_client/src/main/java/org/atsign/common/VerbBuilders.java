@@ -174,6 +174,21 @@ public class VerbBuilders {
 			this.value = value;
 		}
 
+		public void setMetadata(Metadata metadata) {
+			this.isHidden = metadata.isHidden;
+			this.isPublic = metadata.isPublic;
+			this.isCached = metadata.isCached;
+			this.ttl = metadata.ttl;
+			this.ttb = metadata.ttb;
+			this.ttr = metadata.ttr;
+			this.ccd = metadata.ccd;
+			this.isBinary = metadata.isBinary;
+			this.isEncrypted = metadata.isEncrypted;
+			this.dataSignature = metadata.dataSignature;
+			this.sharedKeyEnc = metadata.sharedKeyEnc;
+			this.pubKeyCS = metadata.pubKeyCS;
+			this.encoding = metadata.encoding;
+		}
 		@Override
 		public String build() {
 			if(key == null || key.isEmpty() || sharedBy == null || sharedBy.isEmpty() || value == null || value.toString().isEmpty()) {
