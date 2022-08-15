@@ -367,7 +367,7 @@ public class VerbBuilders {
 		public void setType(Type type) {
 			this.type = type;
 		}
-		
+
 		public void with(SharedKey sharedKey, LookupVerbBuilder.Type type) {
 			setKeyName(sharedKey.name);
 			setSharedWith(sharedKey.sharedWith.toString());
@@ -430,6 +430,12 @@ public class VerbBuilders {
 
 		public void setType(Type type) {
 			this.type = type;
+		}
+
+		public void with(PublicKey atKey, PlookupVerbBuilder.Type type) {
+			setKeyName(atKey.name);
+			setSharedBy(atKey.sharedBy.toString());
+			setType(type);
 		}
 
 		@Override
