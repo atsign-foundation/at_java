@@ -258,10 +258,10 @@ public class VerbBuilders {
 
 		private String key; // e.g. "test", "location", "email" [required]
 		private String sharedBy; // e.g. sharedBy atSign "@alice" [required]
-		private String sharedWith = ""; // e.g. sharedWith atSign "@bob"
-		private Boolean isHidden = false; // if true, adds _ at the beginning of the fullKeyName
-		private Boolean isPublic = false; // if [isPublic] is true, then [atKey] is accessible by all atSigns and "public:" will be added to the fullKeyName, if [isPublic] is false, then [atKey] is accessible either by [sharedWith] or [sharedBy]
-		private Boolean isCached = false; // if true, will add "cached:" to the fullKeyName
+		private String sharedWith = null; // e.g. sharedWith atSign "@bob"
+		private Boolean isHidden = null; // if true, adds _ at the beginning of the fullKeyName
+		private Boolean isPublic = null; // if [isPublic] is true, then [atKey] is accessible by all atSigns and "public:" will be added to the fullKeyName, if [isPublic] is false, then [atKey] is accessible either by [sharedWith] or [sharedBy]
+		private Boolean isCached = null; // if true, will add "cached:" to the fullKeyName
 
 		private Type type = Type.NONE;
 
@@ -309,13 +309,13 @@ public class VerbBuilders {
 				default:
 					break;
 			}
-			if(isHidden) {
+			if(isHidden != null && isHidden) {
 				s += "_";
 			}
-			if(isCached) {
+			if(isCached != null && isCached) {
 				s += "cached:";
 			}
-			if(isPublic) {
+			if(isPublic != null &&isPublic) {
 				s += "public:";
 			}
 			if(sharedWith != null && !sharedWith.isEmpty()) {
