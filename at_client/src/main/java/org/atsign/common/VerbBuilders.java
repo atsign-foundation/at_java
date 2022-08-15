@@ -189,6 +189,18 @@ public class VerbBuilders {
 			this.pubKeyCS = metadata.pubKeyCS;
 			this.encoding = metadata.encoding;
 		}
+
+		public void with(AtKey atKey, Object value) {
+			setKeyName(atKey.name);
+			setSharedBy(atKey.sharedBy.toString());
+			if(atKey.sharedWith != null && !atKey.sharedWith.toString().isEmpty()) setSharedWith(atKey.sharedWith.toString());
+			setIsCached(atKey.metadata.isCached);
+			setIsHidden(atKey.metadata.isHidden);
+			setIsPublic(atKey.metadata.isPublic);
+			setMetadata(atKey.metadata);
+			setValue(value);
+		}
+
 		@Override
 		public String build() {
 			if(key == null || key.isEmpty() || sharedBy == null || sharedBy.isEmpty() || value == null || value.toString().isEmpty()) {
