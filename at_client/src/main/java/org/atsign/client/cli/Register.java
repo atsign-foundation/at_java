@@ -8,6 +8,7 @@ import org.atsign.common.ApiCallStatus;
 import org.atsign.common.AtSign;
 import org.atsign.common.Result;
 import org.atsign.common.Task;
+import org.atsign.common.AtException;
 import org.atsign.config.ConfigReader;
 
 import java.io.FileNotFoundException;
@@ -40,14 +41,14 @@ public class Register implements Callable<String> {
     ConfigReader configReader = new ConfigReader();
     boolean isRegistrarV3 = false;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws AtException {
         int status = new CommandLine(new Register()).execute(args);
         System.exit(status);
     }
 
     @Override
-    // contains actual register logic. main() calls this method with args passed
-    // through CLI
+    // contains actual register logic.
+    // main() calls this method with args passed through CLI
     public String call() throws Exception {
 
         readParameters();
@@ -74,9 +75,13 @@ public class Register implements Callable<String> {
 
             registrationFlow.start();
         }
-        return "Done.";
 
-        //TODO call the onboarding class
+        String[] onboardArgs = new String[] {
+                (params.get("rootDomain")).toString() + ":" + (params.get("rootPort")).toString(),
+                params.get("atSign"), params.get("cram") };
+        Onboard.main(onboardArgs);
+
+        return "Done.";
     }
 
     void readParameters() throws StreamReadException, DatabindException, FileNotFoundException {
@@ -152,23 +157,26 @@ class RegistrationFlow {
     }
 
     boolean isRetryAllowed(int maxRetries, int retryCount) {
-        return retryCount < maxRetries;
+        return retryCount < maxRetries - 1;
     }
 
     void start() throws Exception {
         for (Task<Result<Map<String, String>>> task : processFlow) {
+            // initialize each task by passing params and registerUtil object to init()
             task.init(params, registerUtil);
             result = task.run();
             if (result.apiCallStatus.equals(ApiCallStatus.retry)) {
-                while (isRetryAllowed(Task.maxRetries, task.retryCount)) {
+                while (isRetryAllowed(Task.maxRetries, task.retryCount)
+                        && result.apiCallStatus.equals(ApiCallStatus.retry)) {
                     result = task.retry();
                 }
-            } else if (result.apiCallStatus.equals(ApiCallStatus.success)) {
+            }
+            if (result.apiCallStatus.equals(ApiCallStatus.success)) {
                 for (Entry<String, String> entry : result.data.entrySet()) {
                     params.put(entry.getKey(), entry.getValue());
                 }
             } else {
-                throw result.exception;
+                throw result.atException;
             }
         }
     }
@@ -178,16 +186,15 @@ class GetFreeAtsign extends Task<Result<Map<String, String>>> {
 
     @Override
     public Result<Map<String, String>> run() {
-        System.out.println("Getting free atsign");
+        System.out.println("Getting free atsign ...");
         try {
             result.data.put("atSign",
                     registerUtil.getFreeAtsign(params.get("registrarUrl"), params.get("apiKey")));
             result.apiCallStatus = ApiCallStatus.success;
-            // System.out.println("Got atsign: " + result.data.get("atSign"));
+            System.out.println("Got atsign: " + result.data.get("atSign"));
         } catch (Exception e) {
-            System.out.println("retrying get atsign");
+            result.atException = new AtException(e.getMessage(), e.getCause());
             result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
-            result.exception = e;
         }
         return result;
     }
@@ -203,46 +210,51 @@ class RegisterAtsign extends Task<Result<Map<String, String>>> {
                     registerUtil.registerAtsign(params.get("email"), new AtSign(params.get("atSign")),
                             params.get("registrarUrl"), params.get("apiKey")).toString());
             result.apiCallStatus = ApiCallStatus.success;
-            System.out.println("OTP sent successfully");
         } catch (Exception e) {
+            result.atException = new AtException(e.getMessage(), e.getCause());
             result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
-            result.exception = e;
         }
         return result;
     }
 }
 
 class ValidateOtp extends Task<Result<Map<String, String>>> {
-    String otp;
     Scanner scanner = new Scanner(System.in);
 
     @Override
     public Result<Map<String, String>> run() {
         System.out.println("Enter OTP received on " + params.get("email"));
         try {
-            otp = scanner.nextLine();
-            System.out.println("Validating OTP");
-            String apiResponse = registerUtil.validateOtp(params.get("email"), new AtSign(params.get("atSign")), otp,
+            // only ask for user input the first time. use the otp entry in params map in
+            // subsequent api requests
+            if (!params.containsKey("otp")) {
+                params.put("otp", scanner.nextLine());
+            }
+            System.out.println("Validating OTP ...");
+            String apiResponse = registerUtil.validateOtp(params.get("email"), new AtSign(params.get("atSign")),
+                    params.get("otp"),
                     params.get("registrarUrl"), params.get("apiKey"),
                     Boolean.parseBoolean(params.get("confirmation")));
             if (apiResponse.equals("retry")) {
+                System.out.println("Incorrect OTP!!! Please re-enter your OTP");
+                params.put("otp", scanner.nextLine());
                 result.apiCallStatus = ApiCallStatus.retry;
-                System.out.println("Incorrect OTP. Please re-enter your OTP\n");
+                result.atException = new AtException("Only 3 retries allowed to re-enter OTP",
+                        new Throwable("Incorrect OTP entered"));
             } else if (apiResponse.equals("follow-up")) {
                 params.put("confirmation", "true");
                 result.apiCallStatus = ApiCallStatus.retry;
             } else if (apiResponse.startsWith("@")) {
-                result.apiCallStatus = ApiCallStatus.success;
                 result.data.put("cram", apiResponse.split(":")[1]);
+                System.out.println("your cram secret: " + result.data.get("cram"));
                 System.out.println("Done.");
-                System.out.println("your cram secret: " + params.get("cram"));
+                result.apiCallStatus = ApiCallStatus.success;
+                scanner.close();
             }
         } catch (Exception e) {
+            result.atException = new AtException(e.getMessage(), e.getCause());
             result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
-            result.exception = e;
         }
-
-        scanner.close();
         return result;
     }
 }
@@ -250,14 +262,14 @@ class ValidateOtp extends Task<Result<Map<String, String>>> {
 class GetAtsignV3 extends Task<Result<Map<String, String>>> {
     @Override
     public Result<Map<String, String>> run() {
-        System.out.println("Getting atSign]");
+        System.out.println("Getting atSign ...");
         try {
             result.data.putAll(registerUtil.getAtsignV3(params.get("registrarUrl"), params.get("apiKey")));
-            result.apiCallStatus = ApiCallStatus.success;
             System.out.println("Got atsign: " + result.data.get("atSign"));
+            result.apiCallStatus = ApiCallStatus.success;
         } catch (Exception e) {
+            result.atException = new AtException(e.getMessage(), e.getCause());
             result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
-            result.exception = e;
         }
         return result;
     }
@@ -272,8 +284,8 @@ class ActivateAtsignV3 extends Task<Result<Map<String, String>>> {
             result.apiCallStatus = ApiCallStatus.success;
             System.out.println("Your cram secret: " + result.data.get("cram"));
         } catch (Exception e) {
+            result.atException = new AtException(e.getMessage(), e.getCause());
             result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
-            result.exception = e;
         }
         return result;
     }

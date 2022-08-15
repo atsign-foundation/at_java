@@ -33,7 +33,6 @@ public class RegisterUtil {
      * @throws AtException thrown if HTTPS_REQUEST was not successful
      * @throws IOException if anything goes wrong while using the HttpsURLConnection
      */
-
     public String getFreeAtsign(String registrarUrl, String apiKey)
             throws AtException, IOException {
         URL urlObject = new URL(registrarUrl + Constants.GET_FREE_ATSIGN);
@@ -109,8 +108,6 @@ public class RegisterUtil {
                 Map<String, Map<String, String>> responseDataMap = objectMapper.readValue(responseRaw,
                         Map.class);
                 Map<String, String> responseProcessed = responseDataMap.get("value");
-                System.out.println(responseProcessed);
-                System.exit(1);
                 return responseProcessed;
             } else {
                 throw new AtException("Failed getting atsign. Response from API: " + responseData.get("status"));
