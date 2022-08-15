@@ -498,6 +498,15 @@ public class VerbBuilders {
 			this.isCached = isCached;
 		}
 
+		public void with(AtKey atKey) {
+			setKeyName(atKey.name);
+			setSharedBy(atKey.sharedBy.toString());
+			if(atKey.sharedWith != null && !atKey.sharedWith.toString().isEmpty()) setSharedWith(atKey.sharedWith.toString());
+			setIsHidden(atKey.metadata.isHidden);
+			setIsPublic(atKey.metadata.isPublic);
+			setIsCached(atKey.metadata.isCached);
+		}
+
 		@Override
 		public String build() {
 			if(key == null || sharedBy == null) {
