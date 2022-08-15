@@ -322,6 +322,13 @@ public class VerbBuildersTest {
 			LookupVerbBuilder b = new LookupVerbBuilder();
 			b.build();
 		});
+
+		// with shared key
+		builder = new LookupVerbBuilder();
+		SharedKey sk = new KeyBuilders.SharedKeyBuilder(new AtSign("@sharedby"), new AtSign("@sharedwith")).key("test").build();
+		builder.with(sk, LookupVerbBuilder.Type.METADATA);
+		command = builder.build(); // "lookup:meta:test@sharedby"
+		assertEquals("lookup:meta:test@sharedwith", command);
 	}
 
 	@Test
