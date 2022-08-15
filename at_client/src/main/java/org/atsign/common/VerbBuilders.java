@@ -368,6 +368,12 @@ public class VerbBuilders {
 			this.type = type;
 		}
 		
+		public void with(SharedKey sharedKey, LookupVerbBuilder.Type type) {
+			setKeyName(sharedKey.name);
+			setSharedWith(sharedKey.sharedWith.toString());
+			setType(type);
+		}
+		
 		@Override
 		public String build() {
 			if(key == null || key.isEmpty() || sharedWith == null || sharedWith.isEmpty()) {
