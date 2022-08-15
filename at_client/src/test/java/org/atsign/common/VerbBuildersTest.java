@@ -464,6 +464,27 @@ public class VerbBuildersTest {
 			DeleteVerbBuilder b = new DeleteVerbBuilder();
 			b.build();
 		});
+
+		// with self key
+		builder = new DeleteVerbBuilder();
+		SelfKey selfKey = new KeyBuilders.SelfKeyBuilder(new AtSign("@alice")).key("test").build();
+		builder.with(selfKey);
+		command = builder.build();
+		assertEquals("delete:test@alice", command);
+
+		// with public key
+		builder = new DeleteVerbBuilder();
+		PublicKey pk = new KeyBuilders.PublicKeyBuilder(new AtSign("@bob")).key("publickey").build();
+		builder.with(pk);
+		command = builder.build();
+
+		// with shared key
+		builder = new DeleteVerbBuilder();
+		SharedKey sk = new KeyBuilders.SharedKeyBuilder(new AtSign("@alice"), new AtSign("@bob")).key("test").build();
+		builder.with(sk);
+		command = builder.build();
+		assertEquals("delete:@bob:test@alice", command);
+
 	}
 
 	@Test
