@@ -70,6 +70,94 @@ public class VerbBuildersTest {
 	}
 
 	@Test
+	public void updateVerbBuilderTest() {
+		UpdateVerbBuilder builder;
+		String command;
+
+		// self key
+		builder = new UpdateVerbBuilder();
+		builder.setKeyName("test");
+		builder.setSharedBy("@bob");
+		builder.setValue("my Value 123");
+		command = builder.build(); // "update:test@bob my Value 123"
+		assertEquals("update:test@bob my Value 123", command); 
+
+		// self key but shared with self
+		builder = new UpdateVerbBuilder();
+		builder.setKeyName("test");
+		builder.setSharedBy("@bob");
+		builder.setSharedWith("@bob");
+		builder.setValue("My value 123");
+		command = builder.build(); // "update:@alice:test@bob My value 123"
+		assertEquals("update:@bob:test@bob My value 123", command);
+
+		// public key
+		builder = new UpdateVerbBuilder();
+		builder.setKeyName("publickey");
+		builder.setSharedBy("@bob");
+		builder.setIsPublic(true);
+		builder.setValue("my Value 123");
+		command = builder.build(); // "update:public:publickey@bob my Value 123"
+		assertEquals("update:public:publickey@bob my Value 123", command);
+
+		// cached public key
+		builder = new UpdateVerbBuilder();
+		builder.setKeyName("publickey");
+		builder.setSharedBy("@alice");
+		builder.setIsPublic(true);
+		builder.setIsCached(true);
+		builder.setValue("my Value 123");
+		command = builder.build(); // "update:cached:public:publickey@alice my Value 123"
+		assertEquals("update:cached:public:publickey@alice my Value 123", command);
+
+		// shared key
+		builder = new UpdateVerbBuilder();
+		builder.setKeyName("sharedkey");
+		builder.setSharedBy("@bob");
+		builder.setSharedWith("@alice");
+		builder.setValue("my Value 123");
+		command = builder.build(); // "update:@alice:sharedkey@bob my Value 123"
+		assertEquals("update:@alice:sharedkey@bob my Value 123", command);
+
+		// with shared key
+		builder = new UpdateVerbBuilder();
+		SharedKey sk1 = new KeyBuilders.SharedKeyBuilder(new AtSign("@bob"), new AtSign("@alice")).key("test").build();
+		sk1.metadata.isBinary = true;
+		sk1.metadata.ttl = 1000*60*10; // 10 minutes
+		builder.with(sk1, "myBinaryValue123456");
+		command = builder.build(); // update:ttl:600000:isBinary:true:isEncrypted:true:@alice:test@bob myBinaryValue123456
+		assertEquals("update:ttl:600000:isBinary:true:isEncrypted:true:@alice:test@bob myBinaryValue123456", command);
+
+		// with public key
+		builder = new UpdateVerbBuilder();
+		PublicKey pk1 = new KeyBuilders.PublicKeyBuilder(new AtSign("@bob")).key("test").build();
+		pk1.metadata.isCached = true;
+		builder.with(pk1, "myValue123");
+		command = builder.build(); // update:cached:public:test@bob myValue123
+		assertEquals("update:isBinary:false:isEncrypted:false:cached:public:test@bob myValue123", command);
+
+		// with self key
+		builder = new UpdateVerbBuilder();
+		SelfKey sk2 = new KeyBuilders.SelfKeyBuilder(new AtSign("@bob")).key("test").build();
+		sk2.metadata.ttl = 1000*60*10; // 10 minutes
+		builder.with(sk2, "myValue123");
+		command = builder.build(); // update:ttl:600000:test@bob myValue123
+		assertEquals("update:ttl:600000:isBinary:false:isEncrypted:true:test@bob myValue123", command);
+
+		// with self key (shared with self)
+		builder = new UpdateVerbBuilder();
+		AtSign bob = new AtSign("@bob");
+		SelfKey sk3 = new KeyBuilders.SelfKeyBuilder(bob, bob).key("test").build();
+		sk3.metadata.ttl = 1000*60*10; // 10 minutes
+		builder.with(sk3, "myValue123");
+		command = builder.build(); // update:ttl:600000:@bob:test@bob myValue123
+		assertEquals("update:ttl:600000:isBinary:false:isEncrypted:true:@bob:test@bob myValue123", command);
+
+		// private hidden key
+		// TODO with private hidden key when implemented
+	}
+
+	@Test
 	public void llookupVerbBuilderTest() {
 		LlookupVerbBuilder builder;
 		String command;
