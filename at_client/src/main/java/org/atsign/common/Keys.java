@@ -350,6 +350,11 @@ public abstract class Keys {
         atKey.metadata = Metadata.squash(atKey.metadata, Metadata.fromString(llookedUpMetadata));
         return atKey;
     }
+
+    public static AtKey fromString(Secondary.Response lookupAllResponse) throws AtException {
+        // TODO once transformers are done
+        return null;
+    }
 }
 
 //        static AtKey fromString(String key) {
