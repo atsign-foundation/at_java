@@ -3,6 +3,9 @@ package org.atsign.common;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
+import org.atsign.common.Keys.PublicKey;
+import org.atsign.common.Keys.SelfKey;
+import org.atsign.common.Keys.SharedKey;
 import org.atsign.common.VerbBuilders.CRAMVerbBuilder;
 import org.atsign.common.VerbBuilders.DeleteVerbBuilder;
 import org.atsign.common.VerbBuilders.FromVerbBuilder;
@@ -15,6 +18,7 @@ import org.atsign.common.VerbBuilders.PKAMVerbBuilder;
 import org.atsign.common.VerbBuilders.POLVerbBuilder;
 import org.atsign.common.VerbBuilders.PlookupVerbBuilder;
 import org.atsign.common.VerbBuilders.ScanVerbBuilder;
+import org.atsign.common.VerbBuilders.UpdateVerbBuilder;
 import org.atsign.common.VerbBuilders.PlookupVerbBuilder.Type;
 import org.junit.After;
 import org.junit.Before;
@@ -217,6 +221,55 @@ public class VerbBuildersTest {
 			LlookupVerbBuilder b = new LlookupVerbBuilder();
 			b.build();
 		});
+
+		// with public key
+		builder = new LlookupVerbBuilder();
+		PublicKey pk = new KeyBuilders.PublicKeyBuilder(new AtSign("@bob")).key("publickey").build();
+		builder.with(pk, LlookupVerbBuilder.Type.METADATA);
+		command = builder.build(); // "llookup:meta:public:publickey@bob"
+		assertEquals("llookup:meta:public:publickey@bob", command);
+
+		// with shared key
+		builder = new LlookupVerbBuilder();
+		SharedKey sk = new KeyBuilders.SharedKeyBuilder(new AtSign("@bob"), new AtSign("@alice")).key("sharedkey").build();
+		builder.with(sk, LlookupVerbBuilder.Type.NONE);
+		command = builder.build(); // "llookup:@alice:sharedkey@bob"
+		assertEquals("llookup:@alice:sharedkey@bob", command);
+
+		// with self key
+		builder = new LlookupVerbBuilder();
+		SelfKey selfKey1 = new KeyBuilders.SelfKeyBuilder(new AtSign("@bob")).key("test").build();
+		builder.with(selfKey1, LlookupVerbBuilder.Type.ALL);
+		command = builder.build(); // "llookup:all:test@bob"
+		assertEquals("llookup:all:test@bob", command);
+
+		// with self key (shared with self)
+		builder = new LlookupVerbBuilder();
+		AtSign as = new AtSign("@bob");
+		SelfKey selfKey2 = new KeyBuilders.SelfKeyBuilder(as, as).key("test").build();
+		builder.with(selfKey2, LlookupVerbBuilder.Type.ALL);
+		command = builder.build(); // "llookup:all:@bob:test@bob"
+		assertEquals("llookup:all:@bob:test@bob", command);
+
+		
+		// with cached public key
+		builder = new LlookupVerbBuilder();
+		PublicKey pk2 = new KeyBuilders.PublicKeyBuilder(new AtSign("@bob")).key("publickey").build();
+		pk2.metadata.isCached = true;
+		builder.with(pk2, LlookupVerbBuilder.Type.ALL);
+		command = builder.build(); // "llookup:all:cached:public:publickey@bob"
+		assertEquals("llookup:all:cached:public:publickey@bob", command);
+		
+		// with cached shared key
+		builder = new LlookupVerbBuilder();
+		SharedKey sk2 = new KeyBuilders.SharedKeyBuilder(new AtSign("@bob"), new AtSign("@alice")).key("sharedkey").build();
+		sk2.metadata.isCached = true;
+		builder.with(sk2, LlookupVerbBuilder.Type.NONE);
+		command = builder.build(); // "llookup:cached:@alice:sharedkey@bob"
+		assertEquals("llookup:cached:@alice:sharedkey@bob", command);
+
+		// with private hidden key 
+		// TODO: not implemented yet
 
 	}
 
