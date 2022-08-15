@@ -79,6 +79,8 @@ public class Register implements Callable<String> {
         String[] onboardArgs = new String[] {
                 (params.get("rootDomain")).toString() + ":" + (params.get("rootPort")).toString(),
                 params.get("atSign"), params.get("cram") };
+        // TODO handle case where v3 api does not immediately start up a secondary.
+        // necessary changes to be made in onboard.java
         Onboard.main(onboardArgs);
 
         return "Done.";
@@ -100,32 +102,32 @@ public class Register implements Callable<String> {
 
         params.put("rootDomain", configReader.getProperty("rootServer", "domain"));
         if (params.get("rootDomain") == null) {
-            // reading config from older configuration syntax for backwards compatability
+            // reading config from older configuration syntax for backwards compatibility
             params.put("rootDomain", configReader.getProperty("ROOT_DOMAIN"));
         }
 
         params.put("rootPort", configReader.getProperty("rootServer", "port"));
         if (params.get("rootPort") == null) {
-            // reading config from older configuration syntax for backwards compatability
+            // reading config from older configuration syntax for backwards compatibility
             params.put("rootPort", configReader.getProperty("ROOT_PORT"));
         }
 
         params.put("registrarUrl", isRegistrarV3 ? configReader.getProperty("registrarV3", "url")
                 : configReader.getProperty("registrar", "url"));
         if (params.get("registrarUrl") == null) {
-            // reading config from older configuration syntax for backwards compatability
+            // reading config from older configuration syntax for backwards compatibility
             params.put("registrarUrl", configReader.getProperty("REGISTRAR_URL"));
         }
 
         if (!isRegistrarV3 && apiKey.equals("")) {
             params.put("apiKey", configReader.getProperty("registrar", "apiKey"));
             if (params.get("apiKey") == null) {
-                // reading config from older configuration syntax for backwards compatability
+                // reading config from older configuration syntax for backwards compatibility
                 params.put("apiKey", configReader.getProperty("API_KEY"));
             }
         }
 
-        // adding email/apiKey to params whichevr is passed through command line args
+        // adding email/apiKey to params whichever is passed through command line args
         if (!isRegistrarV3) {
             params.put("email", email);
         } else {
