@@ -412,8 +412,6 @@ public class VerbBuilders {
 		private String key; // key name (e.g. location, test) [required]
 		private String sharedBy; // sharedBy atSign ("@bob") [required]
 
-		private Boolean isCached = false; // if true, will add "cached:" to the fullKeyName
-
 		private Type type = Type.NONE;
 
 		public void setKeyName(String key) {
@@ -422,10 +420,6 @@ public class VerbBuilders {
 
 		public void setSharedBy(String sharedBy) {
 			this.sharedBy = sharedBy;
-		}
-
-		public void setIsCached(Boolean isCached) {
-			this.isCached = isCached;
 		}
 
 		public void setType(Type type) {
@@ -453,9 +447,6 @@ public class VerbBuilders {
 					break;
 				default:
 					break;
-			}
-			if(isCached) {
-				s += "cached:";
 			}
 			s += this.key;
 			s += AtSign.formatAtSign(this.sharedBy);
