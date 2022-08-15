@@ -208,22 +208,22 @@ public class VerbBuilders {
 			}
 			String fullKeyName = buildAtKeyStr();
 			String metadata = buildMetadataStr();
-			String s = "update:" + metadata + ":" + fullKeyName + " " + value.toString();
+			String s = "update" + metadata + ":" + fullKeyName + " " + value.toString();
 			return s;
 		}
 
 		private String buildAtKeyStr() {
 			String s = "";
-			if(isHidden) {
+			if(isHidden != null && isHidden) {
 				s += "_";
 			}
-			if(isCached) {
+			if(isCached != null && isCached) {
 				s += "cached:";
 			}
-			if(isPublic) {
+			if(isPublic != null && isPublic) {
 				s += "public:";
 			}
-			if(sharedWith != null) {
+			if(sharedWith != null && !sharedWith.isEmpty()) {
 				s += AtSign.formatAtSign(sharedWith) + ":";
 			}
 			s += key;
@@ -242,7 +242,7 @@ public class VerbBuilders {
 			metadata.dataSignature = dataSignature;
 			metadata.sharedKeyEnc = sharedKeyEnc;
 			metadata.pubKeyCS = pubKeyCS;
-			// metadata.encoding = encoding;
+			metadata.encoding = encoding;
 			return metadata.toString();
 		}
 		
