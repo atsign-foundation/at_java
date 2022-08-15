@@ -164,6 +164,7 @@ public abstract class Keys {
         public Boolean isCached = false;
         public String sharedKeyEnc;
         public String pubKeyCS;
+        public String encoding;
 
         @Override
         public String toString() {
@@ -178,6 +179,7 @@ public abstract class Keys {
             if (pubKeyCS != null) s += ":pubKeyCS:" + pubKeyCS;
             if (isBinary != null) s += ":isBinary:" + isBinary;
             if (isEncrypted != null) s += ":isEncrypted:" + isEncrypted;
+            if(encoding != null) s += ":encoding:" + encoding;
             return s;
         }
 
@@ -187,24 +189,32 @@ public abstract class Keys {
          * @return Metadata object
          * @throws ParseException if dates from metadata llookup could not be parsed
          */
-        public static Metadata fromString(Secondary.Response rawLlookupMetaResponse) throws ParseException {
+        public static Metadata fromString(Secondary.Response rawLlookupMetaResponse) throws AtException {
             Metadata metadata = new Metadata();
             LlookupMetadataResponseTransformer transformer = new LlookupMetadataResponseTransformer();
             Map<String, Object> map = transformer.transform(rawLlookupMetaResponse);
             metadata.ttl = (Integer) map.get("ttl");
             metadata.ttb = (Integer) map.get("ttb");
             metadata.ttr = (Integer) map.get("ttr");
-            metadata.ccd = (Boolean) map.get("ccd");        
-            metadata.availableAt = DateUtil.parse((String) map.get("availableAt"));
-            metadata.expiresAt = DateUtil.parse((String) map.get("expiresAt"));
-            metadata.refreshAt = DateUtil.parse((String) map.get("refreshAt"));
-            metadata.createdAt = DateUtil.parse((String) map.get("createdAt"));
-            metadata.updatedAt = DateUtil.parse((String) map.get("updatedAt"));
+            metadata.ccd = (Boolean) map.get("ccd");
+            // dates used to be here
             metadata.isBinary = (Boolean) map.get("isBinary");
             metadata.isEncrypted = (Boolean) map.get("isEncrypted");
             metadata.dataSignature = (String) map.get("dataSignature");
             metadata.sharedKeyEnc = (String) map.get("sharedKeyEnc");
             metadata.pubKeyCS = (String) map.get("pubKeyCS");
+            metadata.encoding = (String) map.get("encoding");
+
+            // dates moved down here
+            try {
+                metadata.availableAt = DateUtil.parse((String) map.get("availableAt"));
+                metadata.expiresAt = DateUtil.parse((String) map.get("expiresAt"));
+                metadata.refreshAt = DateUtil.parse((String) map.get("refreshAt"));
+                metadata.createdAt = DateUtil.parse((String) map.get("createdAt"));
+                metadata.updatedAt = DateUtil.parse((String) map.get("updatedAt"));
+            } catch (ParseException e) {
+                throw new AtException("Could not parse dates from metadata. DateUtil.parse(String) threw the ParseException: " + e.toString(), e);
+            }
             return metadata;
         }
 
@@ -277,6 +287,9 @@ public abstract class Keys {
             if(atKeyMetadata.pubKeyCS != null) metadata.pubKeyCS = atKeyMetadata.pubKeyCS;
             else if(metadataUtilMetadata.pubKeyCS != null) metadata.pubKeyCS = metadataUtilMetadata.pubKeyCS;
 
+            if(atKeyMetadata.encoding != null) metadata.encoding = atKeyMetadata.encoding;
+            else if(metadataUtilMetadata.encoding != null) metadata.encoding = metadataUtilMetadata.encoding;
+
             return metadata;
         }
     }
@@ -332,7 +345,7 @@ public abstract class Keys {
      * @throws ParseException
      */
     @SuppressWarnings("JavaDoc")
-    public static AtKey fromString(String fullAtKeyName, Secondary.Response llookedUpMetadata) throws AtException, ParseException {
+    public static AtKey fromString(String fullAtKeyName, Secondary.Response llookedUpMetadata) throws AtException {
         AtKey atKey = fromString(fullAtKeyName);
         atKey.metadata = Metadata.squash(atKey.metadata, Metadata.fromString(llookedUpMetadata));
         return atKey;
