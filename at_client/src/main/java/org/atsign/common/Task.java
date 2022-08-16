@@ -2,7 +2,6 @@ package org.atsign.common;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.atsign.client.util.RegisterUtil;
 
 /**
  * Represents a task in an AtSign registration cycle
@@ -15,8 +14,6 @@ public abstract class Task<V> {
 
     public Map<String, String> params;
 
-    public RegisterUtil registerUtil;
-
     public Result<Map<String, String>> result = new Result<Map<String, String>>();
 
     /**
@@ -27,9 +24,8 @@ public abstract class Task<V> {
      * @param registerUtil shared utility class object containing necessary methods
      *                     to complete registration
      */
-    public void init(Map<String, String> params, RegisterUtil registerUtil) {
+    public void init(Map<String, String> params) {
         this.params = params;
-        this.registerUtil = registerUtil;
         this.result.data = new HashMap<String, String>();
     }
 
@@ -50,9 +46,8 @@ public abstract class Task<V> {
      * @return {@link #result} object with necessary information collected in the
      *         corresponding retry of the API call
      */
-    public V retry() {
-        retryCount++;
-        return run();
+    public boolean shouldRetry() {
+        return retryCount < maxRetries;
     }
 
 }

@@ -53,27 +53,13 @@ public class Register implements Callable<String> {
 
         readParameters();
         if (isRegistrarV3) {
-            GetAtsignV3 getAtsignV3 = new GetAtsignV3();
-            ActivateAtsignV3 activateAtsignV3 = new ActivateAtsignV3();
-            RegistrationFlow registrationFlow = new RegistrationFlow(params);
-
-            registrationFlow.add(getAtsignV3);
-            registrationFlow.add(activateAtsignV3);
-
-            registrationFlow.start();
+            new RegistrationFlow(params).add(new GetAtsignV3()).add(new ActivateAtsignV3()).start();
 
         } else {
-            GetFreeAtsign getFreeAtsign = new GetFreeAtsign();
-            RegisterAtsign registerAtsign = new RegisterAtsign();
-            ValidateOtp validateOtp = new ValidateOtp();
-
+            // parameter confirmation needs to be manually inserted into the params map
             params.put("confirmation", "false");
-            RegistrationFlow registrationFlow = new RegistrationFlow(params);
-            registrationFlow.add(getFreeAtsign);
-            registrationFlow.add(registerAtsign);
-            registrationFlow.add(validateOtp);
-
-            registrationFlow.start();
+            new RegistrationFlow(params).add(new GetFreeAtsign()).add(new RegisterAtsign()).add(new ValidateOtp())
+                    .start();
         }
 
         String[] onboardArgs = new String[] {
@@ -148,29 +134,26 @@ class RegistrationFlow {
     List<Task<Result<Map<String, String>>>> processFlow = new ArrayList<Task<Result<Map<String, String>>>>();
     Result<Map<String, String>> result;
     Map<String, String> params;
-    RegisterUtil registerUtil = new RegisterUtil();
 
     RegistrationFlow(Map<String, String> params) {
         this.params = params;
     }
 
-    void add(Task<Result<Map<String, String>>> task) {
+    RegistrationFlow add(Task<Result<Map<String, String>>> task) {
         processFlow.add(task);
-    }
-
-    boolean isRetryAllowed(int maxRetries, int retryCount) {
-        return retryCount < maxRetries - 1;
+        return this;
     }
 
     void start() throws Exception {
         for (Task<Result<Map<String, String>>> task : processFlow) {
             // initialize each task by passing params and registerUtil object to init()
-            task.init(params, registerUtil);
+            task.init(params);
             result = task.run();
             if (result.apiCallStatus.equals(ApiCallStatus.retry)) {
-                while (isRetryAllowed(Task.maxRetries, task.retryCount)
+                while (task.shouldRetry()
                         && result.apiCallStatus.equals(ApiCallStatus.retry)) {
-                    result = task.retry();
+                    result = task.run();
+                    task.retryCount++;
                 }
             }
             if (result.apiCallStatus.equals(ApiCallStatus.success)) {
@@ -191,7 +174,7 @@ class GetFreeAtsign extends Task<Result<Map<String, String>>> {
         System.out.println("Getting free atsign ...");
         try {
             result.data.put("atSign",
-                    registerUtil.getFreeAtsign(params.get("registrarUrl"), params.get("apiKey")));
+                    RegisterUtil.getFreeAtsign(params.get("registrarUrl"), params.get("apiKey")));
             result.apiCallStatus = ApiCallStatus.success;
             System.out.println("Got atsign: " + result.data.get("atSign"));
         } catch (Exception e) {
@@ -209,7 +192,7 @@ class RegisterAtsign extends Task<Result<Map<String, String>>> {
         System.out.println("Sending one-time-password to :" + params.get("email"));
         try {
             result.data.put("otpSent",
-                    registerUtil.registerAtsign(params.get("email"), new AtSign(params.get("atSign")),
+                    RegisterUtil.registerAtsign(params.get("email"), new AtSign(params.get("atSign")),
                             params.get("registrarUrl"), params.get("apiKey")).toString());
             result.apiCallStatus = ApiCallStatus.success;
         } catch (Exception e) {
@@ -233,7 +216,7 @@ class ValidateOtp extends Task<Result<Map<String, String>>> {
                 params.put("otp", scanner.nextLine());
             }
             System.out.println("Validating OTP ...");
-            String apiResponse = registerUtil.validateOtp(params.get("email"), new AtSign(params.get("atSign")),
+            String apiResponse = RegisterUtil.validateOtp(params.get("email"), new AtSign(params.get("atSign")),
                     params.get("otp"),
                     params.get("registrarUrl"), params.get("apiKey"),
                     Boolean.parseBoolean(params.get("confirmation")));
@@ -266,7 +249,7 @@ class GetAtsignV3 extends Task<Result<Map<String, String>>> {
     public Result<Map<String, String>> run() {
         System.out.println("Getting atSign ...");
         try {
-            result.data.putAll(registerUtil.getAtsignV3(params.get("registrarUrl"), params.get("apiKey")));
+            result.data.putAll(RegisterUtil.getAtsignV3(params.get("registrarUrl"), params.get("apiKey")));
             System.out.println("Got atsign: " + result.data.get("atSign"));
             result.apiCallStatus = ApiCallStatus.success;
         } catch (Exception e) {
@@ -281,7 +264,7 @@ class ActivateAtsignV3 extends Task<Result<Map<String, String>>> {
     @Override
     public Result<Map<String, String>> run() {
         try {
-            result.data.put("cram", registerUtil.activateAtsign(params.get("registrarUrl"), params.get("apiKey"),
+            result.data.put("cram", RegisterUtil.activateAtsign(params.get("registrarUrl"), params.get("apiKey"),
                     new AtSign(params.get("atSign")), params.get("ActivationKey")));
             result.apiCallStatus = ApiCallStatus.success;
             System.out.println("Your cram secret: " + result.data.get("cram"));
