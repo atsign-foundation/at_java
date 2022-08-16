@@ -38,7 +38,6 @@ public class Register implements Callable<String> {
     static String apiKey = "";
 
     Map<String, String> params = new HashMap<String, String>();
-    ConfigReader configReader = new ConfigReader();
     boolean isRegistrarV3 = false;
 
     public static void main(String[] args) throws AtException {
@@ -86,30 +85,30 @@ public class Register implements Callable<String> {
             System.exit(1);
         }
 
-        params.put("rootDomain", configReader.getProperty("rootServer", "domain"));
+        params.put("rootDomain", ConfigReader.getProperty("rootServer", "domain"));
         if (params.get("rootDomain") == null) {
             // reading config from older configuration syntax for backwards compatibility
-            params.put("rootDomain", configReader.getProperty("ROOT_DOMAIN"));
+            params.put("rootDomain", ConfigReader.getProperty("ROOT_DOMAIN"));
         }
 
-        params.put("rootPort", configReader.getProperty("rootServer", "port"));
+        params.put("rootPort", ConfigReader.getProperty("rootServer", "port"));
         if (params.get("rootPort") == null) {
             // reading config from older configuration syntax for backwards compatibility
-            params.put("rootPort", configReader.getProperty("ROOT_PORT"));
+            params.put("rootPort", ConfigReader.getProperty("ROOT_PORT"));
         }
 
-        params.put("registrarUrl", isRegistrarV3 ? configReader.getProperty("registrarV3", "url")
-                : configReader.getProperty("registrar", "url"));
+        params.put("registrarUrl", isRegistrarV3 ? ConfigReader.getProperty("registrarV3", "url")
+                : ConfigReader.getProperty("registrar", "url"));
         if (params.get("registrarUrl") == null) {
             // reading config from older configuration syntax for backwards compatibility
-            params.put("registrarUrl", configReader.getProperty("REGISTRAR_URL"));
+            params.put("registrarUrl", ConfigReader.getProperty("REGISTRAR_URL"));
         }
 
         if (!isRegistrarV3 && apiKey.equals("")) {
-            params.put("apiKey", configReader.getProperty("registrar", "apiKey"));
+            params.put("apiKey", ConfigReader.getProperty("registrar", "apiKey"));
             if (params.get("apiKey") == null) {
                 // reading config from older configuration syntax for backwards compatibility
-                params.put("apiKey", configReader.getProperty("API_KEY"));
+                params.put("apiKey", ConfigReader.getProperty("API_KEY"));
             }
         }
 
@@ -146,7 +145,7 @@ class RegistrationFlow {
 
     void start() throws Exception {
         for (Task<Result<Map<String, String>>> task : processFlow) {
-            // initialize each task by passing params and registerUtil object to init()
+            // initialize each task by passing params to init()
             task.init(params);
             result = task.run();
             if (result.apiCallStatus.equals(ApiCallStatus.retry)) {
@@ -208,7 +207,7 @@ class ValidateOtp extends Task<Result<Map<String, String>>> {
 
     @Override
     public Result<Map<String, String>> run() {
-        System.out.println("Enter OTP received on " + params.get("email"));
+        System.out.println("Enter OTP received on " + params.get("email") + " [note: otp is case sensitve]");
         try {
             // only ask for user input the first time. use the otp entry in params map in
             // subsequent api requests
@@ -217,8 +216,7 @@ class ValidateOtp extends Task<Result<Map<String, String>>> {
             }
             System.out.println("Validating OTP ...");
             String apiResponse = RegisterUtil.validateOtp(params.get("email"), new AtSign(params.get("atSign")),
-                    params.get("otp"),
-                    params.get("registrarUrl"), params.get("apiKey"),
+                    params.get("otp"), params.get("registrarUrl"), params.get("apiKey"),
                     Boolean.parseBoolean(params.get("confirmation")));
             if (apiResponse.equals("retry")) {
                 System.out.println("Incorrect OTP!!! Please re-enter your OTP");
@@ -274,5 +272,4 @@ class ActivateAtsignV3 extends Task<Result<Map<String, String>>> {
         }
         return result;
     }
-
 }
