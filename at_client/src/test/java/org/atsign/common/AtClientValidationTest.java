@@ -228,6 +228,14 @@ public class AtClientValidationTest {
             AtClientValidation.validateAtKey(sharedKey, ROOT_URL);
         });
 
+        // empty root url
+        assertThrows(AtException.class, () -> {
+            AtSign sharedBy = new AtSign("@bob");
+            AtSign sharedWith = new AtSign("@alice");
+            SharedKey sharedKey = new KeyBuilders.SharedKeyBuilder(sharedBy, sharedWith).key("test").build();
+            AtClientValidation.validateAtKey(sharedKey, "");
+        });
+
         // ====================================
         // PrivateHiddenKey tests
         // ====================================

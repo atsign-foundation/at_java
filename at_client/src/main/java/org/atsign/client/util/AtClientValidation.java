@@ -68,11 +68,11 @@ public class AtClientValidation {
      *                     atSign object is empty,
      */
     public static void atSignExists(AtSign atSign, String rootUrl) throws AtException {
-        if(atSign == null) {
-            throw new AtException("atSign cannot be null");
+        if(atSign == null || atSign.toString().isEmpty()) {
+            throw new AtException("atSign cannot be null or empty");
         }
-        if (atSign.toString().isEmpty()) {
-            throw new AtException("atSign cannot be empty");
+        if (rootUrl == null || rootUrl.isEmpty()) {
+            throw new AtException("rootUrl cannot be null or empty");
         }
         Secondary.AddressFinder finder = ArgsUtil.createAddressFinder(rootUrl);
         try {
@@ -101,6 +101,10 @@ public class AtClientValidation {
         // 1. null check
         if(atKey == null) {
             throw new AtException("AtKey cannot be null");
+        }
+
+        if(rootUrl == null || rootUrl.isEmpty()) {
+            throw new AtException("RootURL cannot be null or empty");
         }
 
         // 2. validate key name
