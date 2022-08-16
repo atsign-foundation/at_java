@@ -33,7 +33,7 @@ public class FromStringTest {
         try {
             Secondary.Response response = atClient.executeCommand("llookup:meta:" + KEY_NAME_STR, true);
             atKey = Keys.fromString(KEY_NAME_STR, response);
-        } catch (AtException | ParseException e) {
+        } catch (AtException e) {
             System.err.println(e);
             e.printStackTrace();
         }

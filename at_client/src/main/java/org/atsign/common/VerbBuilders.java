@@ -434,8 +434,8 @@ public class VerbBuilders {
 
 		@Override
 		public String build() {
-			if(this.key == null || this.sharedBy == null) {
-				throw new IllegalArgumentException("key or sharedBy is null");
+			if(this.key == null || this.key.isEmpty() || this.sharedBy == null || this.sharedBy.isEmpty()) {
+				throw new IllegalArgumentException("key or sharedBy is null or empty");
 			}
 			String s = "plookup:";
 			switch(type) {
