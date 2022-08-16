@@ -504,36 +504,21 @@ public class AtClientImpl implements AtClient {
             metaBuilder.with(key, LlookupVerbBuilder.Type.METADATA);
             metaCommand = metaBuilder.build();
         } else {
-            // check if key is cached
-            LlookupVerbBuilder dataBuilder = new LlookupVerbBuilder();
-            dataBuilder.with(key, LlookupVerbBuilder.Type.NONE);
-            dataBuilder.setIsCached(true);
+            // plookup
+            PlookupVerbBuilder dataBuilder = new PlookupVerbBuilder();
+            dataBuilder.with(key, PlookupVerbBuilder.Type.NONE);
             dataCommand = dataBuilder.build();
 
-            LlookupVerbBuilder metaBuilder = new LlookupVerbBuilder();
-            metaBuilder.with(key, LlookupVerbBuilder.Type.METADATA);
-            metaBuilder.setIsCached(true);
+            PlookupVerbBuilder metaBuilder = new PlookupVerbBuilder();
+            metaBuilder.with(key, PlookupVerbBuilder.Type.METADATA);
             metaCommand = metaBuilder.build();
         }
 
         // 2. get the data
-        // llookup:<fullKeyName> or llookup:cached:<key>
+        // llookup:<fullKeyName> or plookup:<fullKeyName>
         Secondary.Response dataResponse = secondary.executeCommand(dataCommand, false);
         if(dataResponse.isError) {
-            // 2.A. if data is not found, plookup
-            PlookupVerbBuilder dataBuilder = new PlookupVerbBuilder();
-            dataBuilder.with(key, PlookupVerbBuilder.Type.NONE);
-            dataCommand = dataBuilder.build(); // plookup:<fullKeyName>
-            
-            PlookupVerbBuilder metaBuilder = new PlookupVerbBuilder();
-            metaBuilder.with(key, PlookupVerbBuilder.Type.METADATA);
-            metaCommand = metaBuilder.build(); // plookup:meta:<fullKeyName>
-            
-            dataResponse = secondary.executeCommand(dataCommand, false);
-            if(dataResponse.isError) {   
-                throw new AtException("Failed to run command " + dataCommand + " : " + dataResponse.error);
-            }
-
+            throw new AtException("Failed to run command " + dataCommand + " : " + dataResponse.error);
         }
 
         responseData = dataResponse.data;
