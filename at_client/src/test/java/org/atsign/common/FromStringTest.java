@@ -27,7 +27,7 @@ public class FromStringTest {
         assertEquals(false, atKey.metadata.isEncrypted);
         assertEquals(false, atKey.metadata.isHidden);
         assertEquals("publickey", atKey.name);
-        assertEquals("@alice", atKey.sharedBy);
+        assertEquals("@alice", atKey.sharedBy.toString());
     }
 
     @Test
