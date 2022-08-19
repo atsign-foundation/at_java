@@ -33,7 +33,7 @@ public class RegisterUtil {
      * @throws AtException thrown if HTTPS_REQUEST was not successful
      * @throws IOException if anything goes wrong while using the HttpsURLConnection
      */
-    public static String getFreeAtsign(String registrarUrl, String apiKey)
+    public String getFreeAtsign(String registrarUrl, String apiKey)
             throws AtException, IOException {
         URL urlObject = new URL(registrarUrl + Constants.GET_FREE_ATSIGN);
         HttpsURLConnection connection = (HttpsURLConnection) urlObject.openConnection();
@@ -64,7 +64,7 @@ public class RegisterUtil {
      * @throws IOException - thrown if anything goes wrong while using the
      *                     HttpsURLConnection.
      */
-    public static Map<String, String> getAtsignV3(String registrarUrl, String apiKey) throws IOException, AtException {
+    public Map<String, String> getAtsignV3(String registrarUrl, String apiKey) throws IOException, AtException {
         AtSign atsign = new AtSign("");
         return getAtsignV3(registrarUrl, apiKey, atsign, "");
     }
@@ -86,7 +86,7 @@ public class RegisterUtil {
      * @throws IOException - thrown if anything goes wrong while using the
      *                     HttpsURLConnection.
      */
-    public static Map<String, String> getAtsignV3(String registrarUrl, String apiKey, AtSign atsignObj,
+    public Map<String, String> getAtsignV3(String registrarUrl, String apiKey, AtSign atsignObj,
             String activationKey)
             throws AtException, IOException {
         Map<String, String> paramsMap = new HashMap<String, String>();
@@ -133,7 +133,7 @@ public class RegisterUtil {
      * @throws AtException thrown if HTTPS_REQUEST was not successful
      * @throws IOException if anything goes wrong while using the HttpsURLConnection
      */
-    public static Boolean registerAtsign(String email, AtSign atsign, String registrarUrl, String apiKey)
+    public Boolean registerAtsign(String email, AtSign atsign, String registrarUrl, String apiKey)
             throws AtException, IOException {
         Map<String, String> paramsMap = Stream.of(
                 new SimpleEntry<>("atsign", atsign.withoutPrefix()),
@@ -196,7 +196,7 @@ public class RegisterUtil {
      *                     Case 2: If API response is anything other than
      *                     HTTP_OK/Status_200.
      */
-    public static String validateOtp(String email, AtSign atsign, String otp, String registrarUrl, String apiKey,
+    public String validateOtp(String email, AtSign atsign, String otp, String registrarUrl, String apiKey,
             Boolean confirmation)
             throws IOException, AtException {
         Map<String, String> paramsMap = Stream.of(
@@ -273,7 +273,7 @@ public class RegisterUtil {
      * @throws IOException - thrown if anything goes wrong while using the
      *                     HttpsURLConnection.
      */
-    public static String activateAtsign(String registrarUrl, String apiKey, AtSign atsign, String activationKey)
+    public String activateAtsign(String registrarUrl, String apiKey, AtSign atsign, String activationKey)
             throws AtException, IOException {
         Map<String, String> paramsMap = Stream.of(
                 new SimpleEntry<>("atSign", atsign.withoutPrefix()),
@@ -310,12 +310,12 @@ public class RegisterUtil {
      *             the new validateOtp} with confirmation set to true
      */
     @Deprecated
-    public static String validateOtp(String email, AtSign atsign, String otp, String registrarUrl, String apiKey)
+    public String validateOtp(String email, AtSign atsign, String otp, String registrarUrl, String apiKey)
             throws IOException, AtException {
         return validateOtp(email, atsign, otp, registrarUrl, apiKey, true);
     }
 
-    private static HttpsURLConnection postRequestToAPI(URL url, String apiKey, String paramsJson) throws IOException {
+    private HttpsURLConnection postRequestToAPI(URL url, String apiKey, String paramsJson) throws IOException {
         HttpsURLConnection httpsConnection = (HttpsURLConnection) url.openConnection();
 
         httpsConnection.setRequestMethod("POST");
