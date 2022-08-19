@@ -5,9 +5,15 @@ public class AtSign {
     private final String withoutPrefix;
 
     public AtSign(String atSign) {
+        if (atSign == null || atSign.trim().isEmpty()) {
+            throw new IllegalArgumentException ("atSign may not be null or empty");
+        }
         atSign = atSign.trim();
         if (! atSign.startsWith("@")) {
             atSign = "@" + atSign;
+        }
+        if ("@".equals(atSign)) {
+            throw new IllegalArgumentException ("'" + atSign + "' is not a valid atSign");
         }
         this.atSign = atSign;
         this.withoutPrefix = atSign.substring(1);

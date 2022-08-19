@@ -44,8 +44,7 @@ public class RegisterUtil {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(
                     connection.getInputStream()));
             String response = bufferedReader.readLine();
-            @SuppressWarnings("unchecked")
-            Map<String, Map<String, String>> responseData = objectMapper.readValue(response, Map.class);
+            @SuppressWarnings("unchecked") Map<String, Map<String, String>> responseData = objectMapper.readValue(response, Map.class);
             Map<String, String> data = responseData.get("data");
             return data.get("atsign");
         } else {
@@ -54,7 +53,7 @@ public class RegisterUtil {
     }
 
     /**
-     * 
+     *
      * @param registrarUrl - URL of the atsign registrar API
      * @param apiKey       - Super API belonging to the user that has suitable
      *                     access to the registrar API
@@ -70,7 +69,7 @@ public class RegisterUtil {
     }
 
     /**
-     * 
+     *
      * @param registrarUrl  - URL of the atsign registrar API
      * @param apiKey        - Super API belonging to the user that has suitable
      *                      access to the registrar API
@@ -261,7 +260,7 @@ public class RegisterUtil {
     /**
      * Activates the atsign provided using activationKey provided through method
      * parameters
-     * 
+     *
      * @param registrarUrl  - URL of the atsign registrar API
      * @param apiKey        - Super API belonging to the user that has suitable
      *                      access to the registrar API
