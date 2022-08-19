@@ -40,7 +40,12 @@ public class Onboard {
 
         System.out.println("Connecting to " + secondaryUrl);
         AtSecondaryConnection conn = new AtSecondaryConnection(new SimpleAtEventBus(), atSign, secondaryUrl, null, false, true);
-        conn.connect();
+        try{
+            conn.connect();
+        } catch (Exception e){
+            Thread.sleep(2000);
+            conn.connect();
+        }
 
         AuthUtil auth = new AuthUtil();
         OnboardingUtil onboarding = new OnboardingUtil();

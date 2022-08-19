@@ -260,7 +260,7 @@ class ActivateAtsignV3 extends RegisterApiTask<RegisterApiResult<Map<String, Str
     public RegisterApiResult<Map<String, String>> run() {
         try {
             result.data.put("cram", registerUtil.activateAtsign(params.get("registrarUrl"), params.get("apiKey"),
-                    new AtSign(params.get("atSign")), params.get("ActivationKey")));
+                    new AtSign(params.get("atSign")), params.get("ActivationKey")).split(":")[1]);
             result.apiCallStatus = ApiCallStatus.success;
             System.out.println("Your cram secret: " + result.data.get("cram"));
         } catch (Exception e) {
