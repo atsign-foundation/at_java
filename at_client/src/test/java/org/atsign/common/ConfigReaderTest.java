@@ -19,7 +19,7 @@ public class ConfigReaderTest {
     @Test
     public void getRootDomain(){
         assertEquals("root.atsign.org", ConfigReader.getProperty("ROOT_DOMAIN"));
-        assertEquals("root.atsign.wtf", ConfigReader.getProperty("rootServer", "domain"));
+        assertEquals("root.atsign.org", ConfigReader.getProperty("rootServer", "domain"));
     }
 
     @Test
