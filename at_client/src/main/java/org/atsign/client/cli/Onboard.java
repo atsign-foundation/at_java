@@ -39,8 +39,6 @@ public class Onboard {
         System.out.println("Got address: " + secondaryUrl);
 
         System.out.println("Connecting to " + secondaryUrl);
-
-        Thread.sleep(1000);
         AtSecondaryConnection conn = new AtSecondaryConnection(new SimpleAtEventBus(), atSign, secondaryUrl, null,
                 false, true);
         conn.connect();
@@ -88,7 +86,7 @@ public class Onboard {
         System.out.println("Onboarding complete");
     }
 
-    static String retrySecondaryConnection(String rootUrl, AtSign atSign)
+    public static String retrySecondaryConnection(String rootUrl, AtSign atSign)
             throws IOException, NoSuchSecondaryException, InterruptedException {
 
         int retryCount = 0;
@@ -98,6 +96,7 @@ public class Onboard {
         while (retryCount < maxRetries && secondaryUrl.equals("")) {
             try {
                 secondaryUrl = new AtRootConnection(rootUrl).lookupAtSign(atSign);
+                System.out.println(secondaryUrl);
             } catch (NoSuchSecondaryException e) {
                 System.out.println("Retrying fetching secondary address ... attempt " + ++retryCount + "/" + maxRetries);
                 Thread.sleep(1000);

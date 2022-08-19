@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.DatabindException;
 import org.atsign.client.util.RegisterUtil;
 import org.atsign.common.ApiCallStatus;
 import org.atsign.common.AtSign;
-import org.atsign.common.RegisterApiResult;
-import org.atsign.common.RegisterApiTask;
+import org.atsign.common.Result;
+import org.atsign.common.Task;
 import org.atsign.common.AtException;
 import org.atsign.config.ConfigReader;
 
@@ -64,6 +64,8 @@ public class Register implements Callable<String> {
         String[] onboardArgs = new String[] {
                 (params.get("rootDomain")).toString() + ":" + (params.get("rootPort")).toString(),
                 params.get("atSign"), params.get("cram") };
+        // TODO handle case where v3 api does not immediately start up a secondary.
+        // necessary changes to be made in onboard.java
         Onboard.main(onboardArgs);
 
         return "Done.";
@@ -128,24 +130,23 @@ public class Register implements Callable<String> {
 }
 
 class RegistrationFlow {
-    List<RegisterApiTask<RegisterApiResult<Map<String, String>>>> processFlow = new ArrayList<RegisterApiTask<RegisterApiResult<Map<String, String>>>>();
-    RegisterApiResult<Map<String, String>> result;
+    List<Task<Result<Map<String, String>>>> processFlow = new ArrayList<Task<Result<Map<String, String>>>>();
+    Result<Map<String, String>> result;
     Map<String, String> params;
-    RegisterUtil registerUtil = new RegisterUtil();
 
     RegistrationFlow(Map<String, String> params) {
         this.params = params;
     }
 
-    RegistrationFlow add(RegisterApiTask<RegisterApiResult<Map<String, String>>> task) {
+    RegistrationFlow add(Task<Result<Map<String, String>>> task) {
         processFlow.add(task);
         return this;
     }
 
     void start() throws Exception {
-        for (RegisterApiTask<RegisterApiResult<Map<String, String>>> task : processFlow) {
+        for (Task<Result<Map<String, String>>> task : processFlow) {
             // initialize each task by passing params to init()
-            task.init(params, registerUtil);
+            task.init(params);
             result = task.run();
             if (result.apiCallStatus.equals(ApiCallStatus.retry)) {
                 while (task.shouldRetry()
@@ -165,14 +166,14 @@ class RegistrationFlow {
     }
 }
 
-class GetFreeAtsign extends RegisterApiTask<RegisterApiResult<Map<String, String>>> {
+class GetFreeAtsign extends Task<Result<Map<String, String>>> {
 
     @Override
-    public RegisterApiResult<Map<String, String>> run() {
+    public Result<Map<String, String>> run() {
         System.out.println("Getting free atsign ...");
         try {
             result.data.put("atSign",
-                    registerUtil.getFreeAtsign(params.get("registrarUrl"), params.get("apiKey")));
+                    RegisterUtil.getFreeAtsign(params.get("registrarUrl"), params.get("apiKey")));
             result.apiCallStatus = ApiCallStatus.success;
             System.out.println("Got atsign: " + result.data.get("atSign"));
         } catch (Exception e) {
@@ -183,14 +184,14 @@ class GetFreeAtsign extends RegisterApiTask<RegisterApiResult<Map<String, String
     }
 }
 
-class RegisterAtsign extends RegisterApiTask<RegisterApiResult<Map<String, String>>> {
+class RegisterAtsign extends Task<Result<Map<String, String>>> {
 
     @Override
-    public RegisterApiResult<Map<String, String>> run() {
+    public Result<Map<String, String>> run() {
         System.out.println("Sending one-time-password to :" + params.get("email"));
         try {
             result.data.put("otpSent",
-                    registerUtil.registerAtsign(params.get("email"), new AtSign(params.get("atSign")),
+                    RegisterUtil.registerAtsign(params.get("email"), new AtSign(params.get("atSign")),
                             params.get("registrarUrl"), params.get("apiKey")).toString());
             result.apiCallStatus = ApiCallStatus.success;
         } catch (Exception e) {
@@ -201,11 +202,11 @@ class RegisterAtsign extends RegisterApiTask<RegisterApiResult<Map<String, Strin
     }
 }
 
-class ValidateOtp extends RegisterApiTask<RegisterApiResult<Map<String, String>>> {
+class ValidateOtp extends Task<Result<Map<String, String>>> {
     Scanner scanner = new Scanner(System.in);
 
     @Override
-    public RegisterApiResult<Map<String, String>> run() {
+    public Result<Map<String, String>> run() {
         System.out.println("Enter OTP received on " + params.get("email") + " [note: otp is case sensitve]");
         try {
             // only ask for user input the first time. use the otp entry in params map in
@@ -214,7 +215,7 @@ class ValidateOtp extends RegisterApiTask<RegisterApiResult<Map<String, String>>
                 params.put("otp", scanner.nextLine());
             }
             System.out.println("Validating OTP ...");
-            String apiResponse = registerUtil.validateOtp(params.get("email"), new AtSign(params.get("atSign")),
+            String apiResponse = RegisterUtil.validateOtp(params.get("email"), new AtSign(params.get("atSign")),
                     params.get("otp"), params.get("registrarUrl"), params.get("apiKey"),
                     Boolean.parseBoolean(params.get("confirmation")));
             if (apiResponse.equals("retry")) {
@@ -241,12 +242,12 @@ class ValidateOtp extends RegisterApiTask<RegisterApiResult<Map<String, String>>
     }
 }
 
-class GetAtsignV3 extends RegisterApiTask<RegisterApiResult<Map<String, String>>> {
+class GetAtsignV3 extends Task<Result<Map<String, String>>> {
     @Override
-    public RegisterApiResult<Map<String, String>> run() {
+    public Result<Map<String, String>> run() {
         System.out.println("Getting atSign ...");
         try {
-            result.data.putAll(registerUtil.getAtsignV3(params.get("registrarUrl"), params.get("apiKey")));
+            result.data.putAll(RegisterUtil.getAtsignV3(params.get("registrarUrl"), params.get("apiKey")));
             System.out.println("Got atsign: " + result.data.get("atSign"));
             result.apiCallStatus = ApiCallStatus.success;
         } catch (Exception e) {
@@ -257,11 +258,11 @@ class GetAtsignV3 extends RegisterApiTask<RegisterApiResult<Map<String, String>>
     }
 }
 
-class ActivateAtsignV3 extends RegisterApiTask<RegisterApiResult<Map<String, String>>> {
+class ActivateAtsignV3 extends Task<Result<Map<String, String>>> {
     @Override
-    public RegisterApiResult<Map<String, String>> run() {
+    public Result<Map<String, String>> run() {
         try {
-            result.data.put("cram", registerUtil.activateAtsign(params.get("registrarUrl"), params.get("apiKey"),
+            result.data.put("cram", RegisterUtil.activateAtsign(params.get("registrarUrl"), params.get("apiKey"),
                     new AtSign(params.get("atSign")), params.get("ActivationKey")));
             result.apiCallStatus = ApiCallStatus.success;
             System.out.println("Your cram secret: " + result.data.get("cram"));
