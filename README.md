@@ -23,7 +23,7 @@ to hear about issues. See also [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ### May 29 2022
 * Retry bug fixed in Register CLI
-* Config yaml parameters restructured and backwards compatibility provided to break exiting usages.
+* Config yaml parameters restructured and backwards compatibility provided to break existing usages.
 * New parameter added to validateOtp method in RegisterUtil.java. The usage of this parameter is provided in java docs of the respective method.
 
 
