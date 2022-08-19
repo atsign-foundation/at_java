@@ -62,14 +62,14 @@ public class Register implements Callable<String> {
         }
 
         String[] onboardArgs = new String[] {
-                (params.get("rootDomain")).toString() + ":" + (params.get("rootPort")).toString(),
+                params.get("rootDomain") + ":" + params.get("rootPort"),
                 params.get("atSign"), params.get("cram") };
         Onboard.main(onboardArgs);
 
         return "Done.";
     }
 
-    void readParameters() throws StreamReadException, DatabindException, FileNotFoundException {
+    void readParameters() {
 
         // checks to ensure only either of email or super-API key are provided as args.
         // if super-API key is provided uses registrar v3, otherwise uses registrar v2.
@@ -155,9 +155,7 @@ class RegistrationFlow {
                 }
             }
             if (result.apiCallStatus.equals(ApiCallStatus.success)) {
-                for (Entry<String, String> entry : result.data.entrySet()) {
-                    params.put(entry.getKey(), entry.getValue());
-                }
+                params.putAll(result.data);
             } else {
                 throw result.atException;
             }

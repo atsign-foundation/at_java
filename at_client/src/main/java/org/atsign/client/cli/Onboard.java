@@ -7,7 +7,9 @@ import org.atsign.client.api.impl.connections.AtRootConnection;
 import org.atsign.client.util.AuthUtil;
 import org.atsign.client.util.KeysUtil;
 import org.atsign.client.util.OnboardingUtil;
+import org.atsign.common.NoSuchSecondaryException;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,7 +29,7 @@ public class Onboard {
         String cramSecret = args[2];
 
         System.out.println("Looking up secondary server address for " + atSign);
-        String secondaryUrl = "";
+        String secondaryUrl;
         try {
             secondaryUrl = new AtRootConnection(rootUrl).lookupAtSign(atSign);
         } catch (NoSuchSecondaryException e) {
@@ -88,12 +90,13 @@ public class Onboard {
         final int maxRetries = 50;
         String secondaryUrl = "";
 
+        Thread.sleep(1000);
+
         while (retryCount < maxRetries && secondaryUrl.equals("")) {
             try {
                 secondaryUrl = new AtRootConnection(rootUrl).lookupAtSign(atSign);
             } catch (NoSuchSecondaryException e) {
                 System.out.println("Retrying fetching secondary address ... attempt " + ++retryCount + "/" + maxRetries);
-                Thread.sleep(1000);
             }
         }
 

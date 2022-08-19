@@ -64,8 +64,7 @@ public class RegisterUtil {
      *                     HttpsURLConnection.
      */
     public Map<String, String> getAtsignV3(String registrarUrl, String apiKey) throws IOException, AtException {
-        AtSign atsign = new AtSign("");
-        return getAtsignV3(registrarUrl, apiKey, atsign, "");
+        return getAtsignV3(registrarUrl, apiKey, "", "");
     }
 
     /**
@@ -73,7 +72,7 @@ public class RegisterUtil {
      * @param registrarUrl  - URL of the atsign registrar API
      * @param apiKey        - Super API belonging to the user that has suitable
      *                      access to the registrar API
-     * @param atsignObj     - [Optional] User can choose to provide atsign. Note:
+     * @param atsign     - [Optional] User can choose to provide atsign. Note:
      *                      The final atsign will be in the following format:
      *                      SuperApi prefix + atsign + SuperApi postfix
      * @param activationKey - [Optional] User can choose to provide an ActivationKey
@@ -85,12 +84,13 @@ public class RegisterUtil {
      * @throws IOException - thrown if anything goes wrong while using the
      *                     HttpsURLConnection.
      */
-    public Map<String, String> getAtsignV3(String registrarUrl, String apiKey, AtSign atsignObj,
+    public Map<String, String> getAtsignV3(String registrarUrl, String apiKey, String atsign,
             String activationKey)
             throws AtException, IOException {
         Map<String, String> paramsMap = new HashMap<String, String>();
-        if (!atsignObj.atSign.isEmpty()) {
-            paramsMap.put("atSign", atsignObj.withoutPrefix());
+        if (!atsign.isEmpty()) {
+            AtSign atSignObj = new AtSign(atsign);
+            paramsMap.put("atSign", atSignObj.withoutPrefix());
         }
         if (!activationKey.isEmpty()) {
             paramsMap.put("ActivationKey", activationKey);
@@ -101,18 +101,13 @@ public class RegisterUtil {
         if (httpsConnection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(httpsConnection.getInputStream()));
             String responseRaw = bufferedReader.readLine();
-            @SuppressWarnings("unchecked")
-            Map<String, String> responseData = objectMapper.readValue(responseRaw, Map.class);
+            @SuppressWarnings("unchecked") Map<String, String> responseData = objectMapper.readValue(responseRaw, Map.class);
             if (responseData.get("status").equals("success")) {
-                @SuppressWarnings("unchecked")
-                Map<String, Map<String, String>> responseDataMap = objectMapper.readValue(responseRaw,
-                        Map.class);
-                Map<String, String> responseProcessed = responseDataMap.get("value");
-                return responseProcessed;
+                @SuppressWarnings("unchecked") Map<String, Map<String, String>> responseDataMap = objectMapper.readValue(responseRaw, Map.class);
+                return responseDataMap.get("value");
             } else {
                 throw new AtException("Failed getting atsign. Response from API: " + responseData.get("status"));
             }
-
         } else {
             throw new AtException(httpsConnection.getResponseCode() + " " + httpsConnection.getResponseMessage());
         }
@@ -140,15 +135,13 @@ public class RegisterUtil {
                 .collect(toMap(SimpleEntry::getKey, SimpleEntry::getValue));
         String paramsJson = objectMapper.writeValueAsString(paramsMap);
 
-        HttpsURLConnection httpsConnection = postRequestToAPI(new URL(registrarUrl + Constants.REGISTER_ATSIGN), apiKey,
-                paramsJson);
+        HttpsURLConnection httpsConnection = postRequestToAPI(new URL(registrarUrl + Constants.REGISTER_ATSIGN), apiKey, paramsJson);
         if (httpsConnection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(
                     httpsConnection.getInputStream()));
 
             String response = bufferedReader.readLine();
-            @SuppressWarnings("unchecked")
-            Map<String, String> responseData = objectMapper.readValue(response, Map.class);
+            @SuppressWarnings("unchecked") Map<String, String> responseData = objectMapper.readValue(response, Map.class);
             String data = responseData.get("message");
             System.out.println("Got response: " + data);
             return response.contains("Sent Successfully");
@@ -183,17 +176,12 @@ public class RegisterUtil {
      * @return Case 1("verified") - the API has registered the atsign to
      *         provided email and CRAM key present in HTTP_RESPONSE Body.
      *         Case 2("follow-up"): User already has existing atsigns and new atsign
-     *         registered successfully. To receive the CRAM key, follow-up by
-     *         calling
-     *         the API with one of the existing listed atsigns, with confirmation
-     *         set to true.
+     *         registered successfully. To receive the CRAM key, follow-up by calling
+     *         the API with one of the existing listed atsigns, with confirmation set to true.
      *         Case 3("retry"): Incorrect OTP send request again with correct OTP.
-     * @throws IOException thrown if anything goes wrong while using the
-     *                     HttpsURLConnection.
-     * @throws AtException Case 1: If user has exhausted 10 free atsign
-     *                     quota
-     *                     Case 2: If API response is anything other than
-     *                     HTTP_OK/Status_200.
+     * @throws IOException thrown if anything goes wrong while using the HttpsURLConnection.
+     * @throws AtException Case 1: If user has exhausted 10 free atsign quota
+     *                     Case 2: If API response is anything other than HTTP_OK/Status_200.
      */
     public String validateOtp(String email, AtSign atsign, String otp, String registrarUrl, String apiKey,
             Boolean confirmation)
@@ -217,22 +205,18 @@ public class RegisterUtil {
             // appending HTTP_RESPONSE to the string buffer line-after-line
             String response = bufferedReader.readLine();
 
-            @SuppressWarnings("unchecked")
-            Map<String, String> responseDataStringObject = objectMapper.readValue(response, Map.class);
+            @SuppressWarnings("unchecked") Map<String, String> responseDataStringObject = objectMapper.readValue(response, Map.class);
             // API in some cases returns response with a data field of Type
             // Map<String, Map<String, String>> the following if condition casts this
             // response to Map<String, String>
             if (response.startsWith("{\"data")) {
-                @SuppressWarnings("unchecked")
-                Map<String, Map<String, String>> responseDataMapObject = objectMapper.readValue(response, Map.class);
+                @SuppressWarnings("unchecked") Map<String, Map<String, String>> responseDataMapObject = objectMapper.readValue(response, Map.class);
                 responseDataStringObject = responseDataMapObject.get("data");
                 // The following if condition logs the existing atsigns if the API response
                 // contains a List<String> of atsigns.
                 if (responseDataStringObject.containsKey("atsigns")
                         || responseDataStringObject.containsKey("newAtsign")) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Map<String, List<String>>> responseDataArrayListObject = objectMapper
-                            .readValue(response, Map.class);
+                    @SuppressWarnings("unchecked") Map<String, Map<String, List<String>>> responseDataArrayListObject = objectMapper.readValue(response, Map.class);
                     System.out.println("Your existing atsigns: "
                             + responseDataArrayListObject.get("data").get("atsigns").toString());
                 }
