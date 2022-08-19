@@ -87,7 +87,7 @@ public class RegisterUtil {
     public Map<String, String> getAtsignV3(String registrarUrl, String apiKey, String atsign,
             String activationKey)
             throws AtException, IOException {
-        Map<String, String> paramsMap = new HashMap<String, String>();
+        Map<String, String> paramsMap = new HashMap<>();
         if (!atsign.isEmpty()) {
             paramsMap.put("atSign", new AtSign(atsign).withoutPrefix());
         }
@@ -191,8 +191,7 @@ public class RegisterUtil {
                 .collect(toMap(SimpleEntry::getKey, SimpleEntry::getValue));
         String paramsJson = objectMapper.writeValueAsString(paramsMap);
 
-        HttpsURLConnection httpsConnection = postRequestToAPI(new URL(registrarUrl + Constants.VALIDATE_OTP), apiKey,
-                paramsJson);
+        HttpsURLConnection httpsConnection = postRequestToAPI(new URL(registrarUrl + Constants.VALIDATE_OTP), apiKey, paramsJson);
 
         // reading response received for the HTTP_REQUEST_POST
         if (httpsConnection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
@@ -278,12 +277,12 @@ public class RegisterUtil {
 
     /**
      * @deprecated method remains for backwards compatibility. will be removed in
-     *             future minor updates
-     *             <p>
-     *             <p>
-     *             This method just calls
-     *             {@link #validateOtp(String, AtSign, String, String, String, Boolean)
-     *             the new validateOtp} with confirmation set to true
+     * future minor updates
+     * <p>
+     * <p>
+     * This method just calls
+     * {@link #validateOtp(String, AtSign, String, String, String, Boolean)
+     * the new validateOtp} with confirmation set to true
      */
     @Deprecated
     public String validateOtp(String email, AtSign atsign, String otp, String registrarUrl, String apiKey)
