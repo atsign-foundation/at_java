@@ -1,8 +1,5 @@
 package org.atsign.client.cli;
 
-import com.fasterxml.jackson.core.exc.StreamReadException;
-import com.fasterxml.jackson.databind.DatabindException;
-
 import org.atsign.client.util.RegisterUtil;
 import org.atsign.common.ApiCallStatus;
 import org.atsign.common.AtSign;
@@ -11,12 +8,10 @@ import org.atsign.common.RegisterApiTask;
 import org.atsign.common.AtException;
 import org.atsign.config.ConfigReader;
 
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Scanner;
 import java.util.concurrent.Callable;
 
@@ -45,9 +40,11 @@ public class Register implements Callable<String> {
         System.exit(status);
     }
 
+    /**
+     * contains actual register logic.
+     * main() calls this method with args passed through CLI
+     */
     @Override
-    // contains actual register logic.
-    // main() calls this method with args passed through CLI
     public String call() throws Exception {
 
         readParameters();
@@ -57,8 +54,7 @@ public class Register implements Callable<String> {
         } else {
             // parameter confirmation needs to be manually inserted into the params map
             params.put("confirmation", "false");
-            new RegistrationFlow(params).add(new GetFreeAtsign()).add(new RegisterAtsign()).add(new ValidateOtp())
-                    .start();
+            new RegistrationFlow(params).add(new GetFreeAtsign()).add(new RegisterAtsign()).add(new ValidateOtp()).start();
         }
 
         String[] onboardArgs = new String[] {
@@ -73,10 +69,10 @@ public class Register implements Callable<String> {
 
         // checks to ensure only either of email or super-API key are provided as args.
         // if super-API key is provided uses registrar v3, otherwise uses registrar v2.
-        if (email.equals("") && !apiKey.equals("")) {
+        if ("".equals(email) && !"".equals(apiKey)) {
             isRegistrarV3 = true;
-        } else if (apiKey.equals("") && !email.equals("")) {
-            // do nothing isRegistrarV3 already set to false
+        } else if ("".equals(apiKey) && !"".equals(email)) {
+            isRegistrarV3 = false;
         } else {
             System.err.println(
                     "Usage: Register -e <email@email.com> (or)\nRegister -k <Your API Key>\nNOTE: Use email if you prefer activating using OTP. Go for API key option if you have your own SuperAPI key. You cannot use both.");
@@ -102,7 +98,7 @@ public class Register implements Callable<String> {
             params.put("registrarUrl", ConfigReader.getProperty("REGISTRAR_URL"));
         }
 
-        if (!isRegistrarV3 && apiKey.equals("")) {
+        if (!isRegistrarV3 && "".equals(apiKey)) {
             params.put("apiKey", ConfigReader.getProperty("registrar", "apiKey"));
             if (params.get("apiKey") == null) {
                 // reading config from older configuration syntax for backwards compatibility
@@ -128,7 +124,7 @@ public class Register implements Callable<String> {
 }
 
 class RegistrationFlow {
-    List<RegisterApiTask<RegisterApiResult<Map<String, String>>>> processFlow = new ArrayList<RegisterApiTask<RegisterApiResult<Map<String, String>>>>();
+    List<RegisterApiTask<RegisterApiResult<Map<String, String>>>> processFlow = new ArrayList<>();
     RegisterApiResult<Map<String, String>> result;
     Map<String, String> params;
     RegisterUtil registerUtil = new RegisterUtil();
@@ -204,7 +200,7 @@ class ValidateOtp extends RegisterApiTask<RegisterApiResult<Map<String, String>>
 
     @Override
     public RegisterApiResult<Map<String, String>> run() {
-        System.out.println("Enter OTP received on " + params.get("email") + " [note: otp is case sensitve]");
+        System.out.println("Enter OTP received on " + params.get("email") + " [note: otp is case sensitive]");
         try {
             // only ask for user input the first time. use the otp entry in params map in
             // subsequent api requests

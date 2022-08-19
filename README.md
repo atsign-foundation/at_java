@@ -23,8 +23,9 @@ to hear about issues. See also [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ### May 29 2022
 * Retry bug fixed in Register CLI
-* Config yaml parameters restructured and backwards compatibility provided to break existing usages.
-* New parameter added to validateOtp method in RegisterUtil.java. The usage of this parameter is provided in java docs of the respective method.
+* Config yaml parameters restructured and backwards compatibility provided so as not to break existing usage.
+* New parameter added to validateOtp method in RegisterUtil.java. The usage of this parameter is provided in
+java docs of the respective method.
 
 
 ### May 18 2022
@@ -36,7 +37,8 @@ to hear about issues. See also [CONTRIBUTING.md](CONTRIBUTING.md)
 * Improved Monitor's event generation
 * Added 'userDefined' to the AtEventType enum, to allow the event bus to be used by application code
 * Caches shared keys after first retrieval
-* AtClientImpl listens for updateNotification events, decrypts the ciphertext on-the-fly, and publishes a decryptedUpdateNotification which is more useful for application code
+* AtClientImpl listens for updateNotification events, decrypts the ciphertext on-the-fly, and publishes a decryptedUpdateNotification
+which is more useful for application code
 * Enhanced REPL to optionally listen to only decryptedUpdateNotification; added command-line flag to listen to both
 
 ### Apr 29 2022
