@@ -89,15 +89,13 @@ public class RegisterUtil {
             throws AtException, IOException {
         Map<String, String> paramsMap = new HashMap<String, String>();
         if (!atsign.isEmpty()) {
-            AtSign atSignObj = new AtSign(atsign);
-            paramsMap.put("atSign", atSignObj.withoutPrefix());
+            paramsMap.put("atSign", new AtSign(atsign).withoutPrefix());
         }
         if (!activationKey.isEmpty()) {
             paramsMap.put("ActivationKey", activationKey);
         }
         String paramsJson = objectMapper.writeValueAsString(paramsMap);
-        HttpsURLConnection httpsConnection = postRequestToAPI(new URL(registrarUrl + Constants.GET_ATSIGN_V3), apiKey,
-                paramsJson);
+        HttpsURLConnection httpsConnection = postRequestToAPI(new URL(registrarUrl + Constants.GET_ATSIGN_V3), apiKey, paramsJson);
         if (httpsConnection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(httpsConnection.getInputStream()));
             String responseRaw = bufferedReader.readLine();
@@ -139,7 +137,6 @@ public class RegisterUtil {
         if (httpsConnection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(
                     httpsConnection.getInputStream()));
-
             String response = bufferedReader.readLine();
             @SuppressWarnings("unchecked") Map<String, String> responseData = objectMapper.readValue(response, Map.class);
             String data = responseData.get("message");
@@ -187,10 +184,10 @@ public class RegisterUtil {
             Boolean confirmation)
             throws IOException, AtException {
         Map<String, String> paramsMap = Stream.of(
-                new SimpleEntry<>("atsign", atsign.withoutPrefix()),
-                new SimpleEntry<>("email", email),
-                new SimpleEntry<>("otp", otp),
-                new SimpleEntry<>("confirmation", confirmation.toString()))
+                    new SimpleEntry<>("atsign", atsign.withoutPrefix()),
+                    new SimpleEntry<>("email", email),
+                    new SimpleEntry<>("otp", otp),
+                    new SimpleEntry<>("confirmation", confirmation.toString()))
                 .collect(toMap(SimpleEntry::getKey, SimpleEntry::getValue));
         String paramsJson = objectMapper.writeValueAsString(paramsMap);
 
@@ -201,10 +198,8 @@ public class RegisterUtil {
         if (httpsConnection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(
                     httpsConnection.getInputStream()));
-
             // appending HTTP_RESPONSE to the string buffer line-after-line
             String response = bufferedReader.readLine();
-
             @SuppressWarnings("unchecked") Map<String, String> responseDataStringObject = objectMapper.readValue(response, Map.class);
             // API in some cases returns response with a data field of Type
             // Map<String, Map<String, String>> the following if condition casts this
@@ -269,9 +264,7 @@ public class RegisterUtil {
         if (httpsConnection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(httpsConnection.getInputStream()));
             String response = bufferedReader.readLine();
-
-            @SuppressWarnings("unchecked")
-            Map<String, String> responseData = objectMapper.readValue(response, Map.class);
+            @SuppressWarnings("unchecked") Map<String, String> responseData = objectMapper.readValue(response, Map.class);
             if (responseData.get("status").equals("success")) {
                 return responseData.get("cramkey");
             } else {
