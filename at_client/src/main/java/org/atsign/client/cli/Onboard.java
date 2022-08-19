@@ -2,12 +2,14 @@ package org.atsign.client.cli;
 
 import org.atsign.client.api.impl.events.SimpleAtEventBus;
 import org.atsign.common.AtSign;
+import org.atsign.common.NoSuchSecondaryException;
 import org.atsign.client.api.impl.connections.AtSecondaryConnection;
 import org.atsign.client.api.impl.connections.AtRootConnection;
 import org.atsign.client.util.AuthUtil;
 import org.atsign.client.util.KeysUtil;
 import org.atsign.client.util.OnboardingUtil;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,16 +25,23 @@ public class Onboard {
         }
 
         String rootUrl = args[0]; // e.g. "root.atsign.org:64";
-        AtSign atSign = new AtSign(args[1]);  // e.g. "@alice";
+        AtSign atSign = new AtSign(args[1]); // e.g. "@alice";
         String cramSecret = args[2];
 
         System.out.println("Looking up secondary server address for " + atSign);
-        String secondaryUrl = new AtRootConnection(rootUrl).lookupAtSign(atSign);
+        String secondaryUrl = "";
+        try {
+            secondaryUrl = new AtRootConnection(rootUrl).lookupAtSign(atSign);
+        } catch (NoSuchSecondaryException e) {
+            secondaryUrl = retrySecondaryConnection(rootUrl, atSign);
+        }
 
         System.out.println("Got address: " + secondaryUrl);
 
         System.out.println("Connecting to " + secondaryUrl);
-        AtSecondaryConnection conn = new AtSecondaryConnection(new SimpleAtEventBus(), atSign, secondaryUrl, null, false, true);
+
+        AtSecondaryConnection conn = new AtSecondaryConnection(new SimpleAtEventBus(), atSign, secondaryUrl, null,
+                false, true);
         conn.connect();
 
         AuthUtil auth = new AuthUtil();
@@ -74,5 +83,28 @@ public class Onboard {
         onboarding.deleteCramKey(conn);
 
         System.out.println("Onboarding complete");
+    }
+
+    static String retrySecondaryConnection(String rootUrl, AtSign atSign)
+            throws IOException, NoSuchSecondaryException, InterruptedException {
+
+        int retryCount = 0;
+        final int maxRetries = 50;
+        String secondaryUrl = "";
+
+        while (retryCount < maxRetries && secondaryUrl.equals("")) {
+            try {
+                secondaryUrl = new AtRootConnection(rootUrl).lookupAtSign(atSign);
+            } catch (NoSuchSecondaryException e) {
+                System.out.println("Retrying fetching secondary address ... attempt " + ++retryCount + "/" + maxRetries);
+                Thread.sleep(1000);
+            }
+        }
+
+        if (secondaryUrl.equals("")) {
+            throw new NoSuchSecondaryException("Root lookup returned null for " + atSign);
+        }
+
+        return secondaryUrl;
     }
 }
