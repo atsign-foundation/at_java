@@ -1,11 +1,12 @@
 package org.atsign.client.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.atsign.common.AtSign;
-import org.atsign.common.AtException;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
+import org.atsign.common.AtException;
+import org.atsign.common.AtSign;
+
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,11 +46,11 @@ public class KeysUtil {
         encryptedKeys.put(encryptionPrivateKeyName, EncryptionUtil.aesEncryptToBase64(keys.get(encryptionPrivateKeyName), selfEncryptionKey));
 
         String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(encryptedKeys);
-        Files.write(file.toPath(), json.getBytes(StandardCharsets.UTF_8));
+        Files.writeString(file.toPath(), json);
     }
 
     private static File getKeysFile(AtSign atSign) {
-        return new File(System.getProperty("user.home") + "/.atsign/keys/" + atSign + "_key.atKeys");
+        return new File(System.getProperty("user.dir") + "/keys/" + atSign + "_key.atKeys");
     }
 
     public static Map<String, String> loadKeys(AtSign atSign) throws Exception {
@@ -59,7 +60,7 @@ public class KeysUtil {
             throw new AtException("loadKeys: No file at " + file.getAbsolutePath());
         }
 
-        String json = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+        String json = Files.readString(file.toPath());
         @SuppressWarnings("unchecked") Map<String, String> encryptedKeys = mapper.readValue(json, Map.class);
 
         // All the keys are encrypted with the AES self encryption key (which is left unencrypted)
