@@ -125,7 +125,7 @@ public class AtClientValidationTest {
         });
 
         // empty atSign
-        assertThrows(AtException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             AtSign atSign = new AtSign("");
             AtClientValidation.atSignExists(atSign, VALID_ROOT_URL);
         });
