@@ -5,12 +5,8 @@ public class AtSign {
     private final String withoutPrefix;
 
     public AtSign(String atSign) {
-        atSign = atSign.trim();
-        if (! atSign.startsWith("@")) {
-            atSign = "@" + atSign;
-        }
-        this.atSign = atSign;
-        this.withoutPrefix = atSign.substring(1);
+        this.atSign = formatAtSign(atSign);
+        this.withoutPrefix = this.atSign.substring(1);
     }
 
     public String withoutPrefix() { return withoutPrefix; }
@@ -34,4 +30,18 @@ public class AtSign {
     public int hashCode() {
         return atSign.hashCode();
     }
+
+    /**
+     * Returns a formatted atSign
+     * @param atSignStr e.g. "@bob"
+     * @return formatted atSign (e.g. "alice " --> "@alice")
+     */
+    public static String formatAtSign(String atSignStr) {
+        atSignStr = atSignStr.trim();
+        if (!atSignStr.startsWith("@")) {
+            atSignStr = "@" + atSignStr;
+        }
+        return atSignStr;
+    }
+    
 }

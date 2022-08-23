@@ -40,7 +40,7 @@ public class FromStringTest {
         AtKey atKey = null;
         try {
             atKey = Keys.fromString(KEY_NAME_STR, response);
-        } catch (AtException | ParseException e) {
+        } catch (AtException e) {
             System.err.println(e);
             e.printStackTrace();
         }
