@@ -5,7 +5,16 @@ public class AtSign {
     private final String withoutPrefix;
 
     public AtSign(String atSign) {
+        if (atSign == null || atSign.trim().isEmpty()) {
+            throw new IllegalArgumentException ("atSign may not be null or empty");
+        }
+
         this.atSign = formatAtSign(atSign);
+
+        if ("@".equals(atSign)) {
+            throw new IllegalArgumentException ("'" + atSign + "' is not a valid atSign");
+        }
+
         this.withoutPrefix = this.atSign.substring(1);
     }
 
