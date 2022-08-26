@@ -8,15 +8,14 @@ public class AtSign {
         if (atSign == null || atSign.trim().isEmpty()) {
             throw new IllegalArgumentException ("atSign may not be null or empty");
         }
-        atSign = atSign.trim();
-        if (! atSign.startsWith("@")) {
-            atSign = "@" + atSign;
-        }
+
+        this.atSign = formatAtSign(atSign);
+
         if ("@".equals(atSign)) {
             throw new IllegalArgumentException ("'" + atSign + "' is not a valid atSign");
         }
-        this.atSign = atSign;
-        this.withoutPrefix = atSign.substring(1);
+
+        this.withoutPrefix = this.atSign.substring(1);
     }
 
     public String withoutPrefix() { return withoutPrefix; }
@@ -40,4 +39,18 @@ public class AtSign {
     public int hashCode() {
         return atSign.hashCode();
     }
+
+    /**
+     * Returns a formatted atSign
+     * @param atSignStr e.g. "@bob"
+     * @return formatted atSign (e.g. "alice " --> "@alice")
+     */
+    public static String formatAtSign(String atSignStr) {
+        atSignStr = atSignStr.trim();
+        if (!atSignStr.startsWith("@")) {
+            atSignStr = "@" + atSignStr;
+        }
+        return atSignStr;
+    }
+    
 }
