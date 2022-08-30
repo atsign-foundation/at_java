@@ -67,14 +67,21 @@ public class KeyBuilders {
         }
     }
 
-    /// Builder class for cached key's.
+    /**
+     * Builder class for cacheable keys.
+     */
     public static abstract class CachedKeyBuilder extends BaseKeyBuilder {
-        ///Cache's the key on [AtKey.sharedWith] atSign.
-        /// TTR denotes the time to refresh the cached key. Accepts an integer value
-        /// which represents the time units in seconds.
-        /// CCD denotes the cascade delete. Accepts a boolean value.
-        /// When set to true, deletes the cached key when corresponding key is deleted.
-        /// When set to false, the cached key remains when corresponding key is deleted.
+        /**
+         * <ul>
+         * <li>Cacheable keys are cached on the recipient AtSign's secondary server when the
+         * ttr metadata value is set to a value greater than zero.</li>
+         * <li>TTR denotes the time to refresh the cached key. Accepts an integer value
+         * which represents the time units in seconds.</li>
+         * <li>CCD denotes the cascade delete. Accepts a boolean value. When set to true, deletes
+         * the cached key when corresponding key is deleted. When set to false, the cached key remains
+         * when corresponding key is deleted.</li>
+         * </ul>
+         */
         public CachedKeyBuilder cache(int ttr, boolean ccd) {
             _atKey.metadata.ttr = ttr;
             _atKey.metadata.ccd = ccd;
