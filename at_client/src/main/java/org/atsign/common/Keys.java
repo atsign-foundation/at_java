@@ -48,9 +48,6 @@ public abstract class Keys {
         @Override
         public String toString() {
             String s = "";
-            if(metadata.isCached) {
-                s += "cached:";
-            }
             if (metadata.isPublic) {
                 s += "public:";
             } else if (sharedWith != null) {
