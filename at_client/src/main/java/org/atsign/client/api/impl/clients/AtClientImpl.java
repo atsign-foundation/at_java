@@ -1,45 +1,49 @@
 package org.atsign.client.api.impl.clients;
 
-import org.atsign.client.api.AtClient;
-import static org.atsign.client.api.AtEvents.*;
-import static org.atsign.client.api.AtEvents.AtEventType.*;
-
-import org.atsign.client.api.Secondary;
-import org.atsign.common.AtSign;
-import org.atsign.common.KeyBuilders;
-import org.atsign.common.Keys;
-import org.atsign.common.ResponseTransformers;
-import org.atsign.common.ResponseTransformers.LlookupMetadataResponseTransformer;
-import org.atsign.common.ResponseTransformers.ScanResponseTransformer;
-import org.atsign.common.VerbBuilders.DeleteVerbBuilder;
-import org.atsign.common.VerbBuilders.LlookupVerbBuilder;
-import org.atsign.common.VerbBuilders.PlookupVerbBuilder;
-import org.atsign.common.VerbBuilders.ScanVerbBuilder;
-import org.atsign.common.VerbBuilders.UpdateVerbBuilder;
-
-import static org.atsign.common.Keys.*;
-
-import org.atsign.common.AtException;
-import org.atsign.client.util.EncryptionUtil;
-import org.atsign.client.util.KeyStringUtil;
-import org.atsign.client.util.KeysUtil;
-import org.atsign.client.util.KeyStringUtil.KeyType;
+import static org.atsign.client.api.AtEvents.AtEventType.decryptedUpdateNotification;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.security.SignatureException;
-import java.security.spec.InvalidKeySpecException;
 import java.text.ParseException;
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+
+import org.atsign.client.api.AtClient;
+import org.atsign.client.api.AtEvents.AtEventBus;
+import org.atsign.client.api.AtEvents.AtEventListener;
+import org.atsign.client.api.AtEvents.AtEventType;
+import org.atsign.client.api.Secondary;
+import org.atsign.client.util.EncryptionUtil;
+import org.atsign.client.util.KeysUtil;
+import org.atsign.common.AtException;
+import org.atsign.common.AtSign;
+import org.atsign.common.Keys;
+import org.atsign.common.Keys.AtKey;
+import org.atsign.common.Keys.Metadata;
+import org.atsign.common.Keys.PublicKey;
+import org.atsign.common.Keys.SelfKey;
+import org.atsign.common.Keys.SharedKey;
+import org.atsign.common.ResponseTransformers;
+import org.atsign.common.ResponseTransformers.LlookupAllResponseTransformer;
+import org.atsign.common.VerbBuilders.DeleteVerbBuilder;
+import org.atsign.common.VerbBuilders.LlookupVerbBuilder;
+import org.atsign.common.VerbBuilders.PlookupVerbBuilder;
+import org.atsign.common.VerbBuilders.ScanVerbBuilder;
+import org.atsign.common.VerbBuilders.UpdateVerbBuilder;
+import org.atsign.common.response_models.LlookupAllResponse;
 
 /**
  * @see org.atsign.client.api.AtClient
@@ -415,49 +419,45 @@ public class AtClientImpl implements AtClient {
     }
 
     private String _get(SelfKey key) throws AtException {
-        // 1. llookup:<fullKeyName>
-        String value = null;
+        // 1. build command
+        String command = null;
         LlookupVerbBuilder builder = new LlookupVerbBuilder();
-        builder.with(key, LlookupVerbBuilder.Type.NONE);
-        String command = builder.build();
+        builder.with(key, LlookupVerbBuilder.Type.ALL);
+        command = builder.build();
+
+        // 2. execute command
         Secondary.Response rawResponse = secondary.executeCommand(command, false);
         if (rawResponse.isError) {
             throw new AtException("Failed to " + command + " : " + rawResponse.error);
         }
 
-        // 2. decrypt the value
+        // 3. transform the data to a LlookupAllResponse object
+        LlookupAllResponse model = null;
+        LlookupAllResponseTransformer transformer = new LlookupAllResponseTransformer();
+        model = transformer.transform(rawResponse); // contains variables for data we want from the `llookup:all:<fullKeyName>` command (e.g. model.metaData.ttl)
+
+        // 3. decrypt the value
+        String decryptedValue = null;
+        String encryptedValue = model.data;
         String selfEncryptionKey = keys.get(KeysUtil.selfEncryptionKeyName);
         try {
-            value = EncryptionUtil.aesDecryptFromBase64(rawResponse.data, selfEncryptionKey);
+            decryptedValue = EncryptionUtil.aesDecryptFromBase64(encryptedValue, selfEncryptionKey);
         } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException e) {
             throw new AtException("Failed to " + command + " : " + e.getMessage(), e);
         }
 
-        // 3. update metadata in key object
-        Metadata metadataRead;
-        LlookupVerbBuilder metaLlookup = new LlookupVerbBuilder();
-        metaLlookup.with(key, LlookupVerbBuilder.Type.METADATA);
-        String metaCommand = metaLlookup.build();
-        Secondary.Response metaResponse = secondary.executeCommand(metaCommand, false);
-        if (metaResponse.isError) {
-            throw new AtException("Failed to " + metaCommand + " : " + metaResponse.error);
-        }
-        try {
-            metadataRead = Metadata.fromString(metaResponse);
-        } catch (AtException e) {
-            throw new AtException("Failed to " + metaCommand + " : " + e.getMessage(), e);
-        }
+        // 4. update metadata. squash the fetchedMetadata with current key.metadata (fetchedMetadata has higher priority)
+        Metadata fetchedMetadata = Metadata.fromModel(model.metaData);
+        key.metadata = Metadata.squash(fetchedMetadata, key.metadata);
 
-        key.metadata = Metadata.squash(key.metadata, metadataRead);        
-
-        return value;
+        return decryptedValue;
     }
 
     private String _put(SelfKey selfKey, String value) throws AtException {
-        // sign dataSignature
+        // 1. generate dataSignature
         selfKey.metadata.dataSignature = generateSignature(value);
 
-        // encrypt data with self encryption key
+        // 2. encrypt data with self encryption key
         String cipherText;
         try {
             cipherText = EncryptionUtil.aesEncryptToBase64(value, keys.get(KeysUtil.selfEncryptionKeyName));
@@ -465,7 +465,7 @@ public class AtClientImpl implements AtClient {
             throw new AtException("Failed to encrypt value with self encryption key : " + e.getMessage(), e);
         }
 
-        // update secondary
+        // 3. update secondary
         UpdateVerbBuilder builder = new UpdateVerbBuilder();
         builder.with(selfKey, cipherText);
         String command = builder.build();
@@ -477,9 +477,12 @@ public class AtClientImpl implements AtClient {
     }
 
     private String _delete(SelfKey key) throws AtException {
+        // 1. build delete command
         DeleteVerbBuilder builder = new DeleteVerbBuilder();
         builder.with(key);
         String command = builder.build();
+
+        // 2. run command
         Secondary.Response response = secondary.executeCommand(command, true);
         if(response.isError) {
             throw new AtException("Failed to run command " + command + " : " + response.error);
@@ -488,114 +491,51 @@ public class AtClientImpl implements AtClient {
     }
 
     private String _get(PublicKey key) throws AtException {
-        String responseData;
-
-        String dataCommand; // to get data
-        String metaCommand; // to get metadata
-
-        // 1. generate command using verb builders
-        if(key.sharedBy.toString().equalsIgnoreCase(atSign.toString())) {
-            // local lookup
-            LlookupVerbBuilder dataBuilder = new LlookupVerbBuilder();
-            dataBuilder.with(key, LlookupVerbBuilder.Type.NONE);
-            dataCommand = dataBuilder.build();
-
-            LlookupVerbBuilder metaBuilder = new LlookupVerbBuilder();
-            metaBuilder.with(key, LlookupVerbBuilder.Type.METADATA);
-            metaCommand = metaBuilder.build();
+        // 1. build command
+        String command = null;
+        if(atSign.toString().equals(key.sharedBy.toString())) {
+            // it's a public key created by this client => llookup
+            LlookupVerbBuilder builder = new LlookupVerbBuilder();
+            builder.with(key, LlookupVerbBuilder.Type.ALL);
+            command = builder.build();
         } else {
-            // plookup
-            PlookupVerbBuilder dataBuilder = new PlookupVerbBuilder();
-            dataBuilder.with(key, PlookupVerbBuilder.Type.NONE);
-            dataCommand = dataBuilder.build();
-
-            PlookupVerbBuilder metaBuilder = new PlookupVerbBuilder();
-            metaBuilder.with(key, PlookupVerbBuilder.Type.METADATA);
-            metaCommand = metaBuilder.build();
+            // it's a public key created by another => plookup
+            PlookupVerbBuilder builder = new PlookupVerbBuilder();
+            builder.with(key, PlookupVerbBuilder.Type.ALL);
+            command = builder.build();
         }
 
-        // 2. get the data
-        // llookup:<fullKeyName> or plookup:<fullKeyName>
-        Secondary.Response dataResponse = secondary.executeCommand(dataCommand, false);
-        if(dataResponse.isError) {
-            throw new AtException("Failed to run command " + dataCommand + " : " + dataResponse.error);
+        // 2. run the command
+        Secondary.Response llookupAllRawResponse = secondary.executeCommand(command, false);
+        if (llookupAllRawResponse.isError) {
+            throw new AtException("Failed to " + command + " : " + llookupAllRawResponse.error);
         }
 
-        responseData = dataResponse.data;
+        // 3. transform the data to a LlookupAllResponse object
+        LlookupAllResponse model = null;
+        LlookupAllResponseTransformer transformer = new LlookupAllResponseTransformer();
+        model = transformer.transform(llookupAllRawResponse);
 
-        // 3. get the metadata and update the key object
-        // llookup:<fullKeyName> or plookup:meta:<fullKeyName>
-        Secondary.Response metaResponse = secondary.executeCommand(metaCommand, false);
-        if(metaResponse.isError) {
-            throw new AtException("Failed to run command " + metaCommand + " : " + metaResponse.error);
-        }
-        key.metadata = Metadata.squash(key.metadata, Metadata.fromString(metaResponse)); // update object metadata
+        // 4. update key object metadata
+        Metadata fetchedMetadata = Metadata.fromModel(model.metaData);
+        key.metadata = Metadata.squash(fetchedMetadata, key.metadata);
+        key.metadata.isCached = model.key.contains("cached:");
 
-        return responseData;
-
-        // =============== OLD ===============
-
-        // // 3 scenarios
-        // // 1. look in own secondary server (e.g. public:test@alice)
-        // // 2. look in own secondary server cached (e.g. cached:public:test@bob)
-        // // 3. look in another secondary server (via plookup) (e.g. public:test@bob -> plookup:test@bob)
-
-        // PlookupVerbBuilder builder = new PlookupVerbBuilder();
-        // PlookupVerbBuilder builderMeta = new PlookupVerbBuilder();
-
-        // String command = null; // data command
-        // String metaCommand = null; // metadata command
-        // Secondary.Response rawResponse = null;
-
-        // // 1. look in own secondary
-        // LlookupVerbBuilder builder1 = new LlookupVerbBuilder();
-        // builder1.with(key, LlookupVerbBuilder.Type.NONE);
-        // command = builder1.build();
-        // builder1.setType(LlookupVerbBuilder.Type.METADATA);
-        // metaCommand = builder1.build();
-        // builder1.setType(LlookupVerbBuilder.Type.NONE);
-        // rawResponse = secondary.executeCommand(command, false);
-        // if(rawResponse.isError) {
-        //     // 2. try cached
-        //     builder1.setIsCached(true);
-        //     command = builder1.build();
-        //     builder1.setType(LlookupVerbBuilder.Type.METADATA);
-        //     metaCommand = builder1.build();
-        //     rawResponse = secondary.executeCommand(command, false);
-        //     if(rawResponse.isError) {
-        //         // 3. try plookup
-        //         String withoutPublic = key.toString().replace("public:", "");
-        //         PlookupVerbBuilder pBuilder1 = new PlookupVerbBuilder();
-        //         pBuilder1.with(key, PlookupVerbBuilder.Type.NONE);
-        //         command = pBuilder1.build();
-        //         pBuilder1.setType(PlookupVerbBuilder.Type.METADATA);
-        //         metaCommand = pBuilder1.build();
-        //         rawResponse = secondary.executeCommand(command, false);
-        //         if(rawResponse.isError) {
-        //             throw new AtException("Failed to " + command + " : " + rawResponse.error);
-        //         }
-        //     }
-        // }
-
-        // Secondary.Response rawResponseMeta = secondary.executeCommand(metaCommand, false);
-        // if(!rawResponseMeta.isError) {
-        //     key.metadata = Metadata.squash(key.metadata, Metadata.fromString(rawResponseMeta));
-        // }
-
-        // return rawResponse.data;
+        // 5. return the AtValue
+        return model.data;
     }
 
     private String _put(PublicKey publicKey, String value) throws AtException {
-        // sign data
+        // 1. generate dataSignature
         publicKey.metadata.dataSignature = generateSignature(value);
 
-        // update
+        // 2. build command
+        String command = null;
         UpdateVerbBuilder builder = new UpdateVerbBuilder();
         builder.with(publicKey, value);
-        
-        // String command = "update" + publicKey.metadata.toString() + ":" + publicKey.toString() + " " + value;
-        String command = builder.build();
+        command = builder.build();
 
+        // 3. run command
         Secondary.Response rawResponse = secondary.executeCommand(command, false);
         if(rawResponse.isError) {
             throw new AtException(rawResponse.error);
@@ -604,9 +544,13 @@ public class AtClientImpl implements AtClient {
     }
 
     private String _delete(PublicKey key) throws AtException {
+        // 1. build command
+        String command = null;
         DeleteVerbBuilder builder = new DeleteVerbBuilder();
         builder.with(key);
-        String command = builder.build();
+        command = builder.build();
+        
+        // 2. run command
         Secondary.Response rawResponse = secondary.executeCommand(command, false);
         if(rawResponse.isError) {
             throw new AtException(rawResponse.error);
