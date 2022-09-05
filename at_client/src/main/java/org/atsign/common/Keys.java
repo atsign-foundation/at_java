@@ -9,6 +9,9 @@ import org.atsign.client.util.DateUtil;
 import org.atsign.client.util.KeyStringUtil;
 import org.atsign.client.util.KeyStringUtil.KeyType;
 import org.atsign.common.ResponseTransformers.LlookupMetadataResponseTransformer;
+import org.atsign.common.response_models.LlookupAllResponse;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @SuppressWarnings("unused")
 public abstract class Keys {
@@ -146,11 +149,15 @@ public abstract class Keys {
         public Integer ttb;
         public Integer ttr;
         public Boolean ccd;
+        public OffsetDateTime createdBy;
+        public OffsetDateTime updatedBy;
         public OffsetDateTime availableAt;
         public OffsetDateTime expiresAt;
         public OffsetDateTime refreshAt;
         public OffsetDateTime createdAt;
         public OffsetDateTime updatedAt;
+        public String status;
+        public Integer version;
         public String dataSignature;
         public String sharedKeyStatus;
         public Boolean isPublic = false;
@@ -212,6 +219,33 @@ public abstract class Keys {
             } catch (ParseException e) {
                 throw new AtException("Could not parse dates from metadata. DateUtil.parse(String) threw the ParseException: " + e.toString(), e);
             }
+            return metadata;
+        }
+
+        public static Metadata fromModel(LlookupAllResponse.Metadata modelMetadata) throws AtException {
+            Metadata metadata = new Metadata();
+            metadata.ttl = modelMetadata.ttl;
+            metadata.ttb = modelMetadata.ttb;
+            metadata.ttr = modelMetadata.ttr;
+            metadata.ccd = modelMetadata.ccd;
+            try {
+                metadata.createdBy = DateUtil.parse(modelMetadata.createdBy);
+                metadata.updatedBy = DateUtil.parse(modelMetadata.updatedBy);
+                metadata.availableAt = DateUtil.parse(modelMetadata.availableAt);
+                metadata.expiresAt = DateUtil.parse(modelMetadata.expiresAt);
+                metadata.refreshAt = DateUtil.parse(modelMetadata.refreshAt);
+                metadata.createdAt = DateUtil.parse(modelMetadata.createdAt);
+                metadata.updatedAt = DateUtil.parse(modelMetadata.updatedAt);
+            } catch (ParseException e) {
+                throw new AtException("Could not parse date from LlookupAllResponse.Metadata: " + e.toString());
+            }
+            metadata.status = modelMetadata.status;
+            metadata.version = modelMetadata.version;
+            metadata.dataSignature = modelMetadata.dataSignature;
+            metadata.isEncrypted = modelMetadata.isEncrypted;
+            metadata.isBinary = modelMetadata.isBinary;
+            metadata.sharedKeyEnc = modelMetadata.sharedKeyEnc;
+            metadata.pubKeyCS = modelMetadata.pubKeyCS;
             return metadata;
         }
 
