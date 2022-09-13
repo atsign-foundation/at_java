@@ -160,6 +160,18 @@ public class REPL {
                             } else {
                                 throw new AtException("Could not evaluate the key type of: " + fullKeyName);
                             }
+                        } else if("share".equals(verb)) {
+                            // _share <atSign> <keyName> <...data>
+                            // example: I am @bob, run _share @alice test hello world!! | will create a key "@alice:test@bob" with encrypted value "hello world!!"
+
+                            String atSign = parts[1];
+                            String keyName = parts[2];
+                            String value = command.substring(verb.length() + atSign.length() + keyName.length() + 3).trim();
+
+                            String fullKeyName = atSign + ":" + keyName + client.getAtSign();
+                            SharedKey sk = Keys.SharedKey.fromString(fullKeyName);
+                            String data = client.put(sk, value).get();
+                            System.out.println("  => \033[31m" + data + "\033[0m");
                         } else {
                             System.err.println("ERROR: command not recognized: [" + verb + "]");
                         }
@@ -245,6 +257,7 @@ public class REPL {
         System.out.println("    _get <key> - get a value from the key (e.g. _get test@bob)");
         System.out.println("    _delete <key> - delete a key (e.g. _delete test@bob)");
         System.out.println("    _scan [regex] - scan for keys matching the regex (e.g. _scan test@bob.*)");
+        System.out.println("    _share <atSign> <keyName> <...data> - share a key with another atSign (e.g. _share @alice test hello world!!)");
         System.out.println();
     }
 }
