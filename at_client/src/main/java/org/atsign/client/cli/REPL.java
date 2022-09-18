@@ -1,19 +1,28 @@
 package org.atsign.client.cli;
 
+import static org.atsign.client.api.AtEvents.AtEventType.decryptedUpdateNotification;
+import static org.atsign.client.api.AtEvents.AtEventType.updateNotification;
+
+import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.AtEvents;
+import org.atsign.client.api.AtEvents.AtEventType;
 import org.atsign.client.api.Secondary;
-import static org.atsign.client.api.AtEvents.*;
-import static org.atsign.client.api.AtEvents.AtEventType.*;
-
 import org.atsign.client.util.ArgsUtil;
-import org.atsign.common.AtSign;
+import org.atsign.client.util.KeyStringUtil;
 import org.atsign.common.AtException;
+import org.atsign.common.AtSign;
 import org.atsign.common.Keys;
-
-import java.time.OffsetDateTime;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import org.atsign.common.Keys.PublicKey;
+import org.atsign.common.Keys.SelfKey;
+import org.atsign.common.Keys.SharedKey;
 
 /**
  * A command-line interface half-example half-utility which connects
@@ -42,7 +51,7 @@ public class REPL {
 
             REPL repl = new REPL(atClient, seeEncryptedNotifications);
             repl.repl();
-        } catch (Exception e) {
+        } catch (IOException | AtException e) {
             e.printStackTrace();
             System.err.println("Calling System.exit");
             System.exit(1);
@@ -56,18 +65,19 @@ public class REPL {
     public REPL(AtClient client, boolean seeEncryptedNotifications) {
         this.client = client;
         this.seeEncryptedNotifications = seeEncryptedNotifications;
+
         HashSet<AtEventType> eventTypes = new HashSet<>(Collections.singletonList(decryptedUpdateNotification));
         if (seeEncryptedNotifications) {
             eventTypes.add(updateNotification);
         }
         client.addEventListener(new REPLEventListener(client), eventTypes);
-
         client.startMonitor();
     }
 
     public void repl() throws AtException {
+        System.out.println("Type \'_help\' from help");
         Scanner cliScanner = new Scanner(System.in);
-        System.out.print('@');
+        System.out.print(client.getAtSign() + "@ ");
 
         while (cliScanner.hasNextLine()) {
             String command = cliScanner.nextLine() + "\n";
@@ -79,19 +89,89 @@ public class REPL {
                     command = command.substring(1);
                     String[] parts = command.split(" ");
                     String verb = parts[0];
-                    String key = "";
-                    if ("get".equals(verb) || "put".equals(verb)) {
-                        key = parts[1];
-                    }
-                    String value;
                     try {
-                        if ("get".equals(verb)) {
-                            System.out.println("  => \033[31m" + client.get(Keys.SharedKey.fromString(key)).get() + "\033[0m");
+                        if("help".equals(verb)) {
+                            printHelpInstructions();
+                        } else if ("get".equals(verb)) {
+                            String fullKeyName = parts[1];
+                            KeyStringUtil keyStringUtil = new KeyStringUtil(fullKeyName);
+                            KeyStringUtil.KeyType keyType = keyStringUtil.getKeyType();
+                            if(keyType.equals(KeyStringUtil.KeyType.PUBLIC_KEY)) {
+                                PublicKey pk = (PublicKey) Keys.fromString(fullKeyName);
+                                String value = client.get(pk).get();
+                                System.out.println("  => \033[31m" + value + "\033[0m");
+                            } else if(keyType.equals(KeyStringUtil.KeyType.SELF_KEY)) {
+                                SelfKey sk = (SelfKey) Keys.fromString(fullKeyName);
+                                String value = client.get(sk).get();
+                                System.out.println("  => \033[31m" + value + "\033[0m");
+                            } else if(keyType.equals(KeyStringUtil.KeyType.SHARED_KEY)) {
+                                SharedKey sk = Keys.SharedKey.fromString(fullKeyName);
+                                String value = client.get(sk).get();
+                                System.out.println("  => \033[31m" + value + "\033[0m");                            } else if(keyType.equals(KeyStringUtil.KeyType.PRIVATE_HIDDEN_KEY)) {
+                                throw new AtException("PrivateHiddenKey is not implemented yet");
+                            } else {
+                                throw new AtException("Could not evaluate the key type of: " + fullKeyName);
+                            }
                         } else if ("put".equals(verb)) {
-                            value = command.substring(verb.length() + key.length() + 2).trim();
-                            System.out.println("  => \033[31m" + client.put(Keys.SharedKey.fromString(key), value).get() + "\033[0m");
+                            String fullKeyName = parts[1];
+                            String value = command.substring(verb.length() + fullKeyName.length() + 2).trim();
+                            KeyStringUtil keyStringUtil = new KeyStringUtil(fullKeyName);
+                            KeyStringUtil.KeyType keyType = keyStringUtil.getKeyType();
+                            if(keyType.equals(KeyStringUtil.KeyType.PUBLIC_KEY)) {
+                                PublicKey pk = (PublicKey) Keys.fromString(fullKeyName);
+                                String data = client.put(pk, value).get();
+                                System.out.println("  => \033[31m" + data + "\033[0m");
+                            } else if(keyType.equals(KeyStringUtil.KeyType.SELF_KEY)) {
+                                SelfKey sk = (SelfKey) Keys.fromString(fullKeyName);
+                                String data = client.put(sk, value).get();
+                                System.out.println("  => \033[31m" + data + "\033[0m");
+                            } else if(keyType.equals(KeyStringUtil.KeyType.SHARED_KEY)) {
+                                SharedKey sk = Keys.SharedKey.fromString(fullKeyName);
+                                String data = client.put(sk, value).get();
+                                System.out.println("  => \033[31m" + data + "\033[0m");
+                            } else if(keyType.equals(KeyStringUtil.KeyType.PRIVATE_HIDDEN_KEY)) {
+                                throw new AtException("PrivateHiddenKey is not implemented yet");
+                            } else {
+                                throw new AtException("Could not evaluate the key type of: " + fullKeyName);
+                            }
                         } else if ("scan".equals(verb)) {
-                            System.out.println("  => \033[31m" + client.getAtKeys("").get() + "\033[0m");
+                            String regex = "";
+                            if(parts.length > 1) regex = parts[1];
+                            List<Keys.AtKey> value = client.getAtKeys(regex).get();
+                            System.out.println("  => \033[31m" + value + "\033[0m");
+                        } else if("delete".equals(verb)) {
+                            String fullKeyName = parts[1];
+                            KeyStringUtil keyStringUtil = new KeyStringUtil(fullKeyName);
+                            KeyStringUtil.KeyType keyType = keyStringUtil.getKeyType();
+                            if(keyType.equals(KeyStringUtil.KeyType.PUBLIC_KEY)) {
+                                PublicKey pk = (PublicKey) Keys.fromString(fullKeyName);
+                                String data = client.delete(pk).get();
+                                System.out.println("  => \033[31m" + data + "\033[0m");
+                            } else if(keyType.equals(KeyStringUtil.KeyType.SELF_KEY)) {
+                                SelfKey sk = (SelfKey) Keys.fromString(fullKeyName);
+                                String data = client.delete(sk).get();
+                                System.out.println("  => \033[31m" + data + "\033[0m");
+                            } else if(keyType.equals(KeyStringUtil.KeyType.SHARED_KEY)) {
+                                SharedKey sk = Keys.SharedKey.fromString(fullKeyName);
+                                String data = client.delete(sk).get();
+                                System.out.println("  => \033[31m" + data + "\033[0m");
+                            } else if(keyType.equals(KeyStringUtil.KeyType.PRIVATE_HIDDEN_KEY)) {
+                                throw new AtException("PrivateHiddenKey is not implemented yet");
+                            } else {
+                                throw new AtException("Could not evaluate the key type of: " + fullKeyName);
+                            }
+                        } else if("share".equals(verb)) {
+                            // _share <atSign> <keyName> <...data>
+                            // example: I am @bob, run _share @alice test hello world!! | will create a key "@alice:test@bob" with encrypted value "hello world!!"
+
+                            String atSign = parts[1];
+                            String keyName = parts[2];
+                            String value = command.substring(verb.length() + atSign.length() + keyName.length() + 3).trim();
+
+                            String fullKeyName = atSign + ":" + keyName + client.getAtSign();
+                            SharedKey sk = Keys.SharedKey.fromString(fullKeyName);
+                            String data = client.put(sk, value).get();
+                            System.out.println("  => \033[31m" + data + "\033[0m");
                         } else {
                             System.err.println("ERROR: command not recognized: [" + verb + "]");
                         }
@@ -114,6 +194,7 @@ public class REPL {
             }
             System.out.print(client.getAtSign() + "@ ");
         }
+        cliScanner.close();
     }
 
     public static class REPLEventListener implements AtEvents.AtEventListener {
@@ -165,5 +246,18 @@ public class REPL {
                     break;
             }
         }
+    }
+
+    public void printHelpInstructions() {
+        System.out.println("\nAtClient REPL | <> = required, [] = optional");
+        System.out.println("  REPL evaluates atProtocol by default. Use _ to use AtClient commands (see below)");
+        System.out.println("  AtClient Commands:");
+        System.out.println("    _help - print this help message");
+        System.out.println("    _put <key> <value> - put a value to the key (e.g. _put test@bob hello world)");
+        System.out.println("    _get <key> - get a value from the key (e.g. _get test@bob)");
+        System.out.println("    _delete <key> - delete a key (e.g. _delete test@bob)");
+        System.out.println("    _scan [regex] - scan for keys matching the regex (e.g. _scan test@bob.*)");
+        System.out.println("    _share <atSign> <keyName> <...data> - share a key with another atSign (e.g. _share @alice test hello world!!)");
+        System.out.println();
     }
 }
