@@ -36,9 +36,6 @@ import java.util.stream.Collectors;
 
 public class CameraUtil{
 
-    public static final String START = "START";
-    public static final String STOP = "STOP";
-    public static final String EXIT = "EXIT";
     static Webcam webcam  = null;
 
     /**
