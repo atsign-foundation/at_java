@@ -4,6 +4,7 @@ import org.atsign.client.api.impl.clients.AtClientImpl;
 import org.atsign.client.api.impl.connections.AtRootConnection;
 import org.atsign.client.api.impl.connections.DefaultAtConnectionFactory;
 import org.atsign.client.api.impl.events.SimpleAtEventBus;
+import org.atsign.client.api.impl.notification.NotificationParams;
 import org.atsign.client.api.impl.secondaries.RemoteSecondary;
 import org.atsign.common.AtSign;
 import org.atsign.common.AtException;
@@ -15,6 +16,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+
+import javax.management.remote.NotificationResult;
 
 /**
  * The primary interface of the AtSign client library.
@@ -156,9 +159,15 @@ public interface AtClient extends Secondary, AtEvents.AtEventBus {
     CompletableFuture<String> put(PublicKey publicKey, String value);
     CompletableFuture<String> delete(PublicKey publicKey);
 
+    CompletableFuture<String> get(PrivateHiddenKey privateHiddenKey);
+    CompletableFuture<byte[]> getBinary(PrivateHiddenKey privateHiddenKey);
+    CompletableFuture<String> put(PrivateHiddenKey privateHiddenKey, String value);
+    CompletableFuture<String> delete(PrivateHiddenKey privateHiddenKey);
+
     CompletableFuture<String> put(SharedKey sharedKey, byte[] value);
     CompletableFuture<String> put(SelfKey selfKey, byte[] value);
     CompletableFuture<String> put(PublicKey publicKey, byte[] value);
+    CompletableFuture<String> put(PrivateHiddenKey privateHiddenKey, byte[] value);
 
     CompletableFuture<List<AtKey>> getAtKeys(String regex);
 }
