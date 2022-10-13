@@ -300,6 +300,61 @@ public class AtClientImpl implements AtClient {
     }
 
     @Override
+    public CompletableFuture<String> put(PrivateHiddenKey privateHiddenKey, String value) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return _put(privateHiddenKey, value);
+            } catch (Exception e) {
+                throw new CompletionException(e);
+            }
+        });
+    }
+
+    @Override
+    public CompletableFuture<String> get(PrivateHiddenKey privateHiddenKey) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return _get(privateHiddenKey);
+            } catch (Exception e) {
+                throw new CompletionException(e);
+            }
+        });
+    }
+
+    @Override
+    public CompletableFuture<byte[]> getBinary(PrivateHiddenKey privateHiddenKey) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return _getBinary(privateHiddenKey);
+            } catch (Exception e) {
+                throw new CompletionException(e);
+            }
+        });
+    }
+
+    @Override
+    public CompletableFuture<String> delete(PrivateHiddenKey privateHiddenKey) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return _delete(privateHiddenKey);
+            } catch (Exception e) {
+                throw new CompletionException(e);
+            }
+        });
+    }
+
+    @Override
+    public CompletableFuture<String> put(PrivateHiddenKey privateHiddenKey, byte[] value) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return _put(privateHiddenKey, value);
+            } catch (Exception e) {
+                throw new CompletionException(e);
+            }
+        });
+    }
+
+    @Override
     public CompletableFuture<List<AtKey>> getAtKeys(String regex) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -558,13 +613,88 @@ public class AtClientImpl implements AtClient {
         return rawResponse.toString();
     }
 
+    private String _put(PrivateHiddenKey key, String value) throws AtException {
+        // 1. generate dataSignature
+        key.metadata.dataSignature = generateSignature(value);
+
+        // 2. encrypt data with self encryption key
+        String cipherText;
+        try {
+            cipherText = EncryptionUtil.aesEncryptToBase64(value, keys.get(KeysUtil.selfEncryptionKeyName));
+        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException e) {
+            throw new AtException("Failed to encrypt value with self encryption key : " + e.getMessage(), e);
+        }
+
+        // 3. update secondary
+        UpdateVerbBuilder builder = new UpdateVerbBuilder();
+        builder.with(key, cipherText);
+        String command = builder.build();
+        Secondary.Response response = secondary.executeCommand(command, true);
+        if(response.isError) {
+            throw new AtException("Failed to update " + key + " : " + response.error);
+        }
+        return response.toString();
+    }
+
+    private String _get(PrivateHiddenKey key) throws AtException {
+        // 1. build command
+        String command = null;
+        LlookupVerbBuilder builder = new LlookupVerbBuilder();
+        builder.with(key, LlookupVerbBuilder.Type.ALL);
+        command = builder.build();
+
+        // 2. run the command
+        Secondary.Response llookupAllRawResponse = secondary.executeCommand(command, false);
+        if (llookupAllRawResponse.isError) {
+            throw new AtException("Failed to " + command + " : " + llookupAllRawResponse.error);
+        }
+
+        // 3. transform the data to a LlookupAllResponse object
+        LlookupAllResponse model = null;
+        LlookupAllResponseTransformer transformer = new LlookupAllResponseTransformer();
+        model = transformer.transform(llookupAllRawResponse);
+
+        // 4. update key object metadata
+        Metadata fetchedMetadata = Metadata.fromModel(model.metaData);
+        key.metadata = Metadata.squash(fetchedMetadata, key.metadata);
+        key.metadata.isCached = model.key.contains("cached:");
+
+        // 5. decrypt data with self encryption key
+        String decryptedValue;
+        try {
+            decryptedValue = EncryptionUtil.aesDecryptFromBase64(model.data, keys.get(KeysUtil.selfEncryptionKeyName));
+        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException e) {
+            throw new AtException("Failed to decrypt value with self encryption key : " + e.getMessage(), e);
+        }
+
+        // 6. return the AtValue
+        return decryptedValue;
+    }
+
+    private String _delete(PrivateHiddenKey key) throws AtException {
+        // 1. build command
+        String command = null;
+        DeleteVerbBuilder builder = new DeleteVerbBuilder();
+        builder.with(key);
+        command = builder.build();
+        
+        // 2. run command
+        Secondary.Response rawResponse = secondary.executeCommand(command, false);
+        if(rawResponse.isError) {
+            throw new AtException(rawResponse.error);
+        }
+        return rawResponse.toString();
+    }
+
     private byte[] _getBinary(SharedKey sharedKey) throws AtException {throw new RuntimeException("Not Implemented");}
     private byte[] _getBinary(SelfKey selfKey) throws AtException {throw new RuntimeException("Not Implemented");}
     private byte[] _getBinary(PublicKey publicKey) throws AtException {throw new RuntimeException("Not Implemented");}
+    private byte[] _getBinary(PrivateHiddenKey privateHiddenKey) throws AtException {throw new RuntimeException("Not Implemented");}
 
     private String _put(SharedKey sharedKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
     private String _put(SelfKey selfKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
     private String _put(PublicKey publicKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
+    private String _put(PrivateHiddenKey privateHiddenKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
 
     private List<AtKey> _getAtKeys(String regex) throws AtException, ParseException {
         ScanVerbBuilder scanVerbBuilder = new ScanVerbBuilder();
