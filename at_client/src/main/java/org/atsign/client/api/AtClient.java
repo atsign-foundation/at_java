@@ -4,7 +4,6 @@ import org.atsign.client.api.impl.clients.AtClientImpl;
 import org.atsign.client.api.impl.connections.AtRootConnection;
 import org.atsign.client.api.impl.connections.DefaultAtConnectionFactory;
 import org.atsign.client.api.impl.events.SimpleAtEventBus;
-import org.atsign.client.api.impl.notification.NotificationParams;
 import org.atsign.client.api.impl.secondaries.RemoteSecondary;
 import org.atsign.common.AtSign;
 import org.atsign.common.AtException;
@@ -16,8 +15,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-
-import javax.management.remote.NotificationResult;
 
 /**
  * The primary interface of the AtSign client library.
