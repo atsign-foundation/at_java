@@ -23,7 +23,9 @@ public class Conversion_Images
 		if(f.exists())
 		{
 			byte[] data=imageToByteArray(filename);
-			File file=byteArrayToImage(data);
+			BufferedImage image=byteArrayToImage(data);
+			File file=new File("Output.jpg");
+			ImageIO.write(image,"jpg",file);
 			System.out.println("Reconstructed image saved as "+file.getName());
 		}
 		else
@@ -44,12 +46,10 @@ public class Conversion_Images
 	}
 	
 	// This method converts a byte array to an image and returns the image file
-	public static File byteArrayToImage(byte data[])throws IOException
+	public static BufferedImage byteArrayToImage(byte data[])throws IOException
 	{
 		ByteArrayInputStream bis = new ByteArrayInputStream(data);
 		BufferedImage image=ImageIO.read(bis);
-		File file=new File("Output.jpg");
-		ImageIO.write(image,"jpg",file);
-		return file;
+		return image;
 	}
 }
