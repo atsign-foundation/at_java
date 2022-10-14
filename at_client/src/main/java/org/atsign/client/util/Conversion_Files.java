@@ -27,7 +27,7 @@ public class Conversion_Files
 		{
 			index=filename.lastIndexOf('.');
 			extension=filename.substring(index+1);
-			byte[] data=fileToByteArray(filename);
+			byte[] data=fileToByteArray(f);
 			File file=byteArrayToFile(data);
 			System.out.println("Reconstructed file saved as "+file.getName());
 		}
@@ -38,9 +38,8 @@ public class Conversion_Files
 	}
 	
 	// This method converts a file to a byte array and returns the byte array
-	public static byte[] fileToByteArray(String filename)throws IOException
+	public static byte[] fileToByteArray(File file)throws IOException
 	{
-		File file=new File(filename);
 		FileInputStream fis=new FileInputStream(file);
         byte[] data=new byte[(int)file.length()];
         fis.read(data);
