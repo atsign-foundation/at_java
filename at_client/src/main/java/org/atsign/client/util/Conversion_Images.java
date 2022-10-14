@@ -22,7 +22,7 @@ public class Conversion_Images
 		File f=new File(filename);
 		if(f.exists())
 		{
-			byte[] data=imageToByteArray(filename);
+			byte[] data=imageToByteArray(f);
 			BufferedImage image=byteArrayToImage(data);
 			File file=new File("Output.jpg");
 			ImageIO.write(image,"jpg",file);
@@ -35,9 +35,8 @@ public class Conversion_Images
 	}
 	
 	// This method converts an image to a byte array and returns the byte array
-	public static byte[] imageToByteArray(String filename)throws IOException
+	public static byte[] imageToByteArray(File file)throws IOException
 	{
-		File file=new File(filename);
 		BufferedImage image=ImageIO.read(file);
 		ByteArrayOutputStream bos=new ByteArrayOutputStream();
 		ImageIO.write(image,"jpg",bos);
