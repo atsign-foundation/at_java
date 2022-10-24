@@ -1,4 +1,4 @@
-package org.atsign.client.api.impl.notification;
+package org.atsign.client.api.notification;
 
 import java.util.ArrayList;
 import java.util.List;
