@@ -1,4 +1,4 @@
-package org.atsign.client.api.impl.notification;
+package org.atsign.client.api.notification;
 
 import java.util.UUID;
 
@@ -21,6 +21,34 @@ public class NotificationParams {
     private NotificationEnums.Strategy strategy;
     // private Integer latestN = 1;
     // private String notifier = SYSTEM;
+
+    public String getNotificationId() {
+        return id;
+    }
+
+    public AtKey getAtKey() {
+        return atKey;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public NotificationEnums.Operation getOperation() {
+        return operation;
+    }
+
+    public NotificationEnums.MessageType getMessageType() {
+        return messageType;
+    }
+
+    public NotificationEnums.Priority getPriority() {
+        return priority;
+    }
+
+    public NotificationEnums.Strategy getStrategy() {
+        return strategy;
+    }
 
     /**
      * 
