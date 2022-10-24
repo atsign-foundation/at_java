@@ -728,4 +728,41 @@ public class VerbBuilders {
 		}
 	}
 	
+	public static class NotifyListVerbBuilder implements VerbBuilder {
+
+		// get a list of notification json objects by running `notify:list`
+
+		private String regex; // optional
+		private Long from; // optional (epochMillis notification created)
+		private Long to; // optional (epochMillis notification created)
+
+		public void setRegex(String regex) {
+			this.regex = regex;
+		}
+
+		public void setFrom(Long from) {
+			this.from = from;
+		}
+
+		public void setTo(Long to) {
+			this.to = to;
+		}
+
+		@Override
+		public String build() {
+			String b = "notify:list";
+			if(from != null) {
+				b += ":" + from;
+			}
+			if(to != null) {
+				b += ":" + to;
+			}
+			if (regex != null) {
+				b += ":" + regex;
+			}
+			return b;
+		}
+		
+	}
+
 }
