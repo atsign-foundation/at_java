@@ -101,7 +101,7 @@ public class Scan {
         System.out.println("atKeys: {");
         for(int i = 0; i < atKeys.size(); i++) {
             AtKey atKey = atKeys.get(i);
-            System.out.println("  " + i + ":  " + atKey.toString());
+            System.out.println("  " + i + ":  " + (atKey.metadata.isCached ? "cached:" : "") + atKey.toString());
         }
         System.out.println("}");
     }
