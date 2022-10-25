@@ -2,7 +2,7 @@
 import java.nio.charset.StandardCharsets;   //Importing UTF-8 Character Encoding
 
 public class ByteUtil {
-    public String convert(byte[] data){ // Method to convert byte[] array to string
+    public static String convert(byte[] data){ // Method to convert byte[] array to string
         try {
             String st = new String(data, StandardCharsets.UTF_8);   //Trying to parse the byte[] array 'data' to string
             return st;
@@ -12,7 +12,7 @@ public class ByteUtil {
             return null;
         }
     }
-    public byte[] convert(String data){ // Method to convert String to byte[] array
+    public static byte[] convert(String data){ // Method to convert String to byte[] array
         try{
             byte[] bytes = data.getBytes(StandardCharsets.UTF_8);   // Gets the byte value of the string passed , iterating through character by character and stores their byte value into byte array
             return bytes;
