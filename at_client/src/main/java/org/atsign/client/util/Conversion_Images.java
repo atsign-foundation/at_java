@@ -1,5 +1,7 @@
 // importing necessary packages
 
+package org.atsign.client.util;
+
 import java.io.*;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
