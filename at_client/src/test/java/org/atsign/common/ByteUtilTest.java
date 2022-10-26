@@ -1,5 +1,7 @@
 package org.atsign.common;
 
+
+import org.atsign.client.util.ByteUtil;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -11,6 +13,7 @@ public class ByteUtilTest {
     public void testByteUtil0(){
         byte[] bytec = new byte[] {74, 101 ,114 ,101 ,109 ,121 ,84 ,117 ,98 ,111 ,110 ,103 ,98 ,97 ,110 ,117 ,97 ,32  };
         assertEquals("JeremyTubongbanua ",ByteUtil.convert(bytec));
+
     }
 
 
@@ -63,7 +66,7 @@ public class ByteUtilTest {
         assertEquals("--+asdc``~2)",ByteUtil.convert(bytec));
     }
 
-    @Test
+    @Test 
     public void testByteUtil9(){
         String s = "at_sign";
         byte[] bytes = {97 ,116 ,95 ,115 ,105 ,103 ,110 };

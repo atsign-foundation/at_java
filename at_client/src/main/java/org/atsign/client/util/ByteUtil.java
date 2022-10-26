@@ -1,4 +1,4 @@
-
+package org.atsign.client.util;
 import java.nio.charset.StandardCharsets;   //Importing UTF-8 Character Encoding
 
 public class ByteUtil {
