@@ -26,5 +26,7 @@ jobs:
           java-version: '8'
           distribution: 'adopt'
           cache: maven
+          server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
+
       - name: Test and Build with Maven
-        run: mvn --batch-mode --update-snapshots clean install
+        run: mvn --batch-mode --update-snapshots --no-transfer-progress -Dgpg.skip=true clean install
