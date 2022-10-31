@@ -35,5 +35,23 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      - name: Print folder
+        run: ls -al .
+
+      - name: Print m2 settings
+        continue-on-error: true
+        run: cat ~/.m2/settings.xml
+
+      - name: echo secrets
+        run: |
+          echo $MAVEN_USERNAME
+          echo $MAVEN_PASSWORD
+          echo $GPG_PASSPHRASE
+          echo $GPG_PRIVATE_KEY
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
       - name: Test and Build with Maven
         run: mvn --batch-mode --update-snapshots clean install
