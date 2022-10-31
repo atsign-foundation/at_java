@@ -57,4 +57,4 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
       - name: Test and Build with Maven
-        run: mvn --batch-mode --update-snapshots clean install
+        run: mvn --batch-mode --update-snapshots --no-transfer-progress clean install
