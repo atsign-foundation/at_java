@@ -25,6 +25,7 @@ import org.atsign.client.api.AtClient;
 import org.atsign.client.api.AtEvents.AtEventBus;
 import org.atsign.client.api.AtEvents.AtEventListener;
 import org.atsign.client.api.AtEvents.AtEventType;
+import org.atsign.client.api.notification.NotificationService;
 import org.atsign.client.api.Secondary;
 import org.atsign.client.util.EncryptionUtil;
 import org.atsign.client.util.KeysUtil;
@@ -57,8 +58,12 @@ public class AtClientImpl implements AtClient {
 
     private final Map<String, String> keys;
     @Override public Map<String, String> getEncryptionKeys() {return keys;}
+
     private final Secondary secondary;
     @Override public Secondary getSecondary() {return secondary;}
+
+    private final NotificationService notificationService;
+    @Override public NotificationService getNotificationService() {return notificationService;}
 
     private final AtEventBus eventBus;
     public AtClientImpl(AtEventBus eventBus, AtSign atSign, Map<String, String> keys, Secondary secondary) {
@@ -66,7 +71,7 @@ public class AtClientImpl implements AtClient {
         this.atSign = atSign;
         this.keys = keys;
         this.secondary = secondary;
-
+        this.notificationService = NotificationService.create(this);
         eventBus.addEventListener(this, EnumSet.allOf(AtEventType.class));
     }
 
