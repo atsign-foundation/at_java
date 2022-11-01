@@ -5,6 +5,7 @@ import org.atsign.client.api.impl.connections.AtRootConnection;
 import org.atsign.client.api.impl.connections.DefaultAtConnectionFactory;
 import org.atsign.client.api.impl.events.SimpleAtEventBus;
 import org.atsign.client.api.impl.secondaries.RemoteSecondary;
+import org.atsign.client.api.notification.NotificationService;
 import org.atsign.common.AtSign;
 import org.atsign.common.AtException;
 import org.atsign.client.util.KeysUtil;
@@ -161,4 +162,6 @@ public interface AtClient extends Secondary, AtEvents.AtEventBus {
     CompletableFuture<String> put(PublicKey publicKey, byte[] value);
 
     CompletableFuture<List<AtKey>> getAtKeys(String regex);
+
+    NotificationService getNotificationService();
 }
