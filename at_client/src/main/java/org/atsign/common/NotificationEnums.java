@@ -32,7 +32,7 @@ public class NotificationEnums {
         KEY, TEXT,;
 
         public String toString() {
-            return "MessageType." + this.name().toLowerCase();
+            return "MessageType." + this.name().toLowerCase(); // MessageType.text or MessageType.key
         }
     }
 }

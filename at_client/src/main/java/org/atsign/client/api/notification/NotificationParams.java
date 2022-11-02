@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.atsign.common.AtSign;
 import org.atsign.common.KeyBuilders;
+import org.atsign.common.Keys;
 import org.atsign.common.NotificationEnums;
 import org.atsign.common.Keys.AtKey;
 import org.atsign.common.Keys.SharedKey;
@@ -79,10 +80,9 @@ public class NotificationParams {
         return params;
     }
 
-    public static NotificationParams forText(String text, String whomToNotify, Boolean shouldEncrypt) {
+    public static NotificationParams forText(String text, AtSign sharedBy, AtSign sharedWith, Boolean shouldEncrypt) {
 
-        SharedKey sharedKey = new KeyBuilders.SharedKeyBuilder(
-            new AtSign(""), new AtSign(whomToNotify)).build();
+        SharedKey sharedKey = new KeyBuilders.SharedKeyBuilder(sharedBy, sharedWith).key(text).build();
         sharedKey.metadata.isEncrypted = shouldEncrypt;
         
 

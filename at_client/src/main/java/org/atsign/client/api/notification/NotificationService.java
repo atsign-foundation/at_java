@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.atsign.client.api.AtClient;
-import org.atsign.client.api.AtEvents;
 import org.atsign.client.api.impl.clients.NotificationServiceImpl;
 
 public interface NotificationService {

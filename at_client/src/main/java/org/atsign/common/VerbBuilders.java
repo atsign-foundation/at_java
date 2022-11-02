@@ -1,10 +1,13 @@
 package org.atsign.common;
 
+import java.util.UUID;
+
 import org.apache.commons.lang3.StringUtils;
 import org.atsign.common.Keys.AtKey;
 import org.atsign.common.Keys.Metadata;
 import org.atsign.common.Keys.PublicKey;
 import org.atsign.common.Keys.SharedKey;
+import org.atsign.common.NotificationEnums.MessageType;
 
 /**
  * 
@@ -659,7 +662,6 @@ public class VerbBuilders {
 				throw new IllegalArgumentException("key cannot be null or empty");
 			}
 			
-			
 			if(!operation.equals("update") && !operation.equals("delete")) {
 				throw new IllegalArgumentException("Only 'update' and 'delete' are allowed for operation");
 			}
@@ -709,7 +711,7 @@ public class VerbBuilders {
 		}
 	}
 	
-	public static class NotificationStatusVerbBuilder implements VerbBuilder {
+	public static class NotifyStatusVerbBuilder implements VerbBuilder {
 		
 		private String notificationId;
 		
@@ -732,29 +734,29 @@ public class VerbBuilders {
 
 		// get a list of notification json objects by running `notify:list`
 
-		private String regex; // optional
-		private Long from; // optional (epochMillis notification created)
-		private Long to; // optional (epochMillis notification created)
+		private String regex; // optional regex to filter the list of notifications
+		private String from; // optional (epochMillis to yyyy-MM-dd format) e.g. "2019-01-01"
+		private String to; // optional (epochMillis to yyyy-MM-dd format) e.g. "2019-01-01"
 
 		public void setRegex(String regex) {
 			this.regex = regex;
 		}
 
-		public void setFrom(Long from) {
+		public void setFrom(String from) {
 			this.from = from;
 		}
 
-		public void setTo(Long to) {
+		public void setTo(String to) {
 			this.to = to;
 		}
 
 		@Override
 		public String build() {
 			String b = "notify:list";
-			if(from != null) {
+			if(from != null && to == null) { // case 1: only from
 				b += ":" + from;
-			}
-			if(to != null) {
+			} else if(from != null && to != null) { // case 2: from and to
+				b += ":" + from;
 				b += ":" + to;
 			}
 			if (regex != null) {
@@ -763,6 +765,25 @@ public class VerbBuilders {
 			return b;
 		}
 		
+	}
+
+	public static class NotifyDeleteVerbBuilder implements VerbBuilder {
+		
+		private String notificationId; // mandatory
+		
+		public void setNotificationId(String notificationId) {
+			this.notificationId = notificationId;
+		}
+
+		//notify:delete:(?<notificationId>\S+)$';
+		public String build() {
+			
+			if(notificationId == null || StringUtils.isBlank(notificationId)) {
+				throw new IllegalArgumentException("notificationId cannot be null or empty");
+			}
+			
+			return "notify:delete:" + notificationId;
+		}
 	}
 
 }
