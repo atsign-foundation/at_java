@@ -41,6 +41,7 @@ jobs:
     - name: Publish to Apache Maven Central
       run: |
         mvn \
+        install \
         deploy \
         --batch-mode \
         --no-transfer-progress
