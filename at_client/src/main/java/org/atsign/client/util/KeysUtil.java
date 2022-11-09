@@ -18,7 +18,7 @@ import java.util.TreeMap;
 public class KeysUtil {
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    private static final String rootFolder = System.getProperty("user.dir") + "/keys/";
+    private static final String rootFolder = System.getProperty("user.home") + "/.atsign/keys/";
 
     public  static final String pkamPublicKeyName = "aesPkamPublicKey";
     public  static final String pkamPrivateKeyName = "aesPkamPrivateKey";
