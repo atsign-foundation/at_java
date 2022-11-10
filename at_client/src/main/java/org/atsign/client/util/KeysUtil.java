@@ -27,13 +27,13 @@ public class KeysUtil {
     public static final String selfEncryptionKeyName = "selfEncryptionKey";
 
     public static void saveKeys(AtSign atSign, Map<String, String> keys) throws Exception {
-        _makeRootFolder();
+        // _makeRootFolder();
         File file = getKeysFile(atSign, rootFolder);
         System.out.println("Saving keys to " + file.getAbsolutePath());
         // if keys do not exist in project dir, search in ~/
         if (!file.exists()) {
             rootFolder = System.getProperty("user.home") + "/.atsign/keys/" + atSign + "_key.atKeys";
-            _makeRootFolder();
+            // _makeRootFolder();
             file = getKeysFile(atSign, rootFolder);
             System.out.println("Saving keys to " + file.getAbsolutePath());
         } else {
@@ -66,12 +66,17 @@ public class KeysUtil {
     }
 
     public static Map<String, String> loadKeys(AtSign atSign) throws Exception {
-        _makeRootFolder();
         File file = getKeysFile(atSign, rootFolder);
         if (!file.exists()) {
-            throw new AtException("loadKeys: No file at " + file.getAbsolutePath());
+            // if keys do not exist in project dir, search in ~/
+            rootFolder = System.getProperty("user.home") + "/.atsign/keys/" + atSign + "_key.atKeys";
         }
-
+        if (!file.exists()) {
+            _makeRootFolder();
+            rootFolder = System.getProperty("user.dir") + "/keys/";
+            throw new AtException("loadKeys: No file at " + file.getAbsolutePath() +
+                    "\t Please store atsign keys within project dir /keys");
+        }
         String json = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
         @SuppressWarnings("unchecked")
         Map<String, String> encryptedKeys = mapper.readValue(json, Map.class);
@@ -93,10 +98,13 @@ public class KeysUtil {
         return keys;
     }
 
-    private static void _makeRootFolder() throws IOException {
+    // Changing _makeRootFolder to be a last resort func
+    private static void _makeRootFolder() throws IOException, AtException {
+        rootFolder = System.getProperty("user.dir") + "/keys/";
         Path dir = Paths.get(rootFolder);
         if (!Files.exists(dir)) {
             Files.createDirectories(dir);
+            throw new AtException("loadKeys: No file at ~/.atsign/keys or your_proj/keys");
         }
     }
 }
