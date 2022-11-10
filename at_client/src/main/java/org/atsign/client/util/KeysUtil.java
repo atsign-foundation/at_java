@@ -18,7 +18,7 @@ import java.util.TreeMap;
 public class KeysUtil {
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    private static String rootFolder = System.getProperty("user.dir") + "/keys/";
+    private static String rootFolder = System.getProperty("user.home") + "/.atsign/keys/";
 
     public static final String pkamPublicKeyName = "aesPkamPublicKey";
     public static final String pkamPrivateKeyName = "aesPkamPrivateKey";
@@ -27,16 +27,22 @@ public class KeysUtil {
     public static final String selfEncryptionKeyName = "selfEncryptionKey";
 
     public static void saveKeys(AtSign atSign, Map<String, String> keys) throws Exception {
-        // _makeRootFolder();
-        File file = getKeysFile(atSign, rootFolder);
-        System.out.println("Saving keys to " + file.getAbsolutePath());
-        // if keys do not exist in project dir, search in ~/
+        rootFolder += atSign + "_key.atKeys";
+        File file = new File(rootFolder);
+        // if keys do not exist in project ~/, search in dir
         if (!file.exists()) {
-            rootFolder = System.getProperty("user.home") + "/.atsign/keys/" + atSign + "_key.atKeys";
+            rootFolder = System.getProperty("user.dir") + "/keys/" + atSign + "_key.atKeys";
             // _makeRootFolder();
-            file = getKeysFile(atSign, rootFolder);
+            file = new File(rootFolder);
+            if (!file.exists()) {
+                // If atKeys file does not exist,
+                // create dir in ~/ and request
+                // to store key files there
+                _makeRootFolder();
+            }
             System.out.println("Saving keys to " + file.getAbsolutePath());
         } else {
+            System.out.println("Saving keys to " + file.getAbsolutePath());
             // noinspection ResultOfMethodCallIgnored
             file.delete();
         }
@@ -61,21 +67,15 @@ public class KeysUtil {
         Files.write(file.toPath(), json.getBytes(StandardCharsets.UTF_8));
     }
 
-    private static File getKeysFile(AtSign atSign, String rootFolder) {
-        return new File(rootFolder);
-    }
-
     public static Map<String, String> loadKeys(AtSign atSign) throws Exception {
-        File file = getKeysFile(atSign, rootFolder);
+        File file = new File(rootFolder);
         if (!file.exists()) {
             // if keys do not exist in project dir, search in ~/
             rootFolder = System.getProperty("user.home") + "/.atsign/keys/" + atSign + "_key.atKeys";
-        }
-        if (!file.exists()) {
-            _makeRootFolder();
-            rootFolder = System.getProperty("user.dir") + "/keys/";
-            throw new AtException("loadKeys: No file at " + file.getAbsolutePath() +
-                    "\t Please store atsign keys within project dir /keys");
+            file = new File(rootFolder);
+            if (!file.exists()) {
+                _makeRootFolder();
+            }
         }
         String json = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
         @SuppressWarnings("unchecked")
@@ -99,12 +99,12 @@ public class KeysUtil {
     }
 
     // Changing _makeRootFolder to be a last resort func
+    // This creates a dir in ~/
     private static void _makeRootFolder() throws IOException, AtException {
-        rootFolder = System.getProperty("user.dir") + "/keys/";
-        Path dir = Paths.get(rootFolder);
-        if (!Files.exists(dir)) {
-            Files.createDirectories(dir);
-            throw new AtException("loadKeys: No file at ~/.atsign/keys or your_proj/keys");
-        }
+        rootFolder = System.getProperty("user.home") + "/.atsign/keys/";
+        Path rootDir = Paths.get(rootFolder);
+        Files.createDirectories(rootDir);
+        throw new AtException("loadKeys: No file at ~/.atsign/keys or your_proj/keys" +
+                "\t Please store atsign keys within dir ~/.atsign/keys/");
     }
 }
