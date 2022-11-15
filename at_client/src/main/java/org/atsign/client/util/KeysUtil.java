@@ -18,7 +18,8 @@ import java.util.TreeMap;
 public class KeysUtil {
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    private static String rootFolder = System.getProperty("user.home") + "/.atsign/keys/";
+    private static final String rootFolder = System.getProperty("user.home") + "/.atsign/keys/";
+    public static final String keysFileSuffix = "_key.atKeys";
 
     public static final String pkamPublicKeyName = "aesPkamPublicKey";
     public static final String pkamPrivateKeyName = "aesPkamPrivateKey";
@@ -27,17 +28,16 @@ public class KeysUtil {
     public static final String selfEncryptionKeyName = "selfEncryptionKey";
 
     public static void saveKeys(AtSign atSign, Map<String, String> keys) throws Exception {
-        rootFolder += atSign + "_key.atKeys";
-        File file = new File(rootFolder);
-        // if keys do not exist in project ~/, search in dir
+        File file = getKeysFile(atSign, rootFolder);
+        // First check for keys file at ~/.atsign/keys/$atSign_key.atKeys
+        // then check at ./keys/$atSign_key.atKeys
         if (!file.exists()) {
-            rootFolder = System.getProperty("user.dir") + "/keys/" + atSign + "_key.atKeys";
-            // _makeRootFolder();
-            file = new File(rootFolder);
+            String keysFileName = System.getProperty("user.dir") + "/keys/" + atSign + keysFileSuffix;
+            file = getKeysFile(atSign, keysFileName);
             if (!file.exists()) {
                 // If atKeys file does not exist,
-                // create dir in ~/ and request
-                // to store key files there
+                // create dir in ~/.atsign/keys/
+                // to store key files
                 _makeRootFolder();
             }
             System.out.println("Saving keys to " + file.getAbsolutePath());
@@ -68,11 +68,18 @@ public class KeysUtil {
     }
 
     public static Map<String, String> loadKeys(AtSign atSign) throws Exception {
+        // check first if file exists at
+        // ~/.atsign/keys/$atSign_key.atKeys
         File file = new File(rootFolder);
+        file = getKeysFile(atSign, rootFolder);
+
         if (!file.exists()) {
             // if keys do not exist in project dir, search in ~/
-            rootFolder = System.getProperty("user.home") + "/.atsign/keys/" + atSign + "_key.atKeys";
-            file = new File(rootFolder);
+            String keysFileName = System.getProperty("user.home") + "/.atsign/keys/";
+            file = getKeysFile(atSign, keysFileName);
+            // if file does not exist at
+            // ./keys/$atSign_key.atKeys
+            // Create dir to store key files
             if (!file.exists()) {
                 _makeRootFolder();
             }
@@ -98,11 +105,15 @@ public class KeysUtil {
         return keys;
     }
 
+    private static File getKeysFile(AtSign atSign, String rootFolder) {
+        return new File(rootFolder + atSign + keysFileSuffix);
+    }
+
     // Changing _makeRootFolder to be a last resort func
     // This creates a dir in ~/
     private static void _makeRootFolder() throws IOException, AtException {
-        rootFolder = System.getProperty("user.home") + "/.atsign/keys/";
-        Path rootDir = Paths.get(rootFolder);
+        String keysFileName = System.getProperty("user.home") + "/.atsign/keys/";
+        Path rootDir = Paths.get(keysFileName);
         Files.createDirectories(rootDir);
         throw new AtException("loadKeys: No file at ~/.atsign/keys or your_proj/keys" +
                 "\t Please store atsign keys within dir ~/.atsign/keys/");
