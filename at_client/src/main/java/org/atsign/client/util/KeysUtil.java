@@ -6,11 +6,8 @@ import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -18,7 +15,8 @@ import java.util.TreeMap;
 public class KeysUtil {
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    private static final String rootFolder = System.getProperty("user.home") + "/.atsign/keys/";
+    private static final String expectedKeysFilesLocation = System.getProperty("user.home") + "/.atsign/keys/";
+    private static final String legacyKeysFilesLocation = System.getProperty("user.dir") + "/keys/";
     public static final String keysFileSuffix = "_key.atKeys";
 
     public static final String pkamPublicKeyName = "aesPkamPublicKey";
@@ -28,31 +26,18 @@ public class KeysUtil {
     public static final String selfEncryptionKeyName = "selfEncryptionKey";
 
     public static void saveKeys(AtSign atSign, Map<String, String> keys) throws Exception {
-        File file = getKeysFile(atSign, rootFolder);
-        // First check for keys file at ~/.atsign/keys/$atSign_key.atKeys
-        // then check at ./keys/$atSign_key.atKeys
-        if (!file.exists()) {
-            String keysFileName = System.getProperty("user.dir") + "/keys/" + atSign + keysFileSuffix;
-            file = getKeysFile(atSign, keysFileName);
-            if (!file.exists()) {
-                // If atKeys file does not exist,
-                // create dir in ~/.atsign/keys/
-                // to store key files
-                _makeRootFolder();
-            }
-            System.out.println("Saving keys to " + file.getAbsolutePath());
-        } else {
-            System.out.println("Saving keys to " + file.getAbsolutePath());
-            // noinspection ResultOfMethodCallIgnored
-            file.delete();
+        File expectedKeysDirectory = new File(expectedKeysFilesLocation);
+        if (! expectedKeysDirectory.exists()) {
+            Files.createDirectories(expectedKeysDirectory.toPath());
         }
+        File file = getKeysFile(atSign, expectedKeysFilesLocation);
+        System.out.println("Saving keys to " + file.getAbsolutePath());
 
         String selfEncryptionKey = keys.get(selfEncryptionKeyName);
 
         Map<String, String> encryptedKeys = new TreeMap<>();
 
-        // We encrypt all the keys with the AES self encryption key (which is left
-        // unencrypted)
+        // We encrypt all the keys with the AES self encryption key (which is left unencrypted)
         encryptedKeys.put(selfEncryptionKeyName, selfEncryptionKey);
         encryptedKeys.put(pkamPublicKeyName,
                 EncryptionUtil.aesEncryptToBase64(keys.get(pkamPublicKeyName), selfEncryptionKey));
@@ -68,28 +53,23 @@ public class KeysUtil {
     }
 
     public static Map<String, String> loadKeys(AtSign atSign) throws Exception {
-        // check first if file exists at
-        // ~/.atsign/keys/$atSign_key.atKeys
-        File file = new File(rootFolder);
-        file = getKeysFile(atSign, rootFolder);
+        // check first if file exists at canonical location ~/.atsign/keys/$atSign_key.atKeys
+        File file = getKeysFile(atSign, expectedKeysFilesLocation);
 
         if (!file.exists()) {
-            // if keys do not exist in project dir, search in ~/
-            String keysFileName = System.getProperty("user.home") + "/.atsign/keys/";
-            file = getKeysFile(atSign, keysFileName);
-            // if file does not exist at
-            // ./keys/$atSign_key.atKeys
-            // Create dir to store key files
+            // if keys do not exist in root, check in keys sub-directory under current working directory
+            file = getKeysFile(atSign, legacyKeysFilesLocation);
+            // if file does not exist under current working directory, we're done - can't find the keys file
             if (!file.exists()) {
-                _makeRootFolder();
+                throw new AtException("loadKeys: No file called " + atSign + keysFileSuffix + " at ~/.atsign/keys or ./keys" +
+                        "\t Keys files are expected to be in ~/.atsign/keys/ (canonical location) or ./keys/ (legacy location)");
             }
         }
         String json = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
         @SuppressWarnings("unchecked")
         Map<String, String> encryptedKeys = mapper.readValue(json, Map.class);
 
-        // All the keys are encrypted with the AES self encryption key (which is left
-        // unencrypted)
+        // All the keys are encrypted with the AES self encryption key (which is left unencrypted)
         String selfEncryptionKey = encryptedKeys.get(selfEncryptionKeyName);
 
         Map<String, String> keys = new HashMap<>();
@@ -105,17 +85,7 @@ public class KeysUtil {
         return keys;
     }
 
-    private static File getKeysFile(AtSign atSign, String rootFolder) {
-        return new File(rootFolder + atSign + keysFileSuffix);
-    }
-
-    // Changing _makeRootFolder to be a last resort func
-    // This creates a dir in ~/
-    private static void _makeRootFolder() throws IOException, AtException {
-        String keysFileName = System.getProperty("user.home") + "/.atsign/keys/";
-        Path rootDir = Paths.get(keysFileName);
-        Files.createDirectories(rootDir);
-        throw new AtException("loadKeys: No file at ~/.atsign/keys or your_proj/keys" +
-                "\t Please store atsign keys within dir ~/.atsign/keys/");
+    private static File getKeysFile(AtSign atSign, String folderToLookIn) {
+        return new File(folderToLookIn + atSign + keysFileSuffix);
     }
 }
