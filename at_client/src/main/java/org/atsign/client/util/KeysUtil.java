@@ -15,8 +15,8 @@ import java.util.TreeMap;
 public class KeysUtil {
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    private static final String expectedKeysFilesLocation = System.getProperty("user.home") + "/.atsign/keys/";
-    private static final String legacyKeysFilesLocation = System.getProperty("user.dir") + "/keys/";
+    public static final String expectedKeysFilesLocation = System.getProperty("user.home") + "/.atsign/keys/";
+    public static final String legacyKeysFilesLocation = System.getProperty("user.dir") + "/keys/";
     public static final String keysFileSuffix = "_key.atKeys";
 
     public static final String pkamPublicKeyName = "aesPkamPublicKey";
@@ -85,7 +85,7 @@ public class KeysUtil {
         return keys;
     }
 
-    private static File getKeysFile(AtSign atSign, String folderToLookIn) {
+    public static File getKeysFile(AtSign atSign, String folderToLookIn) {
         return new File(folderToLookIn + atSign + keysFileSuffix);
     }
 }

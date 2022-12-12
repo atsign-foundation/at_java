@@ -48,7 +48,7 @@ public class Onboard {
         }
 
         AuthUtil auth = new AuthUtil();
-        OnboardingUtil onboarding = new OnboardingUtil();
+        OnboardingUtil onboardingUtil = new OnboardingUtil();
 
         System.out.println("Authenticating with CRAM");
         auth.authenticateWithCram(conn, atSign, cramSecret);
@@ -57,13 +57,13 @@ public class Onboard {
         // We've authenticated with CRAM; let's generate and store the various keys we need
         Map<String, String> keys = new HashMap<>();
         System.out.println("Generating symmetric 'self' encryption key");
-        onboarding.generateSelfEncryptionKey(keys);
+        onboardingUtil.generateSelfEncryptionKey(keys);
 
         System.out.println("Generating PKAM keypair");
-        onboarding.generatePkamKeypair(keys);
+        onboardingUtil.generatePkamKeypair(keys);
 
         System.out.println("Generating asymmetric encryption keypair");
-        onboarding.generateEncryptionKeypair(keys);
+        onboardingUtil.generateEncryptionKeypair(keys);
 
         // Finally, let's store all the keys to a .keys file
         System.out.println("Saving keys to file");
@@ -71,7 +71,7 @@ public class Onboard {
 
         // we're authenticated, let's store the PKAM public key to the secondary
         System.out.println("Storing PKAM public key on cloud secondary");
-        onboarding.storePkamPublicKey(conn, keys);
+        onboardingUtil.storePkamPublicKey(conn, keys);
 
         // and now that the PKAM public key is on the server, let's auth via PKAM
         System.out.println("Authenticating with PKAM");
@@ -79,11 +79,11 @@ public class Onboard {
         System.out.println("Authenticating with PKAM succeeded");
 
         System.out.println("Storing encryption public key");
-        onboarding.storePublicEncryptionKey(conn, atSign, keys);
+        onboardingUtil.storePublicEncryptionKey(conn, atSign, keys);
 
         // and as we've successfully authenticated with PKAM, let's delete the CRAM secret
         System.out.println("Deleting CRAM secret");
-        onboarding.deleteCramKey(conn);
+        onboardingUtil.deleteCramKey(conn);
 
         System.out.println("Onboarding complete");
     }
