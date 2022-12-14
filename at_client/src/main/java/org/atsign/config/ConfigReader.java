@@ -12,9 +12,9 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
  * Loads, reads and returns properties from the configuration file in the resources
  */
 public class ConfigReader {
-    private static Map<String, Object> config;
+    private static HashMap<String, Object> config;
 
-    private static ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    private static final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     
     public static String getProperty(String property, String subProperty) throws IOException {
         if (config == null){
@@ -38,6 +38,7 @@ public class ConfigReader {
      */
     public static void loadConfig() throws IOException {
         InputStream inputStream = ClassLoader.getSystemResourceAsStream("config.yaml");
+        //noinspection unchecked
         config = mapper.readValue(inputStream, HashMap.class);
     }
 }
