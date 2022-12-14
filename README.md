@@ -1,5 +1,8 @@
 <img width=250px src="https://atsign.dev/assets/img/atPlatform_logo_gray.svg?sanitize=true">
 
+[![gitHub license](https://img.shields.io/badge/license-BSD3-blue.svg)](./LICENSE)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/atsign-foundation/at_java/badge)](https://api.securityscorecards.dev/projects/github.com/atsign-foundation/at_java)
+
 # The atPlatform for Java developers
 
 This repo contains libraries, tools, samples and examples for developers who wish
@@ -9,8 +12,6 @@ NB: As of May 3 2022, the Java client library can still be considered a 1.0.0-Be
 be breaking changes, based on feedback from users of the library, until we get to a final version 1.0.0
 
 ### Contributions welcome!
-
-[![gitHub license](https://img.shields.io/badge/license-BSD3-blue.svg)](./LICENSE)
 
 All of our software is open with intent. We welcome contributions - we want pull requests, and we want
 to hear about issues. See also [CONTRIBUTING.md](CONTRIBUTING.md)
