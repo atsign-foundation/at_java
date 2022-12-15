@@ -11,8 +11,8 @@ import org.atsign.common.VerbBuilders.DeleteVerbBuilder;
 import org.atsign.common.VerbBuilders.FromVerbBuilder;
 import org.atsign.common.VerbBuilders.LlookupVerbBuilder;
 import org.atsign.common.VerbBuilders.LookupVerbBuilder;
-import org.atsign.common.VerbBuilders.NotificationStatusVerbBuilder;
 import org.atsign.common.VerbBuilders.NotifyKeyChangeBuilder;
+import org.atsign.common.VerbBuilders.NotifyStatusVerbBuilder;
 import org.atsign.common.VerbBuilders.NotifyTextVerbBuilder;
 import org.atsign.common.VerbBuilders.PKAMVerbBuilder;
 import org.atsign.common.VerbBuilders.POLVerbBuilder;
@@ -672,21 +672,19 @@ public class VerbBuildersTest {
 
 	@Test
 	public void notificationStatusVerbBuilderTest() {
-
 		// Test not setting any parameters
 		assertThrows("Mandatory fields are not set. Expecting a IllegalArgumentException being thrown.",
 				IllegalArgumentException.class, () -> {
-					final NotificationStatusVerbBuilder notificationStatusVerbBuilder = new NotificationStatusVerbBuilder();
-					// Expect build to throw Illegal argument exception for not setting mandatory
-					// parameters
+					final NotifyStatusVerbBuilder notificationStatusVerbBuilder = new NotifyStatusVerbBuilder();
+					// Expect build to throw Illegal argument exception for not setting mandatory parameters
 					notificationStatusVerbBuilder.build();
 				});
 		
-		final NotificationStatusVerbBuilder notificationStatusVerbBuilder = new NotificationStatusVerbBuilder();
+		// Test with notification id parameter
+		final NotifyStatusVerbBuilder notificationStatusVerbBuilder = new NotifyStatusVerbBuilder();
 		notificationStatusVerbBuilder.setNotificationId("n1234");
 		String expectedResult = "notify:status:n1234";
 		assertEquals(expectedResult, notificationStatusVerbBuilder.build());
-		
 	}
 
 	@After
