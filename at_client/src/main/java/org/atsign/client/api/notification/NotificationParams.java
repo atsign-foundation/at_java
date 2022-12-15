@@ -23,6 +23,10 @@ public class NotificationParams {
     // private Integer latestN = 1;
     // private String notifier = SYSTEM;
 
+    // only this class, children, and other classes in this package can create instances
+    // use static factory methods to create instances of NotificationParams.
+    protected NotificationParams() {}
+
     public String getNotificationId() {
         return id;
     }
