@@ -8,6 +8,7 @@ import org.atsign.common.RegisterApiTask;
 import org.atsign.common.AtException;
 import org.atsign.config.ConfigReader;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -65,7 +66,7 @@ public class Register implements Callable<String> {
         return "Done.";
     }
 
-    void readParameters() {
+    void readParameters() throws IOException {
 
         // checks to ensure only either of email or super-API key are provided as args.
         // if super-API key is provided uses registrar v3, otherwise uses registrar v2.
