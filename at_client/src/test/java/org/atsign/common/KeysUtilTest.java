@@ -8,6 +8,8 @@ import static org.junit.Assert.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,7 +41,8 @@ public class KeysUtilTest {
         // When we call KeysUtil.saveKeys
         KeysUtil.saveKeys(testAtSign, keys);
 
-        // Then we end up with a file with the expected name in the expected (canonical) location
+        // Then we end up with a file with the expected name in the expected (canonical)
+        // location
         assertTrue(expected.exists());
     }
 
@@ -69,13 +72,28 @@ public class KeysUtilTest {
         onboardingUtil.generateSelfEncryptionKey(keys);
 
         KeysUtil.saveKeys(testAtSign, keys);
+        File expected = KeysUtil.getKeysFile(testAtSign, KeysUtil.expectedKeysFilesLocation);
+        assertTrue(expected.exists());
+        System.out.println("Expected file path: " + expected.toPath().toString());
 
         // Given a correctly formatted keys file in the legacy location
-        //   And there is NOT a keys file in the canonical location
-        // So = we'll need to copy the generated file to the legacy location
+        // And there is NOT a keys file in the canonical location
+        // So we'll need to copy the generated file to the legacy location
         // And delete the file we just generated
 
+        // Files.deleteIfExists(KeysUtil.getKeysFile(testAtSign,
+        // KeysUtil.legacyKeysFilesLocation).toPath());
+        Path legacyFilePath = Paths.get(KeysUtil.legacyKeysFilesLocation + "/" + testAtSign + ".atKeys");
+
+        File legacyFile = new File(legacyFilePath.toString());
+        System.out.println("Legacy file: " + legacyFile.toPath().toString());
+
+        Files.deleteIfExists(KeysUtil.getKeysFile(testAtSign, KeysUtil.expectedKeysFilesLocation).toPath());
         // When we call KeysUtil.loadKeys
         // Then the keys are loaded successfully from the legacy location
+        KeysUtil.loadKeys(testAtSign);
+        File retrievedFile = KeysUtil.getKeysFile(testAtSign, KeysUtil.legacyKeysFilesLocation);
+        assertEquals(retrievedFile.getAbsoluteFile(),
+                KeysUtil.legacyKeysFilesLocation);
     }
 }
