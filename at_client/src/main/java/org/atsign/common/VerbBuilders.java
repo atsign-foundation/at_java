@@ -781,7 +781,7 @@ public class VerbBuilders {
 
 	public static class NotifyDeleteVerbBuilder implements VerbBuilder {
 		
-		private String notificationId; // mandatory
+		private String notificationId; // mandatory, the id of the notification to delete
 		
 		public void setNotificationId(String notificationId) {
 			this.notificationId = notificationId;

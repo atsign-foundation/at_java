@@ -3,6 +3,9 @@ package org.atsign.common;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
+import java.util.Calendar;
+import java.util.Date;
+
 import org.atsign.common.Keys.PublicKey;
 import org.atsign.common.Keys.SelfKey;
 import org.atsign.common.Keys.SharedKey;
@@ -11,7 +14,9 @@ import org.atsign.common.VerbBuilders.DeleteVerbBuilder;
 import org.atsign.common.VerbBuilders.FromVerbBuilder;
 import org.atsign.common.VerbBuilders.LlookupVerbBuilder;
 import org.atsign.common.VerbBuilders.LookupVerbBuilder;
+import org.atsign.common.VerbBuilders.NotifyDeleteVerbBuilder;
 import org.atsign.common.VerbBuilders.NotifyKeyChangeBuilder;
+import org.atsign.common.VerbBuilders.NotifyListVerbBuilder;
 import org.atsign.common.VerbBuilders.NotifyStatusVerbBuilder;
 import org.atsign.common.VerbBuilders.NotifyTextVerbBuilder;
 import org.atsign.common.VerbBuilders.PKAMVerbBuilder;
@@ -671,7 +676,7 @@ public class VerbBuildersTest {
 	}
 
 	@Test
-	public void notificationStatusVerbBuilderTest() {
+	public void notifyStatusVerbBuilderTest() {
 		// Test not setting any parameters
 		assertThrows("Mandatory fields are not set. Expecting a IllegalArgumentException being thrown.",
 				IllegalArgumentException.class, () -> {
@@ -685,6 +690,49 @@ public class VerbBuildersTest {
 		notificationStatusVerbBuilder.setNotificationId("n1234");
 		String expectedResult = "notify:status:n1234";
 		assertEquals(expectedResult, notificationStatusVerbBuilder.build());
+	}
+
+	@Test
+	public void notifyListVerbBuilderTest() {
+		// test with no argument
+		NotifyListVerbBuilder notificationListVerbBuilder = new NotifyListVerbBuilder();
+		assertEquals("notify:list", notificationListVerbBuilder.build());
+
+		// Test with regex
+		notificationListVerbBuilder = new NotifyListVerbBuilder();
+		notificationListVerbBuilder.setRegex(".*");
+		assertEquals("notify:list:.*", notificationListVerbBuilder.build());
+		
+		// Test with fromDate and toDate
+		 notificationListVerbBuilder = new NotifyListVerbBuilder();
+		Date fromDate = new Calendar.Builder().setDate(2020, Calendar.JANUARY, 1).build().getTime(); 
+		Date toDate = new Calendar.Builder().setDate(2020, Calendar.JANUARY, 2).build().getTime();
+		notificationListVerbBuilder.setFrom(fromDate);
+		notificationListVerbBuilder.setTo(toDate);
+		assertEquals("notify:list:2020-01-01:2020-01-02", notificationListVerbBuilder.build());
+
+		// test with regex, fromDate, and toDate
+		notificationListVerbBuilder = new NotifyListVerbBuilder();
+		notificationListVerbBuilder.setFrom(fromDate);
+		notificationListVerbBuilder.setTo(toDate);
+		notificationListVerbBuilder.setRegex(".*");
+		assertEquals("notify:list:2020-01-01:2020-01-02:.*", notificationListVerbBuilder.build());
+	}
+
+	@Test
+	public void notifyDeleteVerbBuilderTest() {
+		// test with no argument
+		assertThrows("Mandatory fields are not set. Expecting a IllegalArgumentException being thrown.",
+				IllegalArgumentException.class, () -> {
+					NotifyDeleteVerbBuilder notificationDeleteVerbBuilder = new NotifyDeleteVerbBuilder();
+					// Expect build to throw Illegal argument exception for not setting mandatory parameters
+					notificationDeleteVerbBuilder.build();
+				});
+
+		// Test with notification id argument
+		NotifyDeleteVerbBuilder notificationDeleteVerbBuilder = new NotifyDeleteVerbBuilder();
+		notificationDeleteVerbBuilder.setNotificationId("n1234");
+		assertEquals("notify:delete:n1234", notificationDeleteVerbBuilder.build());
 	}
 
 	@After
