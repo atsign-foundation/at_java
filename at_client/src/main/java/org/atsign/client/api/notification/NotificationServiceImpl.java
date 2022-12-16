@@ -14,7 +14,7 @@ import org.atsign.common.AtSign;
 import org.atsign.common.NotificationEnums;
 import org.atsign.common.NotificationStatus;
 import org.atsign.common.ResponseTransformers.NotifyListResponseTransformer;
-import org.atsign.common.VerbBuilders.NotifyDeleteVerbBuilder;
+import org.atsign.common.VerbBuilders.NotifyRemoveVerbBuilder;
 import org.atsign.common.VerbBuilders.NotifyKeyChangeBuilder;
 import org.atsign.common.VerbBuilders.NotifyListVerbBuilder;
 import org.atsign.common.VerbBuilders.NotifyTextVerbBuilder;
@@ -132,8 +132,14 @@ public class NotificationServiceImpl implements NotificationService {
         });
     }
 
+    /**
+     * Remove a notification from the notification store.
+     * Each notification has a notificationId. Obtain these ids from notifyList(...)
+     * @param notificationId - notificationId to remove from the notification store
+     * @return NotificationResult object detailing the status of the notification. The status of the notification will be `delivered` as long as there was a response from the server. A `delivered` status does not mean the notification existed in the first place.
+     */
     @Override
-    public CompletableFuture<NotificationResult> notifyDelete(String notificationId) {
+    public CompletableFuture<NotificationResult> notifyRemove(String notificationId) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return deleteNotification(notificationId);
@@ -144,7 +150,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public CompletableFuture<NotificationResult> notifyDeleteAll() {
+    public CompletableFuture<NotificationResult> notifyRemoveAll() {
         throw new RuntimeException("Not implemented yet");
     }
 
@@ -153,14 +159,16 @@ public class NotificationServiceImpl implements NotificationService {
     /// ******************************
 
     private NotificationResult deleteNotification(String notificationId) throws AtException {
-        NotifyDeleteVerbBuilder b = new NotifyDeleteVerbBuilder();
+        NotifyRemoveVerbBuilder b = new NotifyRemoveVerbBuilder();
         b.setNotificationId(notificationId);
         String command = b.build();
+
+
         NotificationResult result = new NotificationResult(notificationId, null,
                 NotificationStatus.undelivered);
 
         Secondary.Response response = (atClient).executeCommand(command, false);
-        if (response.data != "null") {
+        if (response.data.equals("success")) {
             result.setNotificationStatus(NotificationStatus.delivered);
         }
         return result;
