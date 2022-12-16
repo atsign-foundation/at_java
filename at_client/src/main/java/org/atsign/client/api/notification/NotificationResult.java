@@ -27,20 +27,20 @@ public class NotificationResult {
     }
 
     public AtKey getAtKey() {
-        return atKey;
+        return this.atKey;
     }
 
     public String getNotificationId() {
-        return notificationId;
+        return this.notificationId;
     }
 
     public NotificationStatus getNotificationStatus() {
-        return notificationStatus;
+        return this.notificationStatus;
     }
 
     @Override
     public String toString() {
-        return "id: " + notificationId  + " | status: " + notificationStatus.name();
+        return "id: " + this.notificationId  + " | status: " + this.notificationStatus.name();
     }
     
 }
