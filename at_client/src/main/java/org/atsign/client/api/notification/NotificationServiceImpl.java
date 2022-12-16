@@ -1,16 +1,13 @@
-package org.atsign.client.api.impl.clients;
+package org.atsign.client.api.notification;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.Secondary;
-import org.atsign.client.api.notification.AtNotification;
-import org.atsign.client.api.notification.NotificationParams;
-import org.atsign.client.api.notification.NotificationResult;
-import org.atsign.client.api.notification.NotificationService;
 import org.atsign.client.util.AtClientValidation;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
@@ -43,6 +40,7 @@ public class NotificationServiceImpl implements NotificationService {
         return CompletableFuture.supplyAsync(() -> {
             NotificationResult result = new NotificationResult(params.getNotificationId(), params.getAtKey(),
                     NotificationStatus.undelivered);
+
             if (params.getAtKey().sharedBy == null) {
                 params.getAtKey().sharedBy = atClient.getAtSign();
             }
@@ -77,6 +75,7 @@ public class NotificationServiceImpl implements NotificationService {
             String command = builder.build();
             try {
                 Secondary.Response response = (atClient).executeCommand(command, false);
+                // System.out.println("Executed command: " + command + " got: " + response.toString());
                 if (response.data != "null") {
                     result.setNotificationStatus(NotificationStatus.delivered);
                 }
@@ -92,17 +91,24 @@ public class NotificationServiceImpl implements NotificationService {
         throw new RuntimeException("Not implemented yet");
     }
 
+    /**
+     * Get the list of notifications (notify:list verb)
+     * 
+     * @return non-null List<AtNotification> object, emptyable
+     */
     @Override
     public CompletableFuture<List<AtNotification>> notifyList() {
         return this.notifyList(null);
     }
 
+    /**
+     * Get the list of notifications (notify:list verb)
+     * 
+     * @param regex - regex to filter the notifications, nullable
+     * @return non-null List<AtNotification> object, emptyable
+     */
     public CompletableFuture<List<AtNotification>> notifyList(String regex) {
-        return this.notifyList(null, null);
-    }
-
-    public CompletableFuture<List<AtNotification>> notifyList(String regex, String fromDate) {
-        return this.notifyList(regex, fromDate, null);
+        return this.notifyList(regex, null, null);
     }
 
     /**
@@ -113,48 +119,24 @@ public class NotificationServiceImpl implements NotificationService {
      *                 "2021-01-01"), nullable
      * @param toDate   - to date to filter the notifications yyyy-MM-dd (e.g.
      *                 "2021-01-01"), nullable
-     * @return non-null List<AtNotification> object
+     * @return non-null List<AtNotification> object, emptyable
      */
-    public CompletableFuture<List<AtNotification>> notifyList(String regex, String fromDate, String toDate) {
+    public CompletableFuture<List<AtNotification>> notifyList(String regex, Date fromDate, Date toDate) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-
-                List<AtNotification> notifications = new ArrayList<AtNotification>();
-
-                NotifyListVerbBuilder b = new NotifyListVerbBuilder();
-                b.setRegex(regex);
-                b.setFrom(fromDate);
-                b.setTo(toDate);
-                String command = b.build();
-
-                Secondary.Response response = (atClient).executeCommand(command, false);
-
-                notifications = AtNotification.fromResponse(response);
-
-                return notifications;
+                List<AtNotification> atNotifications = getNotifications(regex, fromDate, toDate);
+                return atNotifications;
             } catch (AtException e) {
                 throw new CompletionException(e);
             }
-
         });
     }
 
     @Override
     public CompletableFuture<NotificationResult> notifyDelete(String notificationId) {
-
         return CompletableFuture.supplyAsync(() -> {
             try {
-                NotifyDeleteVerbBuilder b = new NotifyDeleteVerbBuilder();
-                b.setNotificationId(notificationId);
-                String command = b.build();
-                NotificationResult result = new NotificationResult(notificationId, null,
-                        NotificationStatus.undelivered);
-
-                Secondary.Response response = (atClient).executeCommand(command, false);
-                if (response.data != "null") {
-                    result.setNotificationStatus(NotificationStatus.delivered);
-                }
-                return result;
+                return deleteNotification(notificationId);
             } catch (AtException e) {
                 throw new CompletionException(e);
             }
@@ -164,6 +146,40 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public CompletableFuture<NotificationResult> notifyDeleteAll() {
         throw new RuntimeException("Not implemented yet");
+    }
+
+    /// ******************************
+    /// Private Methods
+    /// ******************************
+
+    private NotificationResult deleteNotification(String notificationId) throws AtException {
+        NotifyDeleteVerbBuilder b = new NotifyDeleteVerbBuilder();
+        b.setNotificationId(notificationId);
+        String command = b.build();
+        NotificationResult result = new NotificationResult(notificationId, null,
+                NotificationStatus.undelivered);
+
+        Secondary.Response response = (atClient).executeCommand(command, false);
+        if (response.data != "null") {
+            result.setNotificationStatus(NotificationStatus.delivered);
+        }
+        return result;
+    }
+
+    private List<AtNotification> getNotifications(String regex, Date fromDate, Date toDate) throws AtException {
+        List<AtNotification> notifications = new ArrayList<AtNotification>();
+
+        NotifyListVerbBuilder b = new NotifyListVerbBuilder();
+        b.setRegex(regex);
+        b.setFrom(fromDate);
+        b.setTo(toDate);
+        String command = b.build();
+
+        Secondary.Response response = (atClient).executeCommand(command, false);
+
+        notifications = AtNotification.fromResponse(response);
+
+        return notifications;
     }
 
 }
