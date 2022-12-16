@@ -765,7 +765,9 @@ public class VerbBuilders {
 		public String build() {
 			String b = "notify:list";
 			if(from != null && to != null) {
-				// TODO check if from < to. from < to is valid.
+				if(from.toInstant().toEpochMilli() > to.toInstant().toEpochMilli()) {
+					throw new IllegalArgumentException("from date cannot be greater than to date");
+				}
 				b += ":" + formatter.format(from);
 				b += ":" + formatter.format(to);
 			}
