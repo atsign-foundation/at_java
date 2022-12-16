@@ -1,5 +1,10 @@
 package org.atsign.common;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
@@ -734,30 +739,35 @@ public class VerbBuilders {
 
 		// get a list of notification json objects by running `notify:list`
 
+		private static SimpleDateFormat formatter;
+
+		static {
+			formatter = new SimpleDateFormat("yyyy-MM-dd");
+		}
+		
 		private String regex; // optional regex to filter the list of notifications
-		private String from; // optional (epochMillis to yyyy-MM-dd format) e.g. "2019-01-01"
-		private String to; // optional (epochMillis to yyyy-MM-dd format) e.g. "2019-01-01"
+		private Date from; // optional (yyyy-MM-dd format) e.g. "2019-01-01"
+		private Date to; // optional (yyyy-MM-dd format) e.g. "2019-01-01"
 
 		public void setRegex(String regex) {
 			this.regex = regex;
 		}
 
-		public void setFrom(String from) {
+		public void setFrom(Date from) {
 			this.from = from;
 		}
 
-		public void setTo(String to) {
+		public void setTo(Date to) {
 			this.to = to;
 		}
 
 		@Override
 		public String build() {
 			String b = "notify:list";
-			if(from != null && to == null) { // case 1: only from
-				b += ":" + from;
-			} else if(from != null && to != null) { // case 2: from and to
-				b += ":" + from;
-				b += ":" + to;
+			if(from != null && to != null) {
+				// TODO check if from < to. from < to is valid.
+				b += ":" + formatter.format(from);
+				b += ":" + formatter.format(to);
 			}
 			if (regex != null) {
 				b += ":" + regex;
