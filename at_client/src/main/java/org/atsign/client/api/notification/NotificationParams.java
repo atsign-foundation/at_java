@@ -84,7 +84,7 @@ public class NotificationParams {
         return params;
     }
 
-    public static NotificationParams forText(String text, AtSign sharedBy, AtSign sharedWith, Boolean shouldEncrypt) {
+    public static NotificationParams forText(String text, AtSign sharedBy, AtSign sharedWith, boolean shouldEncrypt) {
 
         SharedKey sharedKey = new KeyBuilders.SharedKeyBuilder(sharedBy, sharedWith).key(text).build();
         sharedKey.metadata.isEncrypted = shouldEncrypt;
