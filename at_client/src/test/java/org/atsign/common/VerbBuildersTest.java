@@ -14,7 +14,7 @@ import org.atsign.common.VerbBuilders.DeleteVerbBuilder;
 import org.atsign.common.VerbBuilders.FromVerbBuilder;
 import org.atsign.common.VerbBuilders.LlookupVerbBuilder;
 import org.atsign.common.VerbBuilders.LookupVerbBuilder;
-import org.atsign.common.VerbBuilders.NotifyDeleteVerbBuilder;
+import org.atsign.common.VerbBuilders.NotifyRemoveVerbBuilder;
 import org.atsign.common.VerbBuilders.NotifyKeyChangeBuilder;
 import org.atsign.common.VerbBuilders.NotifyListVerbBuilder;
 import org.atsign.common.VerbBuilders.NotifyStatusVerbBuilder;
@@ -724,13 +724,13 @@ public class VerbBuildersTest {
 		// test with no argument
 		assertThrows("Mandatory fields are not set. Expecting a IllegalArgumentException being thrown.",
 				IllegalArgumentException.class, () -> {
-					NotifyDeleteVerbBuilder notificationDeleteVerbBuilder = new NotifyDeleteVerbBuilder();
+					NotifyRemoveVerbBuilder notificationDeleteVerbBuilder = new NotifyRemoveVerbBuilder();
 					// Expect build to throw Illegal argument exception for not setting mandatory parameters
 					notificationDeleteVerbBuilder.build();
 				});
 
 		// Test with notification id argument
-		NotifyDeleteVerbBuilder notificationDeleteVerbBuilder = new NotifyDeleteVerbBuilder();
+		NotifyRemoveVerbBuilder notificationDeleteVerbBuilder = new NotifyRemoveVerbBuilder();
 		notificationDeleteVerbBuilder.setNotificationId("n1234");
 		assertEquals("notify:delete:n1234", notificationDeleteVerbBuilder.build());
 	}

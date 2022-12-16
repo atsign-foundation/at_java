@@ -779,7 +779,7 @@ public class VerbBuilders {
 		
 	}
 
-	public static class NotifyDeleteVerbBuilder implements VerbBuilder {
+	public static class NotifyRemoveVerbBuilder implements VerbBuilder {
 		
 		private String notificationId; // mandatory, the id of the notification to delete
 		
@@ -794,7 +794,7 @@ public class VerbBuilders {
 				throw new IllegalArgumentException("notificationId cannot be null or empty");
 			}
 			
-			return "notify:delete:" + notificationId;
+			return "notify:remove:" + notificationId;
 		}
 	}
 

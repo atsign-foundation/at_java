@@ -63,16 +63,16 @@ public interface NotificationService {
     CompletableFuture<List<AtNotification>> notifyList(String regex, Date fromDate, Date toDate);
 
     /**
-     * Deletes a notification given a String notificationId
+     * Removes a notification given a String notificationId
      * @param notificationId id representing a notification inside the atSign's atServer notification store
      * @return NotificationResult object detailing the result of running this method
      */
-    CompletableFuture<NotificationResult> notifyDelete(String notificationId);
+    CompletableFuture<NotificationResult> notifyRemove(String notificationId);
 
     /**
-     * Deletes all notiifcation in the atServer's notification store
+     * Removes all notifications in the atServer's notification store
      * @return NotificationResult object detailing the result of running this method
      */
-    CompletableFuture<NotificationResult> notifyDeleteAll();
+    CompletableFuture<NotificationResult> notifyRemoveAll();
 
 }
