@@ -6,6 +6,7 @@ import org.atsign.client.api.impl.connections.DefaultAtConnectionFactory;
 import org.atsign.client.api.impl.events.SimpleAtEventBus;
 import org.atsign.client.api.impl.secondaries.RemoteSecondary;
 import org.atsign.common.AtSign;
+import org.atsign.common.options.GetRequestOptions;
 import org.atsign.common.AtException;
 import org.atsign.client.util.KeysUtil;
 
@@ -152,7 +153,9 @@ public interface AtClient extends Secondary, AtEvents.AtEventBus {
     CompletableFuture<String> delete(SelfKey selfKey);
 
     CompletableFuture<String> get(PublicKey publicKey);
+    CompletableFuture<String> get(PublicKey publicKey, GetRequestOptions getRequestOptions);
     CompletableFuture<byte[]> getBinary(PublicKey publicKey);
+    CompletableFuture<byte[]> getBinary(PublicKey publicKey, GetRequestOptions getRequestOptions);
     CompletableFuture<String> put(PublicKey publicKey, String value);
     CompletableFuture<String> delete(PublicKey publicKey);
 
