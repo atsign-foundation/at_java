@@ -732,7 +732,7 @@ public class VerbBuildersTest {
 		// Test with notification id argument
 		NotifyRemoveVerbBuilder notificationDeleteVerbBuilder = new NotifyRemoveVerbBuilder();
 		notificationDeleteVerbBuilder.setNotificationId("n1234");
-		assertEquals("notify:delete:n1234", notificationDeleteVerbBuilder.build());
+		assertEquals("notify:remove:n1234", notificationDeleteVerbBuilder.build());
 	}
 
 	@After
