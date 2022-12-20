@@ -46,6 +46,7 @@ public class NotificationServiceImpl implements NotificationService {
             }
 
             // TODO: AtClientValidation notification
+            // AtClientValidation.validateNotificationRequest(params, /* get hold of rootDomain somehow */, /* get hold of root port somehow */);
 
             VerbBuilder builder;
             switch (params.getMessageType()) {
