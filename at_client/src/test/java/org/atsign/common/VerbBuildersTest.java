@@ -388,6 +388,15 @@ public class VerbBuildersTest {
 		builder.with(pk, Type.ALL);
 		command = builder.build(); // "plookup:all:publickey@bob"
 		assertEquals("plookup:all:publickey@bob", command);
+
+		// bypasscache true
+		builder = new PlookupVerbBuilder();
+		builder.setKeyName("publickey");
+		builder.setSharedBy("@alice");
+		builder.setBypassCache(true);
+		builder.setType(Type.ALL);
+		command = builder.build(); // "plookup:bypassCache:true:all:publickey@alice"
+		assertEquals("plookup:bypassCache:true:all:publickey@alice", command);
 	}
 
 	@Test

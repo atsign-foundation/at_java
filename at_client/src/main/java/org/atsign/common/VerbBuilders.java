@@ -412,6 +412,8 @@ public class VerbBuilders {
 		private String key; // key name (e.g. location, test) [required]
 		private String sharedBy; // sharedBy atSign ("@bob") [required]
 
+		private Boolean bypassCache = false; // bypass cache (plookup:bypassCache:[true/false]) [optional]
+
 		private Type type = Type.NONE;
 
 		public void setKeyName(String key) {
@@ -426,6 +428,10 @@ public class VerbBuilders {
 			this.type = type;
 		}
 
+		public void setBypassCache(Boolean bypassCache) {
+			this.bypassCache = bypassCache;
+		}
+
 		public void with(PublicKey atKey, PlookupVerbBuilder.Type type) {
 			setKeyName(atKey.name);
 			setSharedBy(atKey.sharedBy.toString());
@@ -438,6 +444,9 @@ public class VerbBuilders {
 				throw new IllegalArgumentException("key or sharedBy is null or empty");
 			}
 			String s = "plookup:";
+			if(this.bypassCache != null && this.bypassCache) {
+				s += "bypassCache:true:";
+			}
 			switch(type) {
 				case METADATA:
 					s += "meta:";
