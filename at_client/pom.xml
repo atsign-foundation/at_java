@@ -32,6 +32,12 @@
 			<organization>Atsign</organization>
 			<organizationUrl>https://atsign.com</organizationUrl>
 		</developer>
+		<developer>
+			<name>Tyler Trott</name>
+			<email>tyler.trott@atsign.com</email>
+			<organization>Atsign</organization>
+			<organizationUrl>https://atsign.com</organizationUrl>
+		</developer>
 		<!-- add yourself here if you would want -->
 	</developers>
 
