@@ -4,32 +4,34 @@ on:
   push:
     branches:
       - trunk
-    paths:
-      - at_client/**
   pull_request:
     branches:
       - trunk
-    paths:
-      - at_client/**
+
+permissions:  # added using https://github.com/step-security/secure-workflows
+  contents: read
 
 jobs:
-  build-and-test:
+  test-and-build:
     defaults:
       run:
         working-directory: at_client
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
       - name: Set up JDK 8 and maven cache
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@1df8dbefe2a8cbc99770194893dd902763bee34b # v3.9.0
         with:
           java-version: '8'
           distribution: 'adopt'
           cache: maven
+          server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
+
+      - name: Test and Build with Maven
+        run: mvn --batch-mode --update-snapshots --no-transfer-progress -Dgpg.skip=true clean install
       - name: Build clean and run unit tests
         run: mvn --batch-mode --update-snapshots clean test -DskipIntegrationTests=true
       - name: Run integration tests
         run: mvn --batch-mode verify -DskipUnitTests=true
       - name: Generate build outputs
         run: mvn --batch-mode install -DskipTests=true
-      # TODO Artefact version management, publishing to maven central

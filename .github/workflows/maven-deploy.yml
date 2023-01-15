@@ -1,0 +1,54 @@
+# This workflow will build a package using Maven and then publish it to GitHub packages when a release is created
+# For more information see: https://github.com/actions/setup-java/blob/main/docs/advanced-usage.md#apache-maven-with-a-settings-path
+
+name: Maven Deploy `at_client` to Nexus OSSRH
+
+on:
+  push:
+    branches:
+      - trunk
+  
+permissions:  # added using https://github.com/step-security/secure-workflows
+  contents: read
+
+jobs:
+  deploy:
+    defaults:
+      run:
+        working-directory: at_client
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+    - name: Set up JDK 8
+      uses: actions/setup-java@1df8dbefe2a8cbc99770194893dd902763bee34b # v3.9.0
+      with:
+        java-version: '8'
+        distribution: 'adopt'
+        server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
+        server-username: "MAVEN_USERNAME" # env variable for username in deploy
+        server-password: "MAVEN_PASSWORD" # env variable for token in deploy
+        gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }} # Value of the GPG private key to import
+        gpg-passphrase: "GPG_PASSPHRASE" # env variable for GPG private key passphrase
+      env:
+        MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+        MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+        GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+    - name: Print folder
+      run: ls -al .
+
+    - name: Print m2 settings
+      continue-on-error: true
+      run: cat ~/.m2/settings.xml
+
+    - name: Publish to Apache Maven Central
+      run: |
+        mvn \
+        install \
+        deploy \
+        --batch-mode \
+        --no-transfer-progress
+      env:
+        MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+        MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+        GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}

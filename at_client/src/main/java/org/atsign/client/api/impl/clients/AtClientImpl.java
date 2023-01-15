@@ -1,29 +1,50 @@
 package org.atsign.client.api.impl.clients;
 
-import org.atsign.client.api.AtClient;
-import static org.atsign.client.api.AtEvents.*;
-import static org.atsign.client.api.AtEvents.AtEventType.*;
+import static org.atsign.client.api.AtEvents.AtEventType.decryptedUpdateNotification;
 
-import org.atsign.client.api.Secondary;
-import org.atsign.common.AtSign;
-import org.atsign.common.KeyBuilders;
-import org.atsign.common.Keys;
-import org.atsign.common.ResponseTransformers;
-import org.atsign.common.ResponseTransformers.ScanResponseTransformer;
-
-import static org.atsign.common.Keys.*;
-
-import org.atsign.common.AtException;
-import org.atsign.client.util.EncryptionUtil;
-import org.atsign.client.util.KeyStringUtil;
-import org.atsign.client.util.KeysUtil;
-import org.atsign.client.util.KeyStringUtil.KeyType;
-
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.text.ParseException;
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+
+import org.atsign.client.api.AtClient;
+import org.atsign.client.api.AtEvents.AtEventBus;
+import org.atsign.client.api.AtEvents.AtEventListener;
+import org.atsign.client.api.AtEvents.AtEventType;
+import org.atsign.client.api.Secondary;
+import org.atsign.client.util.EncryptionUtil;
+import org.atsign.client.util.KeysUtil;
+import org.atsign.common.AtException;
+import org.atsign.common.AtSign;
+import org.atsign.common.Keys;
+import org.atsign.common.Keys.AtKey;
+import org.atsign.common.Keys.Metadata;
+import org.atsign.common.Keys.PublicKey;
+import org.atsign.common.Keys.SelfKey;
+import org.atsign.common.Keys.SharedKey;
+import org.atsign.common.ResponseTransformers;
+import org.atsign.common.ResponseTransformers.LlookupAllResponseTransformer;
+import org.atsign.common.VerbBuilders.DeleteVerbBuilder;
+import org.atsign.common.VerbBuilders.LlookupVerbBuilder;
+import org.atsign.common.VerbBuilders.PlookupVerbBuilder;
+import org.atsign.common.VerbBuilders.ScanVerbBuilder;
+import org.atsign.common.VerbBuilders.UpdateVerbBuilder;
+import org.atsign.common.options.GetRequestOptions;
+import org.atsign.common.response_models.LlookupAllResponse;
 
 /**
  * @see org.atsign.client.api.AtClient
@@ -214,10 +235,32 @@ public class AtClientImpl implements AtClient {
     }
 
     @Override
+    public CompletableFuture<String> get(PublicKey publicKey, GetRequestOptions getRequestOptions) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return _get(publicKey, getRequestOptions);
+            } catch (Exception e) {
+                throw new CompletionException(e);
+            }
+        });
+    }
+    
+    @Override
     public CompletableFuture<byte[]> getBinary(PublicKey publicKey) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return _getBinary(publicKey);
+            } catch (Exception e) {
+                throw new CompletionException(e);
+            }
+        });
+    }
+
+    @Override
+    public CompletableFuture<byte[]> getBinary(PublicKey publicKey, GetRequestOptions getRequestOptions) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return _getBinary(publicKey, getRequestOptions);
             } catch (Exception e) {
                 throw new CompletionException(e);
             }
@@ -363,6 +406,9 @@ public class AtClientImpl implements AtClient {
     }
 
     private String _put(SharedKey sharedKey, String value) throws AtException {
+        if (! this.atSign.equals(sharedKey.sharedBy)) {
+            throw new AtException("sharedBy is [" + sharedKey.sharedBy + "] but should be this client's atSign [" + atSign + "]");
+        }
         String what = "";
         try {
             what = "fetch/create shared encryption key";
@@ -395,36 +441,172 @@ public class AtClientImpl implements AtClient {
         }
     }
 
-    private String _get(SelfKey key) throws AtException {throw new RuntimeException("Not Implemented");}
-    private String _put(SelfKey publicKey, String value) {
-        throw new RuntimeException("Not Implemented");
-    }
-    private String _delete(SelfKey key) {
-        throw new RuntimeException("Not Implemented");
+    private String _get(SelfKey key) throws AtException {
+        // 1. build command
+        String command = null;
+        LlookupVerbBuilder builder = new LlookupVerbBuilder();
+        builder.with(key, LlookupVerbBuilder.Type.ALL);
+        command = builder.build();
+
+        // 2. execute command
+        Secondary.Response rawResponse = secondary.executeCommand(command, false);
+        if (rawResponse.isError) {
+            throw new AtException("Failed to " + command + " : " + rawResponse.error);
+        }
+
+        // 3. transform the data to a LlookupAllResponse object
+        LlookupAllResponse model = null;
+        LlookupAllResponseTransformer transformer = new LlookupAllResponseTransformer();
+        model = transformer.transform(rawResponse); // contains variables for data we want from the `llookup:all:<fullKeyName>` command (e.g. model.metaData.ttl)
+
+        // 3. decrypt the value
+        String decryptedValue = null;
+        String encryptedValue = model.data;
+        String selfEncryptionKey = keys.get(KeysUtil.selfEncryptionKeyName);
+        try {
+            decryptedValue = EncryptionUtil.aesDecryptFromBase64(encryptedValue, selfEncryptionKey);
+        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException e) {
+            throw new AtException("Failed to " + command + " : " + e.getMessage(), e);
+        }
+
+        // 4. update metadata. squash the fetchedMetadata with current key.metadata (fetchedMetadata has higher priority)
+        Metadata fetchedMetadata = Metadata.fromModel(model.metaData);
+        key.metadata = Metadata.squash(fetchedMetadata, key.metadata);
+
+        return decryptedValue;
     }
 
-    private String _get(PublicKey key) throws AtException {throw new RuntimeException("Not Implemented");}
-    private String _put(PublicKey publicKey, String value) {throw new RuntimeException("Not Implemented");}
-    private String _delete(PublicKey key) {
-        throw new RuntimeException("Not Implemented");
+    private String _put(SelfKey selfKey, String value) throws AtException {
+        // 1. generate dataSignature
+        selfKey.metadata.dataSignature = generateSignature(value);
+
+        // 2. encrypt data with self encryption key
+        String cipherText;
+        try {
+            cipherText = EncryptionUtil.aesEncryptToBase64(value, keys.get(KeysUtil.selfEncryptionKeyName));
+        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException e) {
+            throw new AtException("Failed to encrypt value with self encryption key : " + e.getMessage(), e);
+        }
+
+        // 3. update secondary
+        UpdateVerbBuilder builder = new UpdateVerbBuilder();
+        builder.with(selfKey, cipherText);
+        String command = builder.build();
+        Secondary.Response response = secondary.executeCommand(command, true);
+        if(response.isError) {
+            throw new AtException("Failed to update " + selfKey + " : " + response.error);
+        }
+        return response.toString();
+    }
+
+    private String _delete(SelfKey key) throws AtException {
+        // 1. build delete command
+        DeleteVerbBuilder builder = new DeleteVerbBuilder();
+        builder.with(key);
+        String command = builder.build();
+
+        // 2. run command
+        Secondary.Response response = secondary.executeCommand(command, true);
+        if(response.isError) {
+            throw new AtException("Failed to run command " + command + " : " + response.error);
+        }
+        return response.toString();
+    }
+
+    private String _get(PublicKey key) throws AtException {
+        return _get(key, null);
+    }
+
+    private String _get(PublicKey key, GetRequestOptions getRequestOptions) throws AtException {
+        // 1. build command
+        String command = null;
+        if(atSign.toString().equals(key.sharedBy.toString())) {
+            // it's a public key created by this client => llookup
+            LlookupVerbBuilder builder = new LlookupVerbBuilder();
+            builder.with(key, LlookupVerbBuilder.Type.ALL);
+            command = builder.build();
+        } else {
+            // it's a public key created by another => plookup
+            PlookupVerbBuilder builder = new PlookupVerbBuilder();
+            builder.with(key, PlookupVerbBuilder.Type.ALL);
+            builder.setBypassCache(getRequestOptions != null && getRequestOptions.getBypassCache());
+            command = builder.build();
+        }
+
+        // 2. run the command
+        Secondary.Response llookupAllRawResponse = secondary.executeCommand(command, false);
+        if (llookupAllRawResponse.isError) {
+            throw new AtException("Failed to " + command + " : " + llookupAllRawResponse.error);
+        }
+
+        // 3. transform the data to a LlookupAllResponse object
+        LlookupAllResponse model = null;
+        LlookupAllResponseTransformer transformer = new LlookupAllResponseTransformer();
+        model = transformer.transform(llookupAllRawResponse);
+
+        // 4. update key object metadata
+        Metadata fetchedMetadata = Metadata.fromModel(model.metaData);
+        key.metadata = Metadata.squash(fetchedMetadata, key.metadata);
+        key.metadata.isCached = model.key.contains("cached:");
+
+        // 5. return the AtValue
+        return model.data;
+    }
+
+    private String _put(PublicKey publicKey, String value) throws AtException {
+        // 1. generate dataSignature
+        publicKey.metadata.dataSignature = generateSignature(value);
+
+        // 2. build command
+        String command = null;
+        UpdateVerbBuilder builder = new UpdateVerbBuilder();
+        builder.with(publicKey, value);
+        command = builder.build();
+
+        // 3. run command
+        Secondary.Response rawResponse = secondary.executeCommand(command, false);
+        if(rawResponse.isError) {
+            throw new AtException(rawResponse.error);
+        }
+        return rawResponse.toString();
+    }
+
+    private String _delete(PublicKey key) throws AtException {
+        // 1. build command
+        String command = null;
+        DeleteVerbBuilder builder = new DeleteVerbBuilder();
+        builder.with(key);
+        command = builder.build();
+        
+        // 2. run command
+        Secondary.Response rawResponse = secondary.executeCommand(command, false);
+        if(rawResponse.isError) {
+            throw new AtException(rawResponse.error);
+        }
+        return rawResponse.toString();
     }
 
     private byte[] _getBinary(SharedKey sharedKey) throws AtException {throw new RuntimeException("Not Implemented");}
     private byte[] _getBinary(SelfKey selfKey) throws AtException {throw new RuntimeException("Not Implemented");}
     private byte[] _getBinary(PublicKey publicKey) throws AtException {throw new RuntimeException("Not Implemented");}
+    private byte[] _getBinary(PublicKey publicKey, GetRequestOptions getRequestOptions) throws AtException {throw new RuntimeException("Not Implemented");}
 
     private String _put(SharedKey sharedKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
     private String _put(SelfKey selfKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
     private String _put(PublicKey publicKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
 
     private List<AtKey> _getAtKeys(String regex) throws AtException, ParseException {
-        Response scanRawResponse = executeCommand("scan " + regex, false);
+        ScanVerbBuilder scanVerbBuilder = new ScanVerbBuilder();
+        scanVerbBuilder.setRegex(regex);
+        scanVerbBuilder.setShowHidden(true); 
+        String command = scanVerbBuilder.build();
+        Response scanRawResponse = executeCommand(command, false);
         ResponseTransformers.ScanResponseTransformer scanResponseTransformer = new ResponseTransformers.ScanResponseTransformer();
         List<String> rawArray = scanResponseTransformer.transform(scanRawResponse);
-        List<AtKey> atKeys = new ArrayList<AtKey>(); 
+        List<AtKey> atKeys = new ArrayList<>();
         for(String atKeyRaw : rawArray) { // eg atKeyRaw == @bob:phone@alice
             AtKey atKey = Keys.fromString(atKeyRaw);
-            Secondary.Response llookupMetaRaw = executeCommand("llookup:meta:" + atKeyRaw, false);
+            Secondary.Response llookupMetaRaw = secondary.executeCommand("llookup:meta:" + atKeyRaw, false);
             atKey.metadata = Metadata.squash(atKey.metadata, Metadata.fromString(llookupMetaRaw)); // atKey.metadata has priority over llookupMetaRaw.data
             atKeys.add(atKey);
         }
@@ -565,5 +747,15 @@ public class AtClientImpl implements AtClient {
         } else {
             return rawResponse.data;
         }
+    }
+
+    private String generateSignature(String value) throws AtException {
+        String signature = null;
+        try {
+            signature = EncryptionUtil.signSHA256RSA(value, keys.get(KeysUtil.encryptionPrivateKeyName));
+        } catch (Exception e) {
+            throw new AtException("Failed to sign value: " + value);
+        }
+        return signature;
     }
 }

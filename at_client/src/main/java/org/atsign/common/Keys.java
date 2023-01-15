@@ -1,19 +1,17 @@
 package org.atsign.common;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.util.Date;
 import java.util.Map;
-import java.util.TimeZone;
 
 import org.atsign.client.api.Secondary;
 import org.atsign.client.util.DateUtil;
 import org.atsign.client.util.KeyStringUtil;
 import org.atsign.client.util.KeyStringUtil.KeyType;
 import org.atsign.common.ResponseTransformers.LlookupMetadataResponseTransformer;
+import org.atsign.common.response_models.LlookupAllResponse;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @SuppressWarnings("unused")
 public abstract class Keys {
@@ -151,11 +149,15 @@ public abstract class Keys {
         public Integer ttb;
         public Integer ttr;
         public Boolean ccd;
+        public OffsetDateTime createdBy;
+        public OffsetDateTime updatedBy;
         public OffsetDateTime availableAt;
         public OffsetDateTime expiresAt;
         public OffsetDateTime refreshAt;
         public OffsetDateTime createdAt;
         public OffsetDateTime updatedAt;
+        public String status;
+        public Integer version;
         public String dataSignature;
         public String sharedKeyStatus;
         public Boolean isPublic = false;
@@ -166,6 +168,7 @@ public abstract class Keys {
         public Boolean isCached = false;
         public String sharedKeyEnc;
         public String pubKeyCS;
+        public String encoding;
 
         @Override
         public String toString() {
@@ -174,10 +177,13 @@ public abstract class Keys {
             if (ttb != null) s += ":ttb:" + ttb;
             if (ttr != null) s += ":ttr:" + ttr;
             if (ccd != null) s += ":ccd:" + ccd;
-            if (dataSignature != null) s += ":dataSignature:" + ccd;
+            if (dataSignature != null) s += ":dataSignature:" + dataSignature;
             if (sharedKeyStatus != null) s += ":sharedKeyStatus:" + sharedKeyStatus;
             if (sharedKeyEnc != null) s += ":sharedKeyEnc:" + sharedKeyEnc;
             if (pubKeyCS != null) s += ":pubKeyCS:" + pubKeyCS;
+            if (isBinary != null) s += ":isBinary:" + isBinary;
+            if (isEncrypted != null) s += ":isEncrypted:" + isEncrypted;
+            if(encoding != null) s += ":encoding:" + encoding;
             return s;
         }
 
@@ -187,24 +193,59 @@ public abstract class Keys {
          * @return Metadata object
          * @throws ParseException if dates from metadata llookup could not be parsed
          */
-        public static Metadata fromString(Secondary.Response rawLlookupMetaResponse) throws ParseException {
+        public static Metadata fromString(Secondary.Response rawLlookupMetaResponse) throws AtException {
             Metadata metadata = new Metadata();
             LlookupMetadataResponseTransformer transformer = new LlookupMetadataResponseTransformer();
             Map<String, Object> map = transformer.transform(rawLlookupMetaResponse);
             metadata.ttl = (Integer) map.get("ttl");
             metadata.ttb = (Integer) map.get("ttb");
             metadata.ttr = (Integer) map.get("ttr");
-            metadata.ccd = (Boolean) map.get("ccd");        
-            metadata.availableAt = DateUtil.parse((String) map.get("availableAt"));
-            metadata.expiresAt = DateUtil.parse((String) map.get("expiresAt"));
-            metadata.refreshAt = DateUtil.parse((String) map.get("refreshAt"));
-            metadata.createdAt = DateUtil.parse((String) map.get("createdAt"));
-            metadata.updatedAt = DateUtil.parse((String) map.get("updatedAt"));
+            metadata.ccd = (Boolean) map.get("ccd");
+            // dates used to be here
             metadata.isBinary = (Boolean) map.get("isBinary");
             metadata.isEncrypted = (Boolean) map.get("isEncrypted");
             metadata.dataSignature = (String) map.get("dataSignature");
             metadata.sharedKeyEnc = (String) map.get("sharedKeyEnc");
             metadata.pubKeyCS = (String) map.get("pubKeyCS");
+            metadata.encoding = (String) map.get("encoding");
+
+            // dates moved down here
+            try {
+                metadata.availableAt = DateUtil.parse((String) map.get("availableAt"));
+                metadata.expiresAt = DateUtil.parse((String) map.get("expiresAt"));
+                metadata.refreshAt = DateUtil.parse((String) map.get("refreshAt"));
+                metadata.createdAt = DateUtil.parse((String) map.get("createdAt"));
+                metadata.updatedAt = DateUtil.parse((String) map.get("updatedAt"));
+            } catch (ParseException e) {
+                throw new AtException("Could not parse dates from metadata. DateUtil.parse(String) threw the ParseException: " + e.toString(), e);
+            }
+            return metadata;
+        }
+
+        public static Metadata fromModel(LlookupAllResponse.Metadata modelMetadata) throws AtException {
+            Metadata metadata = new Metadata();
+            metadata.ttl = modelMetadata.ttl;
+            metadata.ttb = modelMetadata.ttb;
+            metadata.ttr = modelMetadata.ttr;
+            metadata.ccd = modelMetadata.ccd;
+            try {
+                metadata.createdBy = DateUtil.parse(modelMetadata.createdBy);
+                metadata.updatedBy = DateUtil.parse(modelMetadata.updatedBy);
+                metadata.availableAt = DateUtil.parse(modelMetadata.availableAt);
+                metadata.expiresAt = DateUtil.parse(modelMetadata.expiresAt);
+                metadata.refreshAt = DateUtil.parse(modelMetadata.refreshAt);
+                metadata.createdAt = DateUtil.parse(modelMetadata.createdAt);
+                metadata.updatedAt = DateUtil.parse(modelMetadata.updatedAt);
+            } catch (ParseException e) {
+                throw new AtException("Could not parse date from LlookupAllResponse.Metadata: " + e.toString());
+            }
+            metadata.status = modelMetadata.status;
+            metadata.version = modelMetadata.version;
+            metadata.dataSignature = modelMetadata.dataSignature;
+            metadata.isEncrypted = modelMetadata.isEncrypted;
+            metadata.isBinary = modelMetadata.isBinary;
+            metadata.sharedKeyEnc = modelMetadata.sharedKeyEnc;
+            metadata.pubKeyCS = modelMetadata.pubKeyCS;
             return metadata;
         }
 
@@ -277,6 +318,9 @@ public abstract class Keys {
             if(atKeyMetadata.pubKeyCS != null) metadata.pubKeyCS = atKeyMetadata.pubKeyCS;
             else if(metadataUtilMetadata.pubKeyCS != null) metadata.pubKeyCS = metadataUtilMetadata.pubKeyCS;
 
+            if(atKeyMetadata.encoding != null) metadata.encoding = atKeyMetadata.encoding;
+            else if(metadataUtilMetadata.encoding != null) metadata.encoding = metadataUtilMetadata.encoding;
+
             return metadata;
         }
     }
@@ -287,6 +331,7 @@ public abstract class Keys {
      * @return AtKey object
      * @throws AtException
      */
+    @SuppressWarnings("JavaDoc")
     public static AtKey fromString(String fullAtKeyName) throws AtException {
         KeyStringUtil keyStringUtil = new KeyStringUtil(fullAtKeyName);
         KeyType keyType = keyStringUtil.getKeyType();
@@ -299,7 +344,7 @@ public abstract class Keys {
         String namespace = keyStringUtil.getNamespace();
         boolean isCached = keyStringUtil.isCached();
         boolean isHidden = keyStringUtil.isHidden();
-        AtKey atKey = null;
+        AtKey atKey;
         switch(keyType) {
             case PUBLIC_KEY:
                 atKey = new KeyBuilders.PublicKeyBuilder(sharedBy).key(keyName).build();
@@ -328,11 +373,18 @@ public abstract class Keys {
      * @param llookedUpMetadata `llookup:meta:<keyName>` rawResponse from secondary server
      * @return AtKey whose metadata is populated from the llookup:meta:<keyName> rawResponse from secondary server
      * @throws AtException
+     * @throws ParseException
      */
-    public static AtKey fromString(String fullAtKeyName, Secondary.Response llookedUpMetadata) throws AtException, ParseException {
+    @SuppressWarnings("JavaDoc")
+    public static AtKey fromString(String fullAtKeyName, Secondary.Response llookedUpMetadata) throws AtException {
         AtKey atKey = fromString(fullAtKeyName);
         atKey.metadata = Metadata.squash(atKey.metadata, Metadata.fromString(llookedUpMetadata));
         return atKey;
+    }
+
+    public static AtKey fromString(Secondary.Response lookupAllResponse) throws AtException {
+        // TODO once transformers are done
+        return null;
     }
 }
 

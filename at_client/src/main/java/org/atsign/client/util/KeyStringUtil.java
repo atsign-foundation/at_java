@@ -10,7 +10,7 @@ public class KeyStringUtil {
         ;
     }
 
-    private String _fullKeyName;
+    private String _fullKeyName; // e.g. "public:publickey@alice"
 
     private String _keyName; // should never be null (otherwise it's an error)
     private KeyType _keyType; // see enum above, should never be null (otherwise it's an error)
@@ -22,43 +22,84 @@ public class KeyStringUtil {
     private boolean _isCached; // true if key starts with "cached:"
     private boolean _isHidden; // true if key contains "_"
 
+    /**
+     * Constructor
+     * @param fullKeyName full key name e.g. "public:publickey@bob"
+     */
     public KeyStringUtil(String fullKeyName) {
         this._fullKeyName = fullKeyName;
         this._evaluate(fullKeyName);
     }
 
+    /**
+     * Returns the full key name (originally passed into the constructor)
+     * @return fullKeyName (what was originally passed into the constructor)
+     */
     public String getFullKeyName() {
         return this._fullKeyName;
     }
 
+    /**
+     * Returns the key name (e.g. "publickey" from "public:publickey@alice")
+     * This value is evaluated from the private _evaluate method that is called in the constructor
+     * @return the key name
+     */
     public String getKeyName() {
         return this._keyName;
     }
     
+    /**
+     * Returns the namespace of a key (no implementation yet)
+     * @return the namespace from a key (e.g. "mospherepro" from "file_1.mospherepro@alice")
+     */
     public String getNamespace() { // no namespace implementation in _evaluate
         return this._namespace;
     }
 
+    /**
+     * Returns the key type enum of the key type evaluated from the private _evaluate method
+     * @return KeyStringUtil.KeyType (e.g. KeyStringUtil.KeyType.PUBLIC_KEY)
+     */
     public KeyType getKeyType() {
         return this._keyType;
     }
 
+    /**
+     * Returns the sharedBy atSign that is evlauated from the _evaluate private method.
+     * @return the sharedBy atSign String (e.g. "@alice" from "test@alice")
+     */
     public String getSharedBy() {
         return this._sharedBy;
     }
 
+    /**
+     * Returns the sharedWith atSign that is evlauated from the _evaluate private method.
+     * @return the sharedWith atSign String (e.g. "@bob" from "@bob:test@alice")
+     */
     public String getSharedWith() {
         return this._sharedWith;
     }
     
+    /**
+     * Returns true if the key is cached (e.g. "cached:public:publickey@alice")
+     * @return true if the fullKeyName begins with "cached:"
+     */
     public boolean isCached() {
         return this._isCached;
     }
 
+    /**
+     * Returns true if the key is hidden by default in scan
+     * @return true if the fullKeyName begins with "_"
+     */
     public boolean isHidden() {
         return this._isHidden;
     }
 
+    /**
+     * Given the fullKeyName, this method will evaluate all of the properties that can be exactracted from the fullKeyName. Example: fullKeyName "test@bob" will evaluate sharedBy to be "@bob" and keyName to be "test"
+     * @param fullKeyName the fullKeyName to be evaluated (e.g. "test@bob")
+     */
     private void _evaluate(String fullKeyName) {
         // Examples:
         // (1) PublicKey                == public:signing_publickey@smoothalligator
@@ -78,7 +119,7 @@ public class KeyStringUtil {
         // 6 == {"shared_key.wildgreen@smoothalligator"} [len 1]
         
 
-        // all keys may have a namespace
+        // all keys may have a namespace [uncomment here to add partial namespace support]
         // if(fullKeyName.contains(".")) {
         //     String[] split2 = fullKeyName.split("\\.");
         //     // atconnections.wildgreen.smoothalligator.at_contact.mospherepro@smoothalligator

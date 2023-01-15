@@ -1,25 +1,31 @@
 package org.atsign.config;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.Map;
 
-import org.yaml.snakeyaml.Yaml;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 /**
  * Loads, reads and returns properties from the configuration file in the resources
  */
 public class ConfigReader {
-    private Map<String, Object> config;
+    private static HashMap<String, Object> config;
 
-    public String getProperty(String property, String subProperty) {
+    private static final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    
+    public static String getProperty(String property, String subProperty) throws IOException {
         if (config == null){
             loadConfig();
         }
-        @SuppressWarnings("unchecked") Map<String, String> propertyMap = (Map<String, String>) config.get(property);
+        @SuppressWarnings("unchecked")
+        Map<String, String> propertyMap = (Map<String, String>) config.get(property);
         return propertyMap.get(subProperty);
     }
 
-    public String getProperty(String property) {
+    public static String getProperty(String property) throws IOException {
         if (config == null){
             loadConfig();
         }
@@ -30,9 +36,9 @@ public class ConfigReader {
      * Loads configuration properties from the yaml provided in the java/src/main/resources
      * Stores these key-value pairs in the config map
      */
-    public void loadConfig() {
+    public static void loadConfig() throws IOException {
         InputStream inputStream = ClassLoader.getSystemResourceAsStream("config.yaml");
-        Yaml configYaml = new Yaml();
-        config = configYaml.load(inputStream);
+        //noinspection unchecked
+        config = mapper.readValue(inputStream, HashMap.class);
     }
 }

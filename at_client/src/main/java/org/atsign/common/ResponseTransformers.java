@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.atsign.client.api.Secondary.Response;
+import org.atsign.common.response_models.LlookupAllResponse;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ResponseTransformers {
@@ -32,6 +34,25 @@ public class ResponseTransformers {
 			}
 		}
 
+	}
+
+	public static class LlookupAllResponseTransformer implements ResponseTransformer<Response, LlookupAllResponse> {
+		@Override
+		public LlookupAllResponse transform(Response value) {
+			if (value.data == null || value.data.isEmpty()) {
+				return null;
+			}
+
+			LlookupAllResponse model = null;
+			ObjectMapper mapper = new ObjectMapper();
+			try {
+				model = mapper.readValue(value.data, LlookupAllResponse.class);
+			} catch (JsonProcessingException e) {
+				System.err.println(e.toString());
+				e.printStackTrace();
+			}
+			return model;
+		}
 	}
 
 	public static class LlookupMetadataResponseTransformer implements ResponseTransformer<Response, Map<String, Object>> {
