@@ -41,8 +41,7 @@ public class KeysUtilTest {
         // When we call KeysUtil.saveKeys
         KeysUtil.saveKeys(testAtSign, keys);
 
-        // Then we end up with a file with the expected name in the expected (canonical)
-        // location
+        // Then we end up with a file with the expected name in the expected (canonical) location
         assertTrue(expected.exists());
     }
 
@@ -78,22 +77,22 @@ public class KeysUtilTest {
 
         // Given a correctly formatted keys file in the legacy location
         // And there is NOT a keys file in the canonical location
-        // So we'll need to copy the generated file to the legacy location
-        // And delete the file we just generated
 
-        // Files.deleteIfExists(KeysUtil.getKeysFile(testAtSign,
-        // KeysUtil.legacyKeysFilesLocation).toPath());
-        Path legacyFilePath = Paths.get(KeysUtil.legacyKeysFilesLocation + "/" + testAtSign + ".atKeys");
+        // So, in order to set up the "Given" pre-conditions above, we'll need to
+        // 1) move the generated file to the legacy location
+        Files.createDirectories(new File(KeysUtil.legacyKeysFilesLocation).toPath());
+        Files.move(expected.toPath(), KeysUtil.getKeysFile(testAtSign, KeysUtil.legacyKeysFilesLocation).toPath());
 
-        File legacyFile = new File(legacyFilePath.toString());
-        System.out.println("Legacy file: " + legacyFile.toPath().toString());
+        // 2) delete the file we just generated in the expected location
+        Path expectedCanonicalFilePath = KeysUtil.getKeysFile(testAtSign, KeysUtil.expectedKeysFilesLocation).toPath();
+        Files.deleteIfExists(expectedCanonicalFilePath);
 
-        Files.deleteIfExists(KeysUtil.getKeysFile(testAtSign, KeysUtil.expectedKeysFilesLocation).toPath());
+        // Ensure the file does not exist in the expected place
+        assertFalse(expected.exists());
+
         // When we call KeysUtil.loadKeys
         // Then the keys are loaded successfully from the legacy location
-        KeysUtil.loadKeys(testAtSign);
-        File retrievedFile = KeysUtil.getKeysFile(testAtSign, KeysUtil.legacyKeysFilesLocation);
-        assertEquals(retrievedFile.getAbsoluteFile(),
-                KeysUtil.legacyKeysFilesLocation);
+        Map<String, String> loadedKeys = KeysUtil.loadKeys(testAtSign);
+        assertEquals(keys, loadedKeys);
     }
 }
