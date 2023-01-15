@@ -43,6 +43,7 @@ import org.atsign.common.VerbBuilders.LlookupVerbBuilder;
 import org.atsign.common.VerbBuilders.PlookupVerbBuilder;
 import org.atsign.common.VerbBuilders.ScanVerbBuilder;
 import org.atsign.common.VerbBuilders.UpdateVerbBuilder;
+import org.atsign.common.options.GetRequestOptions;
 import org.atsign.common.response_models.LlookupAllResponse;
 
 /**
@@ -234,10 +235,32 @@ public class AtClientImpl implements AtClient {
     }
 
     @Override
+    public CompletableFuture<String> get(PublicKey publicKey, GetRequestOptions getRequestOptions) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return _get(publicKey, getRequestOptions);
+            } catch (Exception e) {
+                throw new CompletionException(e);
+            }
+        });
+    }
+    
+    @Override
     public CompletableFuture<byte[]> getBinary(PublicKey publicKey) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return _getBinary(publicKey);
+            } catch (Exception e) {
+                throw new CompletionException(e);
+            }
+        });
+    }
+
+    @Override
+    public CompletableFuture<byte[]> getBinary(PublicKey publicKey, GetRequestOptions getRequestOptions) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return _getBinary(publicKey, getRequestOptions);
             } catch (Exception e) {
                 throw new CompletionException(e);
             }
@@ -491,6 +514,10 @@ public class AtClientImpl implements AtClient {
     }
 
     private String _get(PublicKey key) throws AtException {
+        return _get(key, null);
+    }
+
+    private String _get(PublicKey key, GetRequestOptions getRequestOptions) throws AtException {
         // 1. build command
         String command = null;
         if(atSign.toString().equals(key.sharedBy.toString())) {
@@ -502,6 +529,7 @@ public class AtClientImpl implements AtClient {
             // it's a public key created by another => plookup
             PlookupVerbBuilder builder = new PlookupVerbBuilder();
             builder.with(key, PlookupVerbBuilder.Type.ALL);
+            builder.setBypassCache(getRequestOptions != null && getRequestOptions.getBypassCache());
             command = builder.build();
         }
 
@@ -561,6 +589,7 @@ public class AtClientImpl implements AtClient {
     private byte[] _getBinary(SharedKey sharedKey) throws AtException {throw new RuntimeException("Not Implemented");}
     private byte[] _getBinary(SelfKey selfKey) throws AtException {throw new RuntimeException("Not Implemented");}
     private byte[] _getBinary(PublicKey publicKey) throws AtException {throw new RuntimeException("Not Implemented");}
+    private byte[] _getBinary(PublicKey publicKey, GetRequestOptions getRequestOptions) throws AtException {throw new RuntimeException("Not Implemented");}
 
     private String _put(SharedKey sharedKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
     private String _put(SelfKey selfKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
