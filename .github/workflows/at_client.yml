@@ -27,7 +27,7 @@ jobs:
           cache: maven
           server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
       - name: Build clean and run unit tests
-        run: mvn --batch-mode clean test -DskipIntegrationTests=true
+        run: mvn --batch-mode clean test -DskipIntegrationTests=true -Dgpg.skip=true
       - name: Run integration tests
         run: mvn --batch-mode verify -DskipUnitTests=true -Dgpg.skip=true
       - name: Generate build outputs
