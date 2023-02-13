@@ -377,7 +377,12 @@ public class AtClientImpl implements AtClient {
 
     private String _getSharedByOtherWithMe(SharedKey sharedKey) throws AtException {
         String what;
-        String shareEncryptionKey = getEncryptionKeySharedByOther(sharedKey);
+        String shareEncryptionKey = null;
+        try{
+            shareEncryptionKey = getEncryptionKeySharedByOther(sharedKey);
+        } catch (AtException e) {
+            shareEncryptionKey = getEncryptionKeySharedByMe(sharedKey);
+        }
 
         // first, try to fetch cached - e.g. if I'm @bob, I would first "llookup:cached:@bob:some.key.name@alice"
         what = "llookup cached " + sharedKey;
@@ -625,6 +630,9 @@ public class AtClientImpl implements AtClient {
         Secondary.Response rawResponse;
         String command = "";
         String toLookup = "shared_key." + key.sharedWith.withoutPrefix() + atSign;
+        if(key.sharedWith.withoutPrefix().equals(atSign.withoutPrefix())) {
+            toLookup = "shared_key." + key.sharedBy.withoutPrefix() + atSign;
+        }
         try {
             command = "llookup:" + toLookup;
             rawResponse = secondary.executeCommand(command, false);
