@@ -38,7 +38,7 @@ public class EncryptionUtil {
 
     public static KeyPair generateRSAKeyPair() throws NoSuchAlgorithmException {
         KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
-        generator.initialize(1024);
+        generator.initialize(2048);
         return generator.generateKeyPair();
     }
 

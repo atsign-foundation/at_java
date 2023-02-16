@@ -33,19 +33,23 @@ public class REPL {
     public static void main(String[] args) {
         String rootUrl; // e.g. "root.atsign.org:64";
         AtSign atSign;  // e.g. "@alice";
+        boolean verbose = false;
 
-        if (args.length != 3) {
-            System.err.println("Usage: REPL <rootUrl> <atSign> <seeEncryptedNotifications == 'true|false'>");
+        if (args.length < 3) {
+            System.err.println("Usage: REPL <rootUrl> <atSign> <seeEncryptedNotifications == 'true|false'> [<verbose == 'true|false'>]");
             System.exit(1);
         }
 
         rootUrl = args[0];
         atSign = new AtSign(args[1]);
         boolean seeEncryptedNotifications = Boolean.parseBoolean(args[2]);
+        if (args.length >= 4) {
+            verbose = Boolean.parseBoolean(args[3]);
+        }
 
         AtClient atClient;
         try {
-            atClient = AtClient.withRemoteSecondary(atSign, ArgsUtil.createAddressFinder(rootUrl), false);
+            atClient = AtClient.withRemoteSecondary(atSign, ArgsUtil.createAddressFinder(rootUrl), verbose);
 
             System.out.println("org.atsign.client.core.Client connected OK");
 
@@ -107,7 +111,8 @@ public class REPL {
                             } else if(keyType.equals(KeyStringUtil.KeyType.SHARED_KEY)) {
                                 SharedKey sk = Keys.SharedKey.fromString(fullKeyName);
                                 String value = client.get(sk).get();
-                                System.out.println("  => \033[31m" + value + "\033[0m");                            } else if(keyType.equals(KeyStringUtil.KeyType.PRIVATE_HIDDEN_KEY)) {
+                                System.out.println("  => \033[31m" + value + "\033[0m");
+                            } else if(keyType.equals(KeyStringUtil.KeyType.PRIVATE_HIDDEN_KEY)) {
                                 throw new AtException("PrivateHiddenKey is not implemented yet");
                             } else {
                                 throw new AtException("Could not evaluate the key type of: " + fullKeyName);
