@@ -47,7 +47,8 @@ jobs:
         install \
         deploy \
         --batch-mode \
-        --no-transfer-progress
+        --no-transfer-progress \
+        -Dgpg.skip=false
       env:
         MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
         MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
