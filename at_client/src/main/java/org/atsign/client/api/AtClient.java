@@ -120,14 +120,14 @@ public interface AtClient extends Secondary, AtEvents.AtEventBus {
         try {
             keys = KeysUtil.loadKeys(atSign);
         } catch (Exception e) {
-            throw new AtClientConfigException("Failed to load keys : " + e.getMessage(), e);
+            throw new AtClientConfigException("Failed to load keys : " + e, e);
         }
 
         RemoteSecondary secondary;
         try {
             secondary = new RemoteSecondary(eventBus, atSign, remoteSecondaryAddress, keys, connectionFactory, verbose);
         } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to create RemoteSecondary, with IOException", e);
+            throw new AtSecondaryConnectException("Failed to create RemoteSecondary : " + e, e);
         }
 
         return new AtClientImpl(eventBus, atSign, keys, secondary);

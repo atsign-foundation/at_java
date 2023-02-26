@@ -55,7 +55,7 @@ public class Scan {
         try {
             what = "initialize AtClient";
             atClient = AtClient.withRemoteSecondary(atSign, sAddress, verbose);
-        } catch (AtException | IOException e) {
+        } catch (AtException e) {
             System.err.println("Failed to " + what + " " + e.getMessage());
             e.printStackTrace(System.err);
             System.exit(1);

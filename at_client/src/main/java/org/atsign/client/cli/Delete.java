@@ -2,11 +2,10 @@ package org.atsign.client.cli;
 
 import org.atsign.client.api.AtClient;
 import org.atsign.client.util.ArgsUtil;
+import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
 import org.atsign.common.KeyBuilders;
-import org.atsign.common.AtException;
 
-import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -33,7 +32,7 @@ public class Delete {
         AtClient atClient = null;
         try {
             atClient = AtClient.withRemoteSecondary(atSign, ArgsUtil.createAddressFinder(rootUrl));
-        } catch (AtException | IOException e) {
+        } catch (AtException e) {
             System.err.println("Failed to create AtClientImpl : " + e.getMessage());
             e.printStackTrace(System.err);
             System.exit(1);
