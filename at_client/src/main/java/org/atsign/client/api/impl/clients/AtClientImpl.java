@@ -361,13 +361,13 @@ public class AtClientImpl implements AtClient {
         try {
             rawResponse = secondary.executeCommand(command, true);
         } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
         }
 
         try {
             return EncryptionUtil.aesDecryptFromBase64(rawResponse.getRawDataResponse(), shareEncryptionKey);
         } catch (Exception e) {
-            throw new AtDecryptionException("Failed to " + "decrypt value with shared encryption key" + " : " + e.getMessage(), e);
+            throw new AtDecryptionException("Failed to decrypt value with shared encryption key", e);
         }
     }
 
@@ -380,14 +380,14 @@ public class AtClientImpl implements AtClient {
         try {
             rawResponse = secondary.executeCommand(command, true);
         } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
         }
 
         what = "decrypt value with shared encryption key";
         try {
             return EncryptionUtil.aesDecryptFromBase64(rawResponse.getRawDataResponse(), shareEncryptionKey);
         } catch (Exception e) {
-            throw new AtDecryptionException("Failed to " + what + " : " + e.getMessage(), e);
+            throw new AtDecryptionException("Failed to " + what, e);
         }
     }
 
@@ -404,7 +404,7 @@ public class AtClientImpl implements AtClient {
             what = "encrypt value with shared encryption key";
             cipherText = EncryptionUtil.aesEncryptToBase64(value, shareToEncryptionKey);
         } catch (Exception e) {
-            throw new AtEncryptionException("Failed to " + what + " : " + e.getMessage(), e);
+            throw new AtEncryptionException("Failed to " + what, e);
         }
 
         String command = "update" + sharedKey.metadata.toString() + ":" + sharedKey + " " + cipherText;
@@ -412,7 +412,7 @@ public class AtClientImpl implements AtClient {
         try {
             return secondary.executeCommand(command, true).toString();
         } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
         }
     }
 
@@ -421,7 +421,7 @@ public class AtClientImpl implements AtClient {
         try {
             return secondary.executeCommand(command, true).toString();
         } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
         }
     }
 
@@ -437,7 +437,7 @@ public class AtClientImpl implements AtClient {
         try {
             response = secondary.executeCommand(command, true);
         } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
         }
 
         // 3. transform the data to a LlookupAllResponse object
@@ -455,7 +455,7 @@ public class AtClientImpl implements AtClient {
         try {
             decryptedValue = EncryptionUtil.aesDecryptFromBase64(encryptedValue, selfEncryptionKey);
         } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException e) {
-            throw new AtDecryptionException("Failed to " + command + " : " + e.getMessage(), e);
+            throw new AtDecryptionException("Failed to " + command, e);
         }
 
         // 4. update metadata. squash the fetchedMetadata with current key.metadata (fetchedMetadata has higher priority)
@@ -473,7 +473,7 @@ public class AtClientImpl implements AtClient {
         try {
             cipherText = EncryptionUtil.aesEncryptToBase64(value, keys.get(KeysUtil.selfEncryptionKeyName));
         } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException e) {
-            throw new AtEncryptionException("Failed to encrypt value with self encryption key : " + e.getMessage(), e);
+            throw new AtEncryptionException("Failed to encrypt value with self encryption key", e);
         }
 
         // 3. update secondary
@@ -483,7 +483,7 @@ public class AtClientImpl implements AtClient {
         try {
             return secondary.executeCommand(command, true).toString();
         } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
         }
     }
 
@@ -497,7 +497,7 @@ public class AtClientImpl implements AtClient {
         try {
             return secondary.executeCommand(command, true).toString();
         } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
         }
     }
 
@@ -526,7 +526,7 @@ public class AtClientImpl implements AtClient {
         try {
             response = secondary.executeCommand(command, true);
         } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
         }
 
         // 3. transform the data to a LlookupAllResponse object
@@ -534,7 +534,7 @@ public class AtClientImpl implements AtClient {
         try {
             fetched = json.readValue(response.getRawDataResponse(), LookupResponse.class);
         } catch (JsonProcessingException e) {
-            throw new AtResponseHandlingException("Failed to parse JSON " + response.getRawDataResponse() + " : " + e, e);
+            throw new AtResponseHandlingException("Failed to parse JSON " + response.getRawDataResponse(), e);
         }
 
         // 4. update key object metadata
@@ -559,7 +559,7 @@ public class AtClientImpl implements AtClient {
         try {
             return secondary.executeCommand(command, true).toString();
         } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
         }
     }
 
@@ -574,7 +574,7 @@ public class AtClientImpl implements AtClient {
         try {
             return secondary.executeCommand(command, true).toString();
         } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
         }
     }
 
@@ -596,7 +596,7 @@ public class AtClientImpl implements AtClient {
         try {
             scanRawResponse = executeCommand(scanCommand, true);
         } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to execute " + scanCommand + " : " + e, e);
+            throw new AtSecondaryConnectException("Failed to execute " + scanCommand, e);
         }
         ResponseTransformers.ScanResponseTransformer scanResponseTransformer = new ResponseTransformers.ScanResponseTransformer();
         List<String> rawArray = scanResponseTransformer.transform(scanRawResponse);
@@ -608,12 +608,12 @@ public class AtClientImpl implements AtClient {
             try {
                 llookupMetaResponse = secondary.executeCommand(llookupCommand, true);
             } catch (IOException e) {
-                throw new AtSecondaryConnectException("Failed to execute " + llookupCommand + " : " + e, e);
+                throw new AtSecondaryConnectException("Failed to execute " + llookupCommand, e);
             }
             try {
                 atKey.metadata = Metadata.squash(atKey.metadata, Metadata.fromJson(llookupMetaResponse.getRawDataResponse())); // atKey.metadata has priority over llookupMetaRaw.data
             } catch (JsonProcessingException e) {
-                throw new AtResponseHandlingException("Failed to parse JSON : " + e, e);
+                throw new AtResponseHandlingException("Failed to parse JSON " + llookupMetaResponse.getRawDataResponse(), e);
             }
             atKeys.add(atKey);
         }
@@ -636,7 +636,7 @@ public class AtClientImpl implements AtClient {
         try {
             rawResponse = secondary.executeCommand(command, false);
         } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
         }
 
         if (rawResponse.isError()) {
@@ -652,7 +652,7 @@ public class AtClientImpl implements AtClient {
         try {
             return EncryptionUtil.rsaDecryptFromBase64(rawResponse.getRawDataResponse(), keys.get(KeysUtil.encryptionPrivateKeyName));
         } catch (Exception e) {
-            throw new AtDecryptionException("Failed to decrypt " + toLookup + " : " + e.getMessage(), e);
+            throw new AtDecryptionException("Failed to decrypt " + toLookup, e);
         }
     }
     private String getEncryptionKeySharedByOther(SharedKey sharedKey) throws AtException {
@@ -672,7 +672,7 @@ public class AtClientImpl implements AtClient {
         try {
             rawResponse = secondary.executeCommand(lookupCommand, true);
         } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to execute " + lookupCommand + " : " + e, e);
+            throw new AtSecondaryConnectException("Failed to execute " + lookupCommand, e);
         }
 
         String sharedSharedKeyDecryptedValue;
@@ -698,7 +698,7 @@ public class AtClientImpl implements AtClient {
         try {
             aesKey = EncryptionUtil.generateAESKeyBase64();
         } catch (Exception e) {
-            throw new AtEncryptionException("Failed to generate AES key for sharing with " + sharedKey.sharedWith + " : " + e.getMessage(), e);
+            throw new AtEncryptionException("Failed to generate AES key for sharing with " + sharedKey.sharedWith, e);
         }
 
         String what = "";
@@ -720,7 +720,7 @@ public class AtClientImpl implements AtClient {
             secondary.executeCommand("update:ttr:" + ttr + ":" + sharedKey.sharedWith + ":shared_key" + sharedKey.sharedBy
                     + " " + encryptedForOther, true);
         } catch (Exception e) {
-            throw new AtEncryptionException("Failed to " + what + " : " + e.getMessage(), e);
+            throw new AtEncryptionException("Failed to " + what, e);
         }
 
         return aesKey;
@@ -734,7 +734,7 @@ public class AtClientImpl implements AtClient {
         try {
             rawResponse = secondary.executeCommand(command, false);
         } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
         }
 
         if (rawResponse.isError()) {

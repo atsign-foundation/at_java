@@ -56,14 +56,14 @@ public class AuthUtil {
         try {
             privateKey = EncryptionUtil._privateKeyFromBase64(keys.get(KeysUtil.pkamPrivateKeyName));
         } catch (Exception e) {
-            throw new AtClientConfigException("Failed to get private key from stored string: " + e.getMessage());
+            throw new AtClientConfigException("Failed to get private key from stored string");
         }
 
         String signature;
         try {
             signature = EncryptionUtil._signSHA256RSA(fromResponse, privateKey);
         } catch (Exception e) {
-            throw new AtEncryptionException("Failed to create SHA256 signature: " + e.getMessage());
+            throw new AtEncryptionException("Failed to create SHA256 signature");
         }
 
         String pkamResponse = connection.executeCommand("pkam:" + signature);

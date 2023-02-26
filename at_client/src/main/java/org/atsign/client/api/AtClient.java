@@ -85,7 +85,7 @@ public interface AtClient extends Secondary, AtEvents.AtEventBus {
         } catch (AtSecondaryNotFoundException e) {
             throw e;
         } catch (Exception e) {
-            throw new AtSecondaryNotFoundException("Failed to lookup remote secondary: " + e.getMessage(), e);
+            throw new AtSecondaryNotFoundException("Failed to lookup remote secondary", e);
         }
 
         return withRemoteSecondary(atSign, secondaryAddress, verbose);
@@ -120,14 +120,14 @@ public interface AtClient extends Secondary, AtEvents.AtEventBus {
         try {
             keys = KeysUtil.loadKeys(atSign);
         } catch (Exception e) {
-            throw new AtClientConfigException("Failed to load keys : " + e, e);
+            throw new AtClientConfigException("Failed to load keys", e);
         }
 
         RemoteSecondary secondary;
         try {
             secondary = new RemoteSecondary(eventBus, atSign, remoteSecondaryAddress, keys, connectionFactory, verbose);
         } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to create RemoteSecondary : " + e, e);
+            throw new AtSecondaryConnectException("Failed to create RemoteSecondary", e);
         }
 
         return new AtClientImpl(eventBus, atSign, keys, secondary);
