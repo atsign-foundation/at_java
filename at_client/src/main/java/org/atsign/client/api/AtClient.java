@@ -5,17 +5,20 @@ import org.atsign.client.api.impl.connections.AtRootConnection;
 import org.atsign.client.api.impl.connections.DefaultAtConnectionFactory;
 import org.atsign.client.api.impl.events.SimpleAtEventBus;
 import org.atsign.client.api.impl.secondaries.RemoteSecondary;
-import org.atsign.common.AtSign;
-import org.atsign.common.options.GetRequestOptions;
-import org.atsign.common.AtException;
 import org.atsign.client.util.KeysUtil;
-
-import static org.atsign.common.Keys.*;
+import org.atsign.common.AtException;
+import org.atsign.common.AtSign;
+import org.atsign.common.exceptions.AtClientConfigException;
+import org.atsign.common.exceptions.AtSecondaryConnectException;
+import org.atsign.common.exceptions.AtSecondaryNotFoundException;
+import org.atsign.common.options.GetRequestOptions;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+
+import static org.atsign.common.Keys.*;
 
 /**
  * The primary interface of the AtSign client library.
@@ -48,11 +51,15 @@ public interface AtClient extends Secondary, AtEvents.AtEventBus {
      * @param atSign the atSign of this client
      * @param secondaryAddressFinder will be used to find the Secondary.Address of the atSign
      * @return An {@link AtClient}
-     * @throws IOException if thrown by the address finder
      * @throws AtException if any other exception occurs while connecting to the remote (cloud) secondary
      */
-    static AtClient withRemoteSecondary(AtSign atSign, Secondary.AddressFinder secondaryAddressFinder) throws IOException, AtException {
-        Secondary.Address remoteSecondaryAddress = secondaryAddressFinder.findSecondary(atSign);
+    static AtClient withRemoteSecondary(AtSign atSign, Secondary.AddressFinder secondaryAddressFinder) throws AtException {
+        Secondary.Address remoteSecondaryAddress;
+        try {
+            remoteSecondaryAddress = secondaryAddressFinder.findSecondary(atSign);
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to find secondary, with IOException", e);
+        }
         return withRemoteSecondary(atSign, remoteSecondaryAddress, false);
     }
 
@@ -75,8 +82,10 @@ public interface AtClient extends Secondary, AtEvents.AtEventBus {
             AtRootConnection rootConnection = connectionFactory.getRootConnection(new SimpleAtEventBus(), rootUrl, verbose);
             rootConnection.connect();
             secondaryAddress = rootConnection.findSecondary(atSign);
+        } catch (AtSecondaryNotFoundException e) {
+            throw e;
         } catch (Exception e) {
-            throw new AtException("Failed to lookup remote secondary: " + e.getMessage(), e);
+            throw new AtSecondaryNotFoundException("Failed to lookup remote secondary: " + e.getMessage(), e);
         }
 
         return withRemoteSecondary(atSign, secondaryAddress, verbose);
@@ -85,7 +94,6 @@ public interface AtClient extends Secondary, AtEvents.AtEventBus {
     /**
      * Factory to use when you wish to use a custom Secondary.AddressFinder
      * @param atSign the atSign of this client
-     * @param secondaryAddressFinder will be used to find the Secondary.Address of the atSign
      * @param verbose set to true for chatty logs
      * @return An {@link AtClient}
      * @throws IOException if thrown by the address finder
@@ -112,14 +120,14 @@ public interface AtClient extends Secondary, AtEvents.AtEventBus {
         try {
             keys = KeysUtil.loadKeys(atSign);
         } catch (Exception e) {
-            throw new AtException("Failed to load keys : " + e.getMessage(), e);
+            throw new AtClientConfigException("Failed to load keys : " + e.getMessage(), e);
         }
 
         RemoteSecondary secondary;
         try {
             secondary = new RemoteSecondary(eventBus, atSign, remoteSecondaryAddress, keys, connectionFactory, verbose);
-        } catch (Exception e) {
-            throw new AtException("Failed to create RemoteSecondary: " + e.getMessage(), e);
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to create RemoteSecondary, with IOException", e);
         }
 
         return new AtClientImpl(eventBus, atSign, keys, secondary);

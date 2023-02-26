@@ -1,19 +1,19 @@
 package org.atsign.client.cli;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Scanner;
-import java.util.concurrent.ExecutionException;
-
 import org.apache.commons.lang3.StringUtils;
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.Secondary;
 import org.atsign.client.util.ArgsUtil;
-import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
 import org.atsign.common.Keys.AtKey;
-import org.atsign.common.Keys.Metadata;
-import org.atsign.common.NoSuchSecondaryException;
+import org.atsign.common.Metadata;
+import org.atsign.common.AtException;
+import org.atsign.common.exceptions.AtSecondaryNotFoundException;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Scanner;
+import java.util.concurrent.ExecutionException;
 
 /**
  * A command-line interface for scanning keys in your secondary (must have keys to atSign in keys/)
@@ -35,16 +35,16 @@ public class Scan {
         // ======================================================
         AtSign atSign = new AtSign(atSignConst);
         boolean verbose = Boolean.parseBoolean(verboseStr);
-        String what = null; // error message string 
+        String what = null; // error message string
 
         // find secondary address
         Secondary.Address sAddress = null;
         try {
             Secondary.AddressFinder sAddressFinder = ArgsUtil.createAddressFinder(rootUrl);
-            what = "could not find secondary with atSign:" + atSign.atSign;
+            what = "find secondary with atSign:" + atSign.atSign;
             sAddress = sAddressFinder.findSecondary(atSign);
             System.out.println("Found address of atSign \"" + atSign.atSign + "\": " + sAddress.host + ":" + sAddress.port);
-        } catch (IOException | NoSuchSecondaryException e) {
+        } catch (IOException | AtSecondaryNotFoundException e) {
             System.err.println("Failed to " + what + " " + e.getMessage());
             e.printStackTrace(System.err);
             System.exit(1);
@@ -55,7 +55,7 @@ public class Scan {
         try {
             what = "initialize AtClient";
             atClient = AtClient.withRemoteSecondary(atSign, sAddress, verbose);
-        } catch (AtException e) {
+        } catch (AtException | IOException e) {
             System.err.println("Failed to " + what + " " + e.getMessage());
             e.printStackTrace(System.err);
             System.exit(1);
@@ -81,7 +81,7 @@ public class Scan {
             System.out.println("Enter index you want to llookup (l to list, q to quit):");
             input = scanner.nextLine();
             if(StringUtils.isNumeric(input)) {
-                int index = Integer.valueOf(input);
+                int index = Integer.parseInt(input);
                 if(index < atKeys.size()) {
                     AtKey atKey = atKeys.get(index);
                     _printAtKeyInfo(atKey);
@@ -101,7 +101,7 @@ public class Scan {
         System.out.println("atKeys: {");
         for(int i = 0; i < atKeys.size(); i++) {
             AtKey atKey = atKeys.get(i);
-            System.out.println("  " + i + ":  " + (atKey.metadata.isCached ? "cached:" : "") + atKey.toString());
+            System.out.println("  " + i + ":  " + (atKey.metadata.isCached ? "cached:" : "") + atKey);
         }
         System.out.println("}");
     }

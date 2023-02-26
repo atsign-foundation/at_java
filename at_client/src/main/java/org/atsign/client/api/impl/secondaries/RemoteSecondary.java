@@ -1,16 +1,22 @@
 package org.atsign.client.api.impl.secondaries;
 
 import org.atsign.client.api.AtConnectionFactory;
-import static org.atsign.client.api.AtEvents.*;
 import org.atsign.client.api.Secondary;
 import org.atsign.client.api.impl.connections.AtMonitorConnection;
 import org.atsign.client.api.impl.connections.AtSecondaryConnection;
-import org.atsign.common.AtSign;
-import org.atsign.common.AtException;
 import org.atsign.client.util.AuthUtil;
+import org.atsign.common.AtException;
+import org.atsign.common.AtSign;
+import org.atsign.common.exceptions.AtIllegalArgumentException;
+import org.atsign.common.exceptions.AtInvalidAtKeyException;
+import org.atsign.common.exceptions.AtInvalidSyntaxException;
+import org.atsign.common.exceptions.AtUnknownResponseException;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Map;
+
+import static org.atsign.client.api.AtEvents.AtEventBus;
+import static org.atsign.client.api.AtEvents.AtEventType;
 
 /**
  * @see org.atsign.client.api.Secondary
@@ -74,39 +80,29 @@ public class RemoteSecondary implements Secondary {
     }
 
     @Override
-    public Response executeCommand(String command, boolean throwExceptionOnErrorResponse) throws AtException {
+    public Response executeCommand(String command, boolean throwExceptionOnErrorResponse) throws IOException, AtException {
         Response response = new Response();
-        String rawResponse;
-        try {
-            rawResponse = connection.executeCommand(command);
-        } catch (IOException e) {
-            throw new AtException("Failed to execute command " + command + " : " + e.getMessage(), e);
-        }
+        String rawResponse = connection.executeCommand(command);
 
         if (rawResponse.startsWith("data:")) {
-            response.data = rawResponse.substring("data:".length());
-            response.isError = false;
-            response.error = null;
+            response.setRawDataResponse(rawResponse.substring("data:".length()));
         } else if (rawResponse.startsWith("error:")) {
-            if (rawResponse.contains("AT0003-Invalid syntax")) {
-                // Secondaries close connections rudely after invalid syntax
+            response.setRawErrorResponse(rawResponse.substring("error:".length()));
+            AtException theServerException = response.getException();
+
+            if (theServerException instanceof AtInvalidSyntaxException
+                    || theServerException instanceof AtIllegalArgumentException
+                    || theServerException instanceof AtInvalidAtKeyException) {
+                // Secondaries used to close connections for these exceptions so let's disconnect and reconnect
                 connection.disconnect();
-                try {
-                    connection.connect();
-                } catch (IOException e) {
-                    throw new AtException("Failed to reconnect after syntax error");
-                }
+                connection.connect();
             }
 
             if (throwExceptionOnErrorResponse) {
-                throw new AtException(rawResponse);
-            } else {
-                response.data = null;
-                response.isError = true;
-                response.error = rawResponse.substring("error:".length());
+                throw theServerException;
             }
         } else {
-            throw new AtException("Invalid response " + rawResponse + " from command " + command);
+            throw new AtUnknownResponseException("Unknown response " + rawResponse + " from command " + command);
         }
         return response;
     }

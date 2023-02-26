@@ -1,13 +1,18 @@
 package org.atsign.client.util;
 
 import org.atsign.client.api.AtConnection;
-import org.atsign.common.AtSign;
 import org.atsign.client.api.impl.connections.AtSecondaryConnection;
+import org.atsign.common.AtSign;
+import org.atsign.common.exceptions.AtClientConfigException;
+import org.atsign.common.exceptions.AtEncryptionException;
 import org.atsign.common.AtException;
+import org.atsign.common.exceptions.AtUnauthenticatedException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.security.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.util.Map;
 
 /**
@@ -17,7 +22,7 @@ public class AuthUtil {
     public void authenticateWithCram(AtSecondaryConnection connection, AtSign atSign, String cramSecret) throws AtException, IOException {
         String fromResponse = connection.executeCommand("from:" + atSign);
         if (! fromResponse.startsWith("data:")) {
-            throw new AtException("CRAM command got invalid from response: " + fromResponse);
+            throw new AtUnauthenticatedException("Invalid response to 'from': " + fromResponse);
         }
 
         String challenge = fromResponse.replaceFirst("data:", "");
@@ -25,25 +30,25 @@ public class AuthUtil {
         try {
             cramDigest = _getCramDigest(cramSecret, challenge);
         } catch (NoSuchAlgorithmException e) {
-            throw new AtException("Failed to generate cramDigest", e);
+            throw new AtEncryptionException("Failed to generate cramDigest", e);
         }
 
         String cramResponse = connection.executeCommand("cram:" + cramDigest);
         if (! cramResponse.startsWith("data:success")) {
-            throw new AtException("CRAM command failed: " + cramResponse);
+            throw new AtUnauthenticatedException("CRAM command failed: " + cramResponse);
         }
     }
 
     public void authenticateWithPkam(AtConnection connection, AtSign atSign, Map<String, String> keys) throws AtException, IOException {
         if (! keys.containsKey(KeysUtil.pkamPrivateKeyName)) {
-            throw new AtException("Cannot authenticate with PKAM: Keys file does not contain " + KeysUtil.pkamPrivateKeyName);
+            throw new AtClientConfigException("Cannot authenticate with PKAM: Keys file does not contain " + KeysUtil.pkamPrivateKeyName);
         }
 
         String fromResponse = connection.executeCommand("from:" + atSign);
 
         String dataPrefix = "data:";
         if (! fromResponse.startsWith(dataPrefix)) {
-            throw new AtException("from command got invalid from response: " + fromResponse);
+            throw new AtUnauthenticatedException("Invalid response to 'from' command: " + fromResponse);
         }
         fromResponse = fromResponse.substring(dataPrefix.length());
 
@@ -51,20 +56,20 @@ public class AuthUtil {
         try {
             privateKey = EncryptionUtil._privateKeyFromBase64(keys.get(KeysUtil.pkamPrivateKeyName));
         } catch (Exception e) {
-            throw new AtException("Failed to get private key from stored string: " + e.getMessage());
+            throw new AtClientConfigException("Failed to get private key from stored string: " + e.getMessage());
         }
 
         String signature;
         try {
             signature = EncryptionUtil._signSHA256RSA(fromResponse, privateKey);
         } catch (Exception e) {
-            throw new AtException("Failed to create SHA256 signature: " + e.getMessage());
+            throw new AtEncryptionException("Failed to create SHA256 signature: " + e.getMessage());
         }
 
         String pkamResponse = connection.executeCommand("pkam:" + signature);
 
         if (! pkamResponse.startsWith("data:success")) {
-            throw new AtException("PKAM command failed: " + pkamResponse);
+            throw new AtUnauthenticatedException("PKAM command failed: " + pkamResponse);
         }
     }
 

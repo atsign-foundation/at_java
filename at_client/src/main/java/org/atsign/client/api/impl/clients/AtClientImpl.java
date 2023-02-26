@@ -1,26 +1,7 @@
 package org.atsign.client.api.impl.clients;
 
-import static org.atsign.client.api.AtEvents.AtEventType.decryptedUpdateNotification;
-
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.text.ParseException;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.AtEvents.AtEventBus;
 import org.atsign.client.api.AtEvents.AtEventListener;
@@ -28,29 +9,38 @@ import org.atsign.client.api.AtEvents.AtEventType;
 import org.atsign.client.api.Secondary;
 import org.atsign.client.util.EncryptionUtil;
 import org.atsign.client.util.KeysUtil;
-import org.atsign.common.AtException;
-import org.atsign.common.AtSign;
-import org.atsign.common.Keys;
+import org.atsign.common.*;
 import org.atsign.common.Keys.AtKey;
-import org.atsign.common.Keys.Metadata;
 import org.atsign.common.Keys.PublicKey;
 import org.atsign.common.Keys.SelfKey;
 import org.atsign.common.Keys.SharedKey;
-import org.atsign.common.ResponseTransformers;
-import org.atsign.common.ResponseTransformers.LlookupAllResponseTransformer;
-import org.atsign.common.VerbBuilders.DeleteVerbBuilder;
-import org.atsign.common.VerbBuilders.LlookupVerbBuilder;
-import org.atsign.common.VerbBuilders.PlookupVerbBuilder;
-import org.atsign.common.VerbBuilders.ScanVerbBuilder;
-import org.atsign.common.VerbBuilders.UpdateVerbBuilder;
+import org.atsign.common.VerbBuilders.*;
+import org.atsign.common.exceptions.*;
 import org.atsign.common.options.GetRequestOptions;
-import org.atsign.common.response_models.LlookupAllResponse;
+import org.atsign.common.response_models.LookupResponse;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+
+import static org.atsign.client.api.AtEvents.AtEventType.decryptedUpdateNotification;
 
 /**
  * @see org.atsign.client.api.AtClient
  */
 @SuppressWarnings({"RedundantThrows", "unused"})
 public class AtClientImpl implements AtClient {
+    static final ObjectMapper json = new ObjectMapper();
+
     // Factory method - creates an AtClientImpl with a RemoteSecondary
 
     private final AtSign atSign;
@@ -343,7 +333,7 @@ public class AtClientImpl implements AtClient {
      * if there is any other exception
      */
     @Override
-    public Response executeCommand(String command, boolean throwExceptionOnErrorResponse) throws AtException {
+    public Response executeCommand(String command, boolean throwExceptionOnErrorResponse) throws AtException, IOException {
         return secondary.executeCommand(command, throwExceptionOnErrorResponse);
     }
 
@@ -366,12 +356,18 @@ public class AtClientImpl implements AtClient {
         String shareEncryptionKey = getEncryptionKeySharedByMe(sharedKey);
 
         // fetch local - e.g. if I'm @bob, I would first "llookup:@alice:some.key.name@bob"
-        Response rawResponse = secondary.executeCommand("llookup:" + sharedKey, true);
+        Response rawResponse;
+        String command = "llookup:" + sharedKey;
+        try {
+            rawResponse = secondary.executeCommand(command, true);
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
+        }
 
         try {
-            return EncryptionUtil.aesDecryptFromBase64(rawResponse.data, shareEncryptionKey);
+            return EncryptionUtil.aesDecryptFromBase64(rawResponse.getRawDataResponse(), shareEncryptionKey);
         } catch (Exception e) {
-            throw new AtException("Failed to " + "decrypt value with shared encryption key" + " : " + e.getMessage(), e);
+            throw new AtDecryptionException("Failed to " + "decrypt value with shared encryption key" + " : " + e.getMessage(), e);
         }
     }
 
@@ -379,99 +375,91 @@ public class AtClientImpl implements AtClient {
         String what;
         String shareEncryptionKey = getEncryptionKeySharedByOther(sharedKey);
 
-        // first, try to fetch cached - e.g. if I'm @bob, I would first "llookup:cached:@bob:some.key.name@alice"
-        what = "llookup cached " + sharedKey;
-        Secondary.Response rawResponse = secondary.executeCommand("llookup:cached:" + sharedKey, false);
-        if (rawResponse.isError) {
-            if (rawResponse.error.contains("AT0015-key not found")) {
-                // next, try to fetch from remote - e.g. if I'm @bob, "lookup:some.key.name@alice" - note that "@bob" is NOT required
-                String lookupRemoteKey = sharedKey.getFullyQualifiedKeyName() + sharedKey.sharedBy;
-                what = "lookup remote " + lookupRemoteKey;
-                try {
-                    rawResponse = secondary.executeCommand("lookup:" + lookupRemoteKey, true);
-                } catch (AtException e) {
-                    throw new AtException("Failed to " + what + " : " + rawResponse.error);
-                }
-            } else {
-                throw new AtException("Failed to " + what + " : " + rawResponse.error);
-            }
+        Response rawResponse;
+        String command = "lookup:" + sharedKey;
+        try {
+            rawResponse = secondary.executeCommand(command, true);
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
         }
 
         what = "decrypt value with shared encryption key";
         try {
-            return EncryptionUtil.aesDecryptFromBase64(rawResponse.data, shareEncryptionKey);
+            return EncryptionUtil.aesDecryptFromBase64(rawResponse.getRawDataResponse(), shareEncryptionKey);
         } catch (Exception e) {
-            throw new AtException("Failed to " + what + " : " + e.getMessage(), e);
+            throw new AtDecryptionException("Failed to " + what + " : " + e.getMessage(), e);
         }
     }
 
     private String _put(SharedKey sharedKey, String value) throws AtException {
         if (! this.atSign.equals(sharedKey.sharedBy)) {
-            throw new AtException("sharedBy is [" + sharedKey.sharedBy + "] but should be this client's atSign [" + atSign + "]");
+            throw new AtIllegalArgumentException("sharedBy is [" + sharedKey.sharedBy + "] but should be this client's atSign [" + atSign + "]");
         }
         String what = "";
+        String cipherText;
         try {
             what = "fetch/create shared encryption key";
             String shareToEncryptionKey = getEncryptionKeySharedByMe(sharedKey);
 
             what = "encrypt value with shared encryption key";
-            String cipherText = EncryptionUtil.aesEncryptToBase64(value, shareToEncryptionKey);
-
-            what = "save " + sharedKey + " to secondary";
-
-            String command = "update" + sharedKey.metadata.toString() + ":" + sharedKey + " " + cipherText;
-            Secondary.Response response = secondary.executeCommand(command, true);
-//            response = secondary.executeCommand(command, true);
-
-            return response.toString();
+            cipherText = EncryptionUtil.aesEncryptToBase64(value, shareToEncryptionKey);
         } catch (Exception e) {
-            throw new AtException("Failed to " + what + " : " + e.getMessage(), e);
+            throw new AtEncryptionException("Failed to " + what + " : " + e.getMessage(), e);
+        }
+
+        String command = "update" + sharedKey.metadata.toString() + ":" + sharedKey + " " + cipherText;
+
+        try {
+            return secondary.executeCommand(command, true).toString();
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
         }
     }
 
     private String _delete(SharedKey sharedKey) throws AtException {
-        String what = "";
+        String command = "delete:" + sharedKey;
         try {
-            what = "delete " + sharedKey + " from secondary";
-            Secondary.Response response = secondary.executeCommand("delete:" + sharedKey, true);
-
-            return response.toString();
-        } catch (Exception e) {
-            throw new AtException("Failed to " + what + " : " + e.getMessage(), e);
+            return secondary.executeCommand(command, true).toString();
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
         }
     }
 
     private String _get(SelfKey key) throws AtException {
         // 1. build command
-        String command = null;
+        String command;
         LlookupVerbBuilder builder = new LlookupVerbBuilder();
         builder.with(key, LlookupVerbBuilder.Type.ALL);
         command = builder.build();
 
         // 2. execute command
-        Secondary.Response rawResponse = secondary.executeCommand(command, false);
-        if (rawResponse.isError) {
-            throw new AtException("Failed to " + command + " : " + rawResponse.error);
+        Response response;
+        try {
+            response = secondary.executeCommand(command, true);
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
         }
 
         // 3. transform the data to a LlookupAllResponse object
-        LlookupAllResponse model = null;
-        LlookupAllResponseTransformer transformer = new LlookupAllResponseTransformer();
-        model = transformer.transform(rawResponse); // contains variables for data we want from the `llookup:all:<fullKeyName>` command (e.g. model.metaData.ttl)
+        LookupResponse fetched;
+        try {
+            fetched = json.readValue(response.getRawDataResponse(), LookupResponse.class);
+        } catch (JsonProcessingException e) {
+            throw new AtResponseHandlingException("Failed to parse JSON " + response.getRawDataResponse(), e);
+        }
 
         // 3. decrypt the value
-        String decryptedValue = null;
-        String encryptedValue = model.data;
+        String decryptedValue;
+        String encryptedValue = fetched.data;
         String selfEncryptionKey = keys.get(KeysUtil.selfEncryptionKeyName);
         try {
             decryptedValue = EncryptionUtil.aesDecryptFromBase64(encryptedValue, selfEncryptionKey);
         } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException e) {
-            throw new AtException("Failed to " + command + " : " + e.getMessage(), e);
+            throw new AtDecryptionException("Failed to " + command + " : " + e.getMessage(), e);
         }
 
         // 4. update metadata. squash the fetchedMetadata with current key.metadata (fetchedMetadata has higher priority)
-        Metadata fetchedMetadata = Metadata.fromModel(model.metaData);
-        key.metadata = Metadata.squash(fetchedMetadata, key.metadata);
+        key.metadata = Metadata.squash(fetched.metaData, key.metadata);
 
         return decryptedValue;
     }
@@ -485,18 +473,18 @@ public class AtClientImpl implements AtClient {
         try {
             cipherText = EncryptionUtil.aesEncryptToBase64(value, keys.get(KeysUtil.selfEncryptionKeyName));
         } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException e) {
-            throw new AtException("Failed to encrypt value with self encryption key : " + e.getMessage(), e);
+            throw new AtEncryptionException("Failed to encrypt value with self encryption key : " + e.getMessage(), e);
         }
 
         // 3. update secondary
         UpdateVerbBuilder builder = new UpdateVerbBuilder();
         builder.with(selfKey, cipherText);
         String command = builder.build();
-        Secondary.Response response = secondary.executeCommand(command, true);
-        if(response.isError) {
-            throw new AtException("Failed to update " + selfKey + " : " + response.error);
+        try {
+            return secondary.executeCommand(command, true).toString();
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
         }
-        return response.toString();
     }
 
     private String _delete(SelfKey key) throws AtException {
@@ -506,11 +494,11 @@ public class AtClientImpl implements AtClient {
         String command = builder.build();
 
         // 2. run command
-        Secondary.Response response = secondary.executeCommand(command, true);
-        if(response.isError) {
-            throw new AtException("Failed to run command " + command + " : " + response.error);
+        try {
+            return secondary.executeCommand(command, true).toString();
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
         }
-        return response.toString();
     }
 
     private String _get(PublicKey key) throws AtException {
@@ -519,7 +507,7 @@ public class AtClientImpl implements AtClient {
 
     private String _get(PublicKey key, GetRequestOptions getRequestOptions) throws AtException {
         // 1. build command
-        String command = null;
+        String command;
         if(atSign.toString().equals(key.sharedBy.toString())) {
             // it's a public key created by this client => llookup
             LlookupVerbBuilder builder = new LlookupVerbBuilder();
@@ -534,23 +522,27 @@ public class AtClientImpl implements AtClient {
         }
 
         // 2. run the command
-        Secondary.Response llookupAllRawResponse = secondary.executeCommand(command, false);
-        if (llookupAllRawResponse.isError) {
-            throw new AtException("Failed to " + command + " : " + llookupAllRawResponse.error);
+        Response response;
+        try {
+            response = secondary.executeCommand(command, true);
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
         }
 
         // 3. transform the data to a LlookupAllResponse object
-        LlookupAllResponse model = null;
-        LlookupAllResponseTransformer transformer = new LlookupAllResponseTransformer();
-        model = transformer.transform(llookupAllRawResponse);
+        LookupResponse fetched;
+        try {
+            fetched = json.readValue(response.getRawDataResponse(), LookupResponse.class);
+        } catch (JsonProcessingException e) {
+            throw new AtResponseHandlingException("Failed to parse JSON " + response.getRawDataResponse() + " : " + e, e);
+        }
 
         // 4. update key object metadata
-        Metadata fetchedMetadata = Metadata.fromModel(model.metaData);
-        key.metadata = Metadata.squash(fetchedMetadata, key.metadata);
-        key.metadata.isCached = model.key.contains("cached:");
+        key.metadata = Metadata.squash(fetched.metaData, key.metadata);
+        key.metadata.isCached = fetched.key.contains("cached:");
 
         // 5. return the AtValue
-        return model.data;
+        return fetched.data;
     }
 
     private String _put(PublicKey publicKey, String value) throws AtException {
@@ -558,32 +550,32 @@ public class AtClientImpl implements AtClient {
         publicKey.metadata.dataSignature = generateSignature(value);
 
         // 2. build command
-        String command = null;
+        String command;
         UpdateVerbBuilder builder = new UpdateVerbBuilder();
         builder.with(publicKey, value);
         command = builder.build();
 
         // 3. run command
-        Secondary.Response rawResponse = secondary.executeCommand(command, false);
-        if(rawResponse.isError) {
-            throw new AtException(rawResponse.error);
+        try {
+            return secondary.executeCommand(command, true).toString();
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
         }
-        return rawResponse.toString();
     }
 
     private String _delete(PublicKey key) throws AtException {
         // 1. build command
-        String command = null;
+        String command;
         DeleteVerbBuilder builder = new DeleteVerbBuilder();
         builder.with(key);
         command = builder.build();
         
         // 2. run command
-        Secondary.Response rawResponse = secondary.executeCommand(command, false);
-        if(rawResponse.isError) {
-            throw new AtException(rawResponse.error);
+        try {
+            return secondary.executeCommand(command, true).toString();
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
         }
-        return rawResponse.toString();
     }
 
     private byte[] _getBinary(SharedKey sharedKey) throws AtException {throw new RuntimeException("Not Implemented");}
@@ -595,19 +587,34 @@ public class AtClientImpl implements AtClient {
     private String _put(SelfKey selfKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
     private String _put(PublicKey publicKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
 
-    private List<AtKey> _getAtKeys(String regex) throws AtException, ParseException {
+    private List<AtKey> _getAtKeys(String regex) throws AtException {
         ScanVerbBuilder scanVerbBuilder = new ScanVerbBuilder();
         scanVerbBuilder.setRegex(regex);
         scanVerbBuilder.setShowHidden(true); 
-        String command = scanVerbBuilder.build();
-        Response scanRawResponse = executeCommand(command, false);
+        String scanCommand = scanVerbBuilder.build();
+        Response scanRawResponse;
+        try {
+            scanRawResponse = executeCommand(scanCommand, true);
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + scanCommand + " : " + e, e);
+        }
         ResponseTransformers.ScanResponseTransformer scanResponseTransformer = new ResponseTransformers.ScanResponseTransformer();
         List<String> rawArray = scanResponseTransformer.transform(scanRawResponse);
         List<AtKey> atKeys = new ArrayList<>();
         for(String atKeyRaw : rawArray) { // eg atKeyRaw == @bob:phone@alice
             AtKey atKey = Keys.fromString(atKeyRaw);
-            Secondary.Response llookupMetaRaw = secondary.executeCommand("llookup:meta:" + atKeyRaw, false);
-            atKey.metadata = Metadata.squash(atKey.metadata, Metadata.fromString(llookupMetaRaw)); // atKey.metadata has priority over llookupMetaRaw.data
+            String llookupCommand = "llookup:meta:" + atKeyRaw;
+            Response llookupMetaResponse;
+            try {
+                llookupMetaResponse = secondary.executeCommand(llookupCommand, true);
+            } catch (IOException e) {
+                throw new AtSecondaryConnectException("Failed to execute " + llookupCommand + " : " + e, e);
+            }
+            try {
+                atKey.metadata = Metadata.squash(atKey.metadata, Metadata.fromJson(llookupMetaResponse.getRawDataResponse())); // atKey.metadata has priority over llookupMetaRaw.data
+            } catch (JsonProcessingException e) {
+                throw new AtResponseHandlingException("Failed to parse JSON : " + e, e);
+            }
             atKeys.add(atKey);
         }
         return atKeys;
@@ -623,28 +630,29 @@ public class AtClientImpl implements AtClient {
     private String getEncryptionKeySharedByMe(SharedKey key) throws AtException {
         // llookup:shared_key.bob@alice
         Secondary.Response rawResponse;
-        String command = "";
         String toLookup = "shared_key." + key.sharedWith.withoutPrefix() + atSign;
+
+        String command = "llookup:" + toLookup;
         try {
-            command = "llookup:" + toLookup;
             rawResponse = secondary.executeCommand(command, false);
-        } catch (AtException e) {
-            throw new AtException("Failed to " + command + " : " + e.getMessage(), e);
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
         }
-        if (rawResponse.isError) {
-            if (rawResponse.error.contains("AT0015-key not found")) {
+
+        if (rawResponse.isError()) {
+            if (rawResponse.getException() instanceof AtKeyNotFoundException) {
                 // No key found - so we should create one
                 return createSharedEncryptionKey(key);
             } else {
-                throw new AtException("Failed to llookup shared key : " + rawResponse.error);
+                throw rawResponse.getException();
             }
         }
 
         // When we stored it, we encrypted it with our encryption public key; so we need to decrypt it now with our encryption private key
         try {
-            return EncryptionUtil.rsaDecryptFromBase64(rawResponse.data, keys.get(KeysUtil.encryptionPrivateKeyName));
+            return EncryptionUtil.rsaDecryptFromBase64(rawResponse.getRawDataResponse(), keys.get(KeysUtil.encryptionPrivateKeyName));
         } catch (Exception e) {
-            throw new AtException("Failed to decrypt " + toLookup + " : " + e.getMessage(), e);
+            throw new AtDecryptionException("Failed to decrypt " + toLookup + " : " + e.getMessage(), e);
         }
     }
     private String getEncryptionKeySharedByOther(SharedKey sharedKey) throws AtException {
@@ -657,42 +665,32 @@ public class AtClientImpl implements AtClient {
         }
 
         String what = "";
+
+        // Not in memory so now let's try to fetch from remote - e.g. if I'm @bob, lookup:shared_key@alice
+        String lookupCommand = "lookup:" + "shared_key" + sharedKey.sharedBy;
+        Response rawResponse;
         try {
-            // First, try to fetch cached - e.g. if I'm @bob, llookup:cached:@bob:shared_key@alice
-            String llookupCommand = "llookup:cached:" + sharedSharedKeyName;
-            what = llookupCommand;
-            Secondary.Response rawResponse = secondary.executeCommand(llookupCommand, false);
-            if (rawResponse.isError) {
-                if (rawResponse.error.contains("AT0015-key not found")) {
-                    // Next, try to fetch from remote - e.g. if I'm @bob, lookup:shared_key@alice
-                    String lookupCommand = "lookup:" + "shared_key" + sharedKey.sharedBy;
-                    what = lookupCommand;
-                    rawResponse = secondary.executeCommand(lookupCommand, false);
-                    if (rawResponse.isError) {
-                        throw new AtException("Failed to " + what + " : " + rawResponse.error);
-                    }
-                } else {
-                    throw new AtException("Failed to " + what + " : " + rawResponse.error);
-                }
-            }
-
-            what = "decrypt the shared_key  with our encryption private key";
-            String sharedSharedKeyDecryptedValue = EncryptionUtil.rsaDecryptFromBase64(rawResponse.data, keys.get(KeysUtil.encryptionPrivateKeyName));
-            keys.put(sharedSharedKeyName, sharedSharedKeyDecryptedValue);
-
-            return sharedSharedKeyDecryptedValue;
-        } catch (AtException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new AtException("Failed to " + what + " : " + e.getMessage(), e);
+            rawResponse = secondary.executeCommand(lookupCommand, true);
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + lookupCommand + " : " + e, e);
         }
+
+        String sharedSharedKeyDecryptedValue;
+        try {
+            sharedSharedKeyDecryptedValue = EncryptionUtil.rsaDecryptFromBase64(rawResponse.getRawDataResponse(), keys.get(KeysUtil.encryptionPrivateKeyName));
+        } catch (Exception e) {
+            throw new AtDecryptionException("Failed to decrypt the shared_key with our encryption private key", e);
+        }
+        keys.put(sharedSharedKeyName, sharedSharedKeyDecryptedValue);
+
+        return sharedSharedKeyDecryptedValue;
     }
 
     private String createSharedEncryptionKey(SharedKey sharedKey) throws AtException {
         // We need their public key
         String theirPublicEncryptionKey = getPublicEncryptionKey(sharedKey.sharedWith);
         if (theirPublicEncryptionKey == null) {
-            throw new AtException(" public key " + sharedKey.sharedWith + " not found but service is running - maybe that AtSign has not yet been onboarded");
+            throw new AtKeyNotFoundException(" public key " + sharedKey.sharedWith + " not found but service is running - maybe that AtSign has not yet been onboarded");
         }
 
         // Cut an AES key
@@ -700,7 +698,7 @@ public class AtClientImpl implements AtClient {
         try {
             aesKey = EncryptionUtil.generateAESKeyBase64();
         } catch (Exception e) {
-            throw new AtException("Failed to generate AES key for sharing with " + sharedKey.sharedWith + " : " + e.getMessage(), e);
+            throw new AtEncryptionException("Failed to generate AES key for sharing with " + sharedKey.sharedWith + " : " + e.getMessage(), e);
         }
 
         String what = "";
@@ -722,7 +720,7 @@ public class AtClientImpl implements AtClient {
             secondary.executeCommand("update:ttr:" + ttr + ":" + sharedKey.sharedWith + ":shared_key" + sharedKey.sharedBy
                     + " " + encryptedForOther, true);
         } catch (Exception e) {
-            throw new AtException("Failed to " + what + " : " + e.getMessage(), e);
+            throw new AtEncryptionException("Failed to " + what + " : " + e.getMessage(), e);
         }
 
         return aesKey;
@@ -731,30 +729,31 @@ public class AtClientImpl implements AtClient {
     private String getPublicEncryptionKey(AtSign sharedWith) throws AtException {
         // plookup:publickey@alice
         Secondary.Response rawResponse;
-        String command = "";
+
+        String command = "plookup:publickey" + sharedWith;
         try {
-            command = "plookup:publickey" + sharedWith;
             rawResponse = secondary.executeCommand(command, false);
-        } catch (AtException e) {
-            throw new AtException("Failed to " + command + " : " + e.getMessage(), e);
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command + " : " + e, e);
         }
-        if (rawResponse.isError) {
-            if (rawResponse.error.contains("AT0015-key not found")) {
+
+        if (rawResponse.isError()) {
+            if (rawResponse.getException() instanceof AtKeyNotFoundException) {
                 return null;
             } else {
-                throw new AtException("Failed to plookup public key for " + sharedWith + " : " + rawResponse.error);
+                throw rawResponse.getException();
             }
         } else {
-            return rawResponse.data;
+            return rawResponse.getRawDataResponse();
         }
     }
 
     private String generateSignature(String value) throws AtException {
-        String signature = null;
+        String signature;
         try {
             signature = EncryptionUtil.signSHA256RSA(value, keys.get(KeysUtil.encryptionPrivateKeyName));
         } catch (Exception e) {
-            throw new AtException("Failed to sign value: " + value);
+            throw new AtEncryptionException("Failed to sign value: " + value, e);
         }
         return signature;
     }

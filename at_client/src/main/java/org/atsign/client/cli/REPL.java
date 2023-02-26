@@ -1,16 +1,5 @@
 package org.atsign.client.cli;
 
-import static org.atsign.client.api.AtEvents.AtEventType.decryptedUpdateNotification;
-import static org.atsign.client.api.AtEvents.AtEventType.updateNotification;
-
-import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.AtEvents;
 import org.atsign.client.api.AtEvents.AtEventType;
@@ -23,6 +12,16 @@ import org.atsign.common.Keys;
 import org.atsign.common.Keys.PublicKey;
 import org.atsign.common.Keys.SelfKey;
 import org.atsign.common.Keys.SharedKey;
+import org.atsign.common.exceptions.AtIllegalArgumentException;
+import org.atsign.common.exceptions.AtInvalidSyntaxException;
+import org.atsign.common.exceptions.AtNotYetImplementedException;
+
+import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.util.*;
+
+import static org.atsign.client.api.AtEvents.AtEventType.decryptedUpdateNotification;
+import static org.atsign.client.api.AtEvents.AtEventType.updateNotification;
 
 /**
  * A command-line interface half-example half-utility which connects
@@ -79,7 +78,7 @@ public class REPL {
     }
 
     public void repl() throws AtException {
-        System.out.println("Type \'_help\' from help");
+        System.out.println("Type '/help' to see help");
         Scanner cliScanner = new Scanner(System.in);
         System.out.print(client.getAtSign() + "@ ");
 
@@ -88,7 +87,7 @@ public class REPL {
             if (! command.trim().isEmpty()) {
                 command = command.trim();
                 Secondary.Response response;
-                if (command.startsWith("_")) {
+                if (command.equals("help") || command.startsWith("_") || command.startsWith("/") || command.startsWith("\\")) {
                     // simple repl for get / put /
                     command = command.substring(1);
                     String[] parts = command.split(" ");
@@ -113,9 +112,9 @@ public class REPL {
                                 String value = client.get(sk).get();
                                 System.out.println("  => \033[31m" + value + "\033[0m");
                             } else if(keyType.equals(KeyStringUtil.KeyType.PRIVATE_HIDDEN_KEY)) {
-                                throw new AtException("PrivateHiddenKey is not implemented yet");
+                                throw new AtNotYetImplementedException("PrivateHiddenKey is not implemented yet");
                             } else {
-                                throw new AtException("Could not evaluate the key type of: " + fullKeyName);
+                                throw new AtInvalidSyntaxException("Could not evaluate the key type of: " + fullKeyName);
                             }
                         } else if ("put".equals(verb)) {
                             String fullKeyName = parts[1];
@@ -135,9 +134,9 @@ public class REPL {
                                 String data = client.put(sk, value).get();
                                 System.out.println("  => \033[31m" + data + "\033[0m");
                             } else if(keyType.equals(KeyStringUtil.KeyType.PRIVATE_HIDDEN_KEY)) {
-                                throw new AtException("PrivateHiddenKey is not implemented yet");
+                                throw new AtNotYetImplementedException("PrivateHiddenKey is not implemented yet");
                             } else {
-                                throw new AtException("Could not evaluate the key type of: " + fullKeyName);
+                                throw new AtIllegalArgumentException("Could not evaluate the key type of: " + fullKeyName);
                             }
                         } else if ("scan".equals(verb)) {
                             String regex = "";
@@ -161,9 +160,9 @@ public class REPL {
                                 String data = client.delete(sk).get();
                                 System.out.println("  => \033[31m" + data + "\033[0m");
                             } else if(keyType.equals(KeyStringUtil.KeyType.PRIVATE_HIDDEN_KEY)) {
-                                throw new AtException("PrivateHiddenKey is not implemented yet");
+                                throw new AtNotYetImplementedException("PrivateHiddenKey is not implemented yet");
                             } else {
-                                throw new AtException("Could not evaluate the key type of: " + fullKeyName);
+                                throw new AtIllegalArgumentException("Could not evaluate the key type of: " + fullKeyName);
                             }
                         } else if("share".equals(verb)) {
                             // _share <atSign> <keyName> <...data>
@@ -181,19 +180,15 @@ public class REPL {
                             System.err.println("ERROR: command not recognized: [" + verb + "]");
                         }
                     } catch (Exception e) {
-                        System.err.println("Exception: " + e.toString());
+                        //noinspection ThrowablePrintedToSystemOut
+                        System.err.println(e);
                     }
                 } else {
                     try {
                         response = client.executeCommand(command, true);
                         System.out.println("  => \033[31m" + response.toString() + "\033[0m");
-                    } catch (AtException e) {
-                        // We can swallow syntax errors. Anything else, let's rethrow.
-                        if (!e.toString().contains("AT0003-Invalid syntax")) {
-                            throw e;
-                        } else {
-                            System.err.println("*** " + e);
-                        }
+                    } catch (AtException | IOException e) {
+                        System.err.println("*** " + e);
                     }
                 }
             }
@@ -234,13 +229,9 @@ public class REPL {
                 case updateNotification: {
                     try {
                         sharedKey = Keys.SharedKey.fromString((String) eventData.get("key"));
-                        value = (String) eventData.get("value");
+                        String encryptedValue = (String) eventData.get("value");
                         decryptedValue = client.get(sharedKey).get();
-//                        System.out.println("\t" + OffsetDateTime.now()
-//                                + " REPL Retrieved value [" + decryptedValue + "]"
-//                                + " for key [" + sharedKey + "]"
-//                                + " (encryptedValue was [" + value + "])");
-                        System.out.println("  => Notification ==> \033[31m Key: [" + sharedKey + "]  ==> DecryptedValue [" + decryptedValue + "]" + "\033[0m");
+                        System.out.println("  => Notification ==> \033[31m Key: [" + sharedKey + "]  ==> EncryptedValue [" + encryptedValue + "]  ==> DecryptedValue [" + decryptedValue + "]" + "\033[0m");
                         System.out.print(client.getAtSign() + "@ ");
                     } catch (Exception e) {
                         System.err.println("Failed to retrieve " + sharedKey + " : " + e);
@@ -255,14 +246,14 @@ public class REPL {
 
     public void printHelpInstructions() {
         System.out.println("\nAtClient REPL | <> = required, [] = optional");
-        System.out.println("  REPL evaluates atProtocol by default. Use _ to use AtClient commands (see below)");
+        System.out.println("  By default, REPL treats input as atProtocol commands. Use / to use AtClient commands (see below)");
         System.out.println("  AtClient Commands:");
-        System.out.println("    _help - print this help message");
-        System.out.println("    _put <key> <value> - put a value to the key (e.g. _put test@bob hello world)");
-        System.out.println("    _get <key> - get a value from the key (e.g. _get test@bob)");
-        System.out.println("    _delete <key> - delete a key (e.g. _delete test@bob)");
-        System.out.println("    _scan [regex] - scan for keys matching the regex (e.g. _scan test@bob.*)");
-        System.out.println("    _share <atSign> <keyName> <...data> - share a key with another atSign (e.g. _share @alice test hello world!!)");
+        System.out.println("    help or /help - print this help message");
+        System.out.println("    /put <key> <value> - put a value to the key (e.g. _put test@bob hello world)");
+        System.out.println("    /get <key> - get a value from the key (e.g. _get test@bob)");
+        System.out.println("    /delete <key> - delete a key (e.g. _delete test@bob)");
+        System.out.println("    /scan [regex] - scan for keys matching the regex (e.g. _scan test@bob.*)");
+        System.out.println("    /share <atSign> <keyName> <...data> - share a key with another atSign (e.g. _share @alice test hello world!!)");
         System.out.println();
     }
 }

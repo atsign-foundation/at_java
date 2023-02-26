@@ -3,7 +3,6 @@ package org.atsign.common;
 import static org.junit.Assert.assertThrows;
 
 import org.atsign.client.util.AtClientValidation;
-import org.atsign.common.Keys.Metadata;
 import org.atsign.common.Keys.PublicKey;
 import org.atsign.common.Keys.SelfKey;
 import org.atsign.common.Keys.SharedKey;

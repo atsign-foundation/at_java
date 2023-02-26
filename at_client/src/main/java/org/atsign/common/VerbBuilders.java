@@ -2,7 +2,6 @@ package org.atsign.common;
 
 import org.apache.commons.lang3.StringUtils;
 import org.atsign.common.Keys.AtKey;
-import org.atsign.common.Keys.Metadata;
 import org.atsign.common.Keys.PublicKey;
 import org.atsign.common.Keys.SharedKey;
 
