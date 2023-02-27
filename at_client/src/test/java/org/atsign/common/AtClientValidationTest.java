@@ -2,6 +2,7 @@ package org.atsign.common;
 
 import static org.junit.Assert.assertThrows;
 
+import org.atsign.client.api.notification.NotificationParams;
 import org.atsign.client.util.AtClientValidation;
 import org.atsign.common.Keys.Metadata;
 import org.atsign.common.Keys.PublicKey;
@@ -241,6 +242,53 @@ public class AtClientValidationTest {
         // ====================================
 
         // TODO
+    }
+
+    @Test
+    public void validateNotificationRequestTest() {
+        // AtSign dummy1 = new AtSign("@alice");
+        // AtSign dummy2 = new AtSign("@bob");
+        // final String ROOT_DOMAIN = "root.atsign.org";
+        // final int ROOT_PORT = 64;
+
+
+        // // null params
+        // assertThrows(AtException.class, () -> {
+        //     NotificationParams params = null;
+        //     AtClientValidation.validateNotificationRequest(params, ROOT_DOMAIN, ROOT_PORT);
+        // });
+
+        // // forText with null text
+        // assertThrows(AtException.class, () -> {
+        //     NotificationParams params = NotificationParams.forText(null, dummy1, dummy2, false);
+        //     AtClientValidation.validateNotificationRequest(params, ROOT_DOMAIN, ROOT_PORT);
+        // });
+
+        // // forText with null sharedBy
+        // assertThrows(AtException.class, () -> {
+        //     NotificationParams params = NotificationParams.forText("test", null, dummy2, false);
+        //     AtClientValidation.validateNotificationRequest(params, ROOT_DOMAIN, ROOT_PORT);
+        // });
+
+        // // forText with null sharedWith
+        // assertThrows(AtException.class, () -> {
+        //     NotificationParams params = NotificationParams.forText("test", dummy1, null, false);
+        //     AtClientValidation.validateNotificationRequest(params, ROOT_DOMAIN, ROOT_PORT);
+        // });
+
+        // // forUpdate with null sharedBy
+        // assertThrows(AtException.class, () -> {
+        //     SharedKey sk = new KeyBuilders.SharedKeyBuilder(null, dummy2).key("test").build();
+        //     NotificationParams params = NotificationParams.forUpdate(sk, "lmao");
+        //     AtClientValidation.validateNotificationRequest(params, ROOT_DOMAIN, ROOT_PORT);
+        // });
+
+        // // forUpdate with null sharedWith
+        // assertThrows(AtException.class, () -> {
+        //     SharedKey sk = new KeyBuilders.SharedKeyBuilder(dummy1, null).key("test").build();
+        //     NotificationParams params = NotificationParams.forUpdate(sk, "lmao");
+        //     AtClientValidation.validateNotificationRequest(params, ROOT_DOMAIN, ROOT_PORT);
+        // });
     }
 
     @After

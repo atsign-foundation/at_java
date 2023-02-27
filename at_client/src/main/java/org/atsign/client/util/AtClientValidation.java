@@ -3,10 +3,12 @@ package org.atsign.client.util;
 import java.io.IOException;
 
 import org.atsign.client.api.Secondary;
+import org.atsign.client.api.notification.NotificationParams;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
 import org.atsign.common.Keys.AtKey;
 import org.atsign.common.Keys.Metadata;
+import org.atsign.common.NotificationEnums.MessageType;
 
 public class AtClientValidation {
 
@@ -116,6 +118,23 @@ public class AtClientValidation {
         // 4. validate sharedWith exists
         if (atKey.sharedWith != null) {
             atSignExists(atKey.sharedWith, rootUrl);
+        }
+
+    }
+
+    public static void validateNotificationRequest(NotificationParams params, String rootDomain, int rootPort) throws AtException{
+        if(params.getAtKey().sharedBy == null) {
+            throw new AtException("AtKey.sharedBy cannot be null");
+        }
+
+        if(params.getAtKey().sharedWith == null) {
+            throw new AtException("AtKey.sharedWith cannot be null");
+        }
+
+        atSignExists(params.getAtKey().sharedWith, rootDomain, rootPort + "");
+
+        if(params.getMessageType() != MessageType.TEXT) {
+            validateAtKey(params.getAtKey(), rootDomain + ":" + rootPort);
         }
 
     }
