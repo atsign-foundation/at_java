@@ -1,5 +1,7 @@
 package org.atsign.common;
 
+import org.atsign.common.exceptions.AtInvalidAtKeyException;
+
 import static org.atsign.common.Keys.*;
 
 @SuppressWarnings({"unused", "UnusedReturnValue"})
@@ -55,13 +57,13 @@ public class KeyBuilders {
         /// Validates AtKey and throws Exception for a given issue
         public void validate() throws AtException {
             if (_atKey.name == null || _atKey.name.isEmpty()) {
-                throw new AtException("Key cannot be empty");
+                throw new AtInvalidAtKeyException("Key cannot be empty");
             }
 
             // We only need to check namespace if the key already doesn't include a namespace
             if (! _atKey.name.contains(".")) {
                 if (_atKey.getNamespace() == null || _atKey.getNamespace().isEmpty()) {
-                    throw new AtException("Namespace cannot be empty");
+                    throw new AtInvalidAtKeyException("Namespace cannot be empty");
                 }
             }
         }
@@ -193,7 +195,7 @@ public class KeyBuilders {
             //Call AbstractKeyBuilder validate method to perform the common validations.
             super.validate();
             if (_atKey.sharedWith == null || _atKey.sharedWith.toString().isEmpty()) {
-                throw new AtException("sharedWith cannot be empty");
+                throw new AtInvalidAtKeyException("sharedWith cannot be empty");
             }
         }
     }

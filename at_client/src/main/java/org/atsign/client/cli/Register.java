@@ -6,6 +6,7 @@ import org.atsign.common.AtSign;
 import org.atsign.common.RegisterApiResult;
 import org.atsign.common.RegisterApiTask;
 import org.atsign.common.AtException;
+import org.atsign.common.exceptions.AtRegistrarException;
 import org.atsign.config.ConfigReader;
 
 import java.io.IOException;
@@ -33,7 +34,7 @@ public class Register implements Callable<String> {
     @Option(names = { "-k", "--api-key" }, description = "register an atsign using super-API key")
     static String apiKey = "";
 
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new HashMap<>();
     boolean isRegistrarV3 = false;
 
     public static void main(String[] args) throws AtException {
@@ -170,10 +171,12 @@ class GetFreeAtsign extends RegisterApiTask<RegisterApiResult<Map<String, String
                     registerUtil.getFreeAtsign(params.get("registrarUrl"), params.get("apiKey")));
             result.apiCallStatus = ApiCallStatus.success;
             System.out.println("Got atsign: " + result.data.get("atSign"));
+        } catch (AtRegistrarException e) {
+            result.atException = e;
         } catch (Exception e) {
-            result.atException = new AtException(e.getMessage(), e.getCause());
-            result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
+            result.atException = new AtRegistrarException("error while getting free atsign", e);
         }
+        result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
         return result;
     }
 }
@@ -189,7 +192,7 @@ class RegisterAtsign extends RegisterApiTask<RegisterApiResult<Map<String, Strin
                             params.get("registrarUrl"), params.get("apiKey")).toString());
             result.apiCallStatus = ApiCallStatus.success;
         } catch (Exception e) {
-            result.atException = new AtException(e.getMessage(), e.getCause());
+            result.atException = new AtRegistrarException(e.getMessage(), e.getCause());
             result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
         }
         return result;
@@ -216,8 +219,7 @@ class ValidateOtp extends RegisterApiTask<RegisterApiResult<Map<String, String>>
                 System.out.println("Incorrect OTP!!! Please re-enter your OTP");
                 params.put("otp", scanner.nextLine());
                 result.apiCallStatus = ApiCallStatus.retry;
-                result.atException = new AtException("Only 3 retries allowed to re-enter OTP",
-                        new Throwable("Incorrect OTP entered"));
+                result.atException = new AtRegistrarException("Only 3 retries allowed to re-enter OTP - Incorrect OTP entered");
             } else if (apiResponse.equals("follow-up")) {
                 params.put("confirmation", "true");
                 result.apiCallStatus = ApiCallStatus.retry;
@@ -228,8 +230,11 @@ class ValidateOtp extends RegisterApiTask<RegisterApiResult<Map<String, String>>
                 result.apiCallStatus = ApiCallStatus.success;
                 scanner.close();
             }
+        } catch (AtRegistrarException e) {
+            result.atException = e;
+            result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
         } catch (Exception e) {
-            result.atException = new AtException(e.getMessage(), e.getCause());
+            result.atException = new AtRegistrarException("Failed while validating OTP", e);
             result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
         }
         return result;
@@ -244,8 +249,11 @@ class GetAtsignV3 extends RegisterApiTask<RegisterApiResult<Map<String, String>>
             result.data.putAll(registerUtil.getAtsignV3(params.get("registrarUrl"), params.get("apiKey")));
             System.out.println("Got atsign: " + result.data.get("atSign"));
             result.apiCallStatus = ApiCallStatus.success;
+        } catch (AtRegistrarException e) {
+            result.atException = e;
+            result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
         } catch (Exception e) {
-            result.atException = new AtException(e.getMessage(), e.getCause());
+            result.atException = new AtRegistrarException("Failed while getting atSign", e);
             result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
         }
         return result;
@@ -260,8 +268,11 @@ class ActivateAtsignV3 extends RegisterApiTask<RegisterApiResult<Map<String, Str
                     new AtSign(params.get("atSign")), params.get("ActivationKey")).split(":")[1]);
             result.apiCallStatus = ApiCallStatus.success;
             System.out.println("Your cram secret: " + result.data.get("cram"));
+        } catch (AtRegistrarException e) {
+            result.atException = e;
+            result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
         } catch (Exception e) {
-            result.atException = new AtException(e.getMessage(), e.getCause());
+            result.atException = new AtRegistrarException("Failed while activating atSign", e);
             result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
         }
         return result;

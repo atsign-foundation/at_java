@@ -7,7 +7,7 @@ import org.atsign.client.api.impl.connections.AtRootConnection;
 import org.atsign.client.util.AuthUtil;
 import org.atsign.client.util.KeysUtil;
 import org.atsign.client.util.OnboardingUtil;
-import org.atsign.common.NoSuchSecondaryException;
+import org.atsign.common.exceptions.AtSecondaryNotFoundException;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -32,7 +32,7 @@ public class Onboard {
         String secondaryUrl;
         try {
             secondaryUrl = new AtRootConnection(rootUrl).lookupAtSign(atSign);
-        } catch (NoSuchSecondaryException e) {
+        } catch (AtSecondaryNotFoundException e) {
             secondaryUrl = retrySecondaryConnection(rootUrl, atSign);
         }
 
@@ -89,7 +89,7 @@ public class Onboard {
     }
 
     static String retrySecondaryConnection(String rootUrl, AtSign atSign)
-            throws IOException, NoSuchSecondaryException, InterruptedException {
+            throws IOException, AtSecondaryNotFoundException, InterruptedException {
 
         int retryCount = 0;
         final int maxRetries = 50;
@@ -100,13 +100,13 @@ public class Onboard {
         while (retryCount < maxRetries && secondaryUrl.equals("")) {
             try {
                 secondaryUrl = new AtRootConnection(rootUrl).lookupAtSign(atSign);
-            } catch (NoSuchSecondaryException e) {
+            } catch (AtSecondaryNotFoundException e) {
                 System.out.println("Retrying fetching secondary address ... attempt " + ++retryCount + "/" + maxRetries);
             }
         }
 
         if (secondaryUrl.equals("")) {
-            throw new NoSuchSecondaryException("Root lookup returned null for " + atSign);
+            throw new AtSecondaryNotFoundException("Root lookup returned null for " + atSign);
         }
 
         return secondaryUrl;

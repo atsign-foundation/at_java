@@ -216,6 +216,7 @@
 			<version>2.14.0</version>
 		</dependency>
 
+		<!--suppress VulnerableLibrariesLocal -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.dataformat</groupId>
 			<artifactId>jackson-dataformat-yaml</artifactId>

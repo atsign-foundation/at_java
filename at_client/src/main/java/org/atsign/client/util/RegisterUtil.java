@@ -16,6 +16,7 @@ import javax.net.ssl.HttpsURLConnection;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
+import org.atsign.common.exceptions.AtRegistrarException;
 
 import static java.util.stream.Collectors.toMap;
 import static java.util.AbstractMap.*;
@@ -48,7 +49,7 @@ public class RegisterUtil {
             Map<String, String> data = responseData.get("data");
             return data.get("atsign");
         } else {
-            throw new AtException(connection.getResponseCode() + " " + connection.getResponseMessage());
+            throw new AtRegistrarException(connection.getResponseCode() + " " + connection.getResponseMessage());
         }
     }
 
@@ -104,10 +105,10 @@ public class RegisterUtil {
                 @SuppressWarnings("unchecked") Map<String, Map<String, String>> responseDataMap = objectMapper.readValue(responseRaw, Map.class);
                 return responseDataMap.get("value");
             } else {
-                throw new AtException("Failed getting atsign. Response from API: " + responseData.get("status"));
+                throw new AtRegistrarException("Failed getting atsign. Response from API: " + responseData.get("status"));
             }
         } else {
-            throw new AtException(httpsConnection.getResponseCode() + " " + httpsConnection.getResponseMessage());
+            throw new AtRegistrarException(httpsConnection.getResponseCode() + " " + httpsConnection.getResponseMessage());
         }
     }
 
@@ -143,7 +144,7 @@ public class RegisterUtil {
             System.out.println("Got response: " + data);
             return response.contains("Sent Successfully");
         } else {
-            throw new AtException(httpsConnection.getResponseCode() + " " + httpsConnection.getResponseMessage());
+            throw new AtRegistrarException(httpsConnection.getResponseCode() + " " + httpsConnection.getResponseMessage());
         }
     }
 
@@ -226,12 +227,12 @@ public class RegisterUtil {
                 return "retry";
             } else if (responseDataStringObject.containsKey("message") && responseDataStringObject.get("message")
                     .contains("You already have the maximum number of free @signs")) {
-                throw new AtException("Maximum free atsigns reached for email");
+                throw new AtRegistrarException("Maximum free atsigns reached for email");
             } else {
                 return responseDataStringObject.get("message");
             }
         } else {
-            throw new AtException(httpsConnection.getResponseCode() + " " + httpsConnection.getResponseMessage());
+            throw new AtRegistrarException(httpsConnection.getResponseCode() + " " + httpsConnection.getResponseMessage());
         }
     }
 
@@ -246,7 +247,7 @@ public class RegisterUtil {
      * @param activationKey - activationKey corresponding to the atsign being
      *                      provided
      * @return cram secret for the atsign
-     * @throws AtException - thrown if invalid method parameters rovided
+     * @throws AtException - thrown if invalid method parameters provided
      * @throws IOException - thrown if anything goes wrong while using the
      *                     HttpsURLConnection.
      */
@@ -267,10 +268,10 @@ public class RegisterUtil {
             if (responseData.get("status").equals("success")) {
                 return responseData.get("cramkey");
             } else {
-                throw new AtException(responseData.get("status"));
+                throw new AtRegistrarException(responseData.get("status"));
             }
         } else {
-            throw new AtException(httpsConnection.getResponseCode() + " " + httpsConnection.getResponseMessage());
+            throw new AtRegistrarException(httpsConnection.getResponseCode() + " " + httpsConnection.getResponseMessage());
         }
 
     }

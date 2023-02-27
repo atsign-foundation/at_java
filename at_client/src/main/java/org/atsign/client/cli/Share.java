@@ -3,15 +3,14 @@ package org.atsign.client.cli;
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.Secondary;
 import org.atsign.client.util.ArgsUtil;
-import org.atsign.common.AtSign;
-import static org.atsign.common.KeyBuilders.*;
-
-import org.atsign.common.Keys;
 import org.atsign.common.AtException;
+import org.atsign.common.AtSign;
+import org.atsign.common.Keys;
 
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.concurrent.ExecutionException;
+
+import static org.atsign.common.KeyBuilders.SharedKeyBuilder;
 
 /**
  * A command-line interface half-example half-utility to share something with another atSign
@@ -50,7 +49,7 @@ public class Share {
         AtClient atClient = null;
         try {
             atClient = AtClient.withRemoteSecondary(atSign, addressFinder);
-        } catch (AtException | IOException e) {
+        } catch (AtException e) {
             System.err.println("Failed to create AtClientImpl : " + e.getMessage());
             e.printStackTrace(System.err);
             System.exit(1);

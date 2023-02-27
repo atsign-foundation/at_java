@@ -1,17 +1,12 @@
 package org.atsign.common;
 
-import java.text.ParseException;
-import java.time.OffsetDateTime;
-import java.util.Map;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.atsign.client.api.Secondary;
-import org.atsign.client.util.DateUtil;
 import org.atsign.client.util.KeyStringUtil;
 import org.atsign.client.util.KeyStringUtil.KeyType;
-import org.atsign.common.ResponseTransformers.LlookupMetadataResponseTransformer;
-import org.atsign.common.response_models.LlookupAllResponse;
+import org.atsign.common.exceptions.MalformedKeyException;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import java.text.ParseException;
 
 @SuppressWarnings("unused")
 public abstract class Keys {
@@ -144,187 +139,6 @@ public abstract class Keys {
         }
     }
 
-    public static class Metadata {
-        public Integer ttl;
-        public Integer ttb;
-        public Integer ttr;
-        public Boolean ccd;
-        public OffsetDateTime createdBy;
-        public OffsetDateTime updatedBy;
-        public OffsetDateTime availableAt;
-        public OffsetDateTime expiresAt;
-        public OffsetDateTime refreshAt;
-        public OffsetDateTime createdAt;
-        public OffsetDateTime updatedAt;
-        public String status;
-        public Integer version;
-        public String dataSignature;
-        public String sharedKeyStatus;
-        public Boolean isPublic = false;
-        public Boolean isEncrypted = true;
-        public Boolean isHidden = false;
-        public Boolean namespaceAware = true;
-        public Boolean isBinary = false;
-        public Boolean isCached = false;
-        public String sharedKeyEnc;
-        public String pubKeyCS;
-        public String encoding;
-
-        @Override
-        public String toString() {
-            String s = "";
-            if (ttl != null) s += ":ttl:" + ttl;
-            if (ttb != null) s += ":ttb:" + ttb;
-            if (ttr != null) s += ":ttr:" + ttr;
-            if (ccd != null) s += ":ccd:" + ccd;
-            if (dataSignature != null) s += ":dataSignature:" + dataSignature;
-            if (sharedKeyStatus != null) s += ":sharedKeyStatus:" + sharedKeyStatus;
-            if (sharedKeyEnc != null) s += ":sharedKeyEnc:" + sharedKeyEnc;
-            if (pubKeyCS != null) s += ":pubKeyCS:" + pubKeyCS;
-            if (isBinary != null) s += ":isBinary:" + isBinary;
-            if (isEncrypted != null) s += ":isEncrypted:" + isEncrypted;
-            if(encoding != null) s += ":encoding:" + encoding;
-            return s;
-        }
-
-        /**
-         * Create metadata object from a Response
-         * @param rawLlookupMetaResponse Secondary.Response from executingVerb `llookup:meta:<keyName>`
-         * @return Metadata object
-         * @throws ParseException if dates from metadata llookup could not be parsed
-         */
-        public static Metadata fromString(Secondary.Response rawLlookupMetaResponse) throws AtException {
-            Metadata metadata = new Metadata();
-            LlookupMetadataResponseTransformer transformer = new LlookupMetadataResponseTransformer();
-            Map<String, Object> map = transformer.transform(rawLlookupMetaResponse);
-            metadata.ttl = (Integer) map.get("ttl");
-            metadata.ttb = (Integer) map.get("ttb");
-            metadata.ttr = (Integer) map.get("ttr");
-            metadata.ccd = (Boolean) map.get("ccd");
-            // dates used to be here
-            metadata.isBinary = (Boolean) map.get("isBinary");
-            metadata.isEncrypted = (Boolean) map.get("isEncrypted");
-            metadata.dataSignature = (String) map.get("dataSignature");
-            metadata.sharedKeyEnc = (String) map.get("sharedKeyEnc");
-            metadata.pubKeyCS = (String) map.get("pubKeyCS");
-            metadata.encoding = (String) map.get("encoding");
-
-            // dates moved down here
-            try {
-                metadata.availableAt = DateUtil.parse((String) map.get("availableAt"));
-                metadata.expiresAt = DateUtil.parse((String) map.get("expiresAt"));
-                metadata.refreshAt = DateUtil.parse((String) map.get("refreshAt"));
-                metadata.createdAt = DateUtil.parse((String) map.get("createdAt"));
-                metadata.updatedAt = DateUtil.parse((String) map.get("updatedAt"));
-            } catch (ParseException e) {
-                throw new AtException("Could not parse dates from metadata. DateUtil.parse(String) threw the ParseException: " + e.toString(), e);
-            }
-            return metadata;
-        }
-
-        public static Metadata fromModel(LlookupAllResponse.Metadata modelMetadata) throws AtException {
-            Metadata metadata = new Metadata();
-            metadata.ttl = modelMetadata.ttl;
-            metadata.ttb = modelMetadata.ttb;
-            metadata.ttr = modelMetadata.ttr;
-            metadata.ccd = modelMetadata.ccd;
-            try {
-                metadata.createdBy = DateUtil.parse(modelMetadata.createdBy);
-                metadata.updatedBy = DateUtil.parse(modelMetadata.updatedBy);
-                metadata.availableAt = DateUtil.parse(modelMetadata.availableAt);
-                metadata.expiresAt = DateUtil.parse(modelMetadata.expiresAt);
-                metadata.refreshAt = DateUtil.parse(modelMetadata.refreshAt);
-                metadata.createdAt = DateUtil.parse(modelMetadata.createdAt);
-                metadata.updatedAt = DateUtil.parse(modelMetadata.updatedAt);
-            } catch (ParseException e) {
-                throw new AtException("Could not parse date from LlookupAllResponse.Metadata: " + e.toString());
-            }
-            metadata.status = modelMetadata.status;
-            metadata.version = modelMetadata.version;
-            metadata.dataSignature = modelMetadata.dataSignature;
-            metadata.isEncrypted = modelMetadata.isEncrypted;
-            metadata.isBinary = modelMetadata.isBinary;
-            metadata.sharedKeyEnc = modelMetadata.sharedKeyEnc;
-            metadata.pubKeyCS = modelMetadata.pubKeyCS;
-            return metadata;
-        }
-
-        /**
-         * Squashes the two metadatas into one metadata.
-         * @param atKeyMetadata Metadata from atKey.metadata (has priority)
-         * @param metadataUtilMetadata Metadata from MetadataUtil.java
-         * @return One merged metadata object
-         *
-         */
-        public static Metadata squash(Metadata atKeyMetadata, Metadata metadataUtilMetadata) {
-            Metadata metadata = new Metadata();
-            if(atKeyMetadata.ttl != null) metadata.ttl = atKeyMetadata.ttl;
-            else if(metadataUtilMetadata.ttl != null) metadata.ttl = metadataUtilMetadata.ttl;
-
-            if(atKeyMetadata.ttb != null) metadata.ttb = atKeyMetadata.ttb;
-            else if(metadataUtilMetadata.ttb != null) metadata.ttb = metadataUtilMetadata.ttb;
-
-            if(atKeyMetadata.ttr != null) metadata.ttr = atKeyMetadata.ttr;
-            else if(metadataUtilMetadata.ttr != null) metadata.ttr = metadataUtilMetadata.ttr;
-
-            if(atKeyMetadata.ccd != null) metadata.ccd = atKeyMetadata.ccd;
-            else if(metadataUtilMetadata.ccd != null) metadata.ccd = metadataUtilMetadata.ccd;
-
-            if(atKeyMetadata.availableAt != null) metadata.availableAt = atKeyMetadata.availableAt;
-            else if(metadataUtilMetadata.availableAt != null) metadata.availableAt = metadataUtilMetadata.availableAt;
-
-            if(atKeyMetadata.expiresAt != null) metadata.expiresAt = atKeyMetadata.expiresAt;
-            else if(metadataUtilMetadata.expiresAt != null) metadata.expiresAt = metadataUtilMetadata.expiresAt;
-
-            if(atKeyMetadata.refreshAt != null) metadata.refreshAt = atKeyMetadata.refreshAt;
-            else if(metadataUtilMetadata.refreshAt != null) metadata.refreshAt = metadataUtilMetadata.refreshAt;
-
-            if(atKeyMetadata.createdAt != null) metadata.createdAt = atKeyMetadata.createdAt;
-            else if(metadataUtilMetadata.createdAt != null) metadata.createdAt = metadataUtilMetadata.createdAt;
-
-            if(atKeyMetadata.updatedAt != null) metadata.updatedAt = atKeyMetadata.updatedAt;
-            else if(metadataUtilMetadata.updatedAt != null) metadata.updatedAt = metadataUtilMetadata.updatedAt;            
-
-            if(atKeyMetadata.dataSignature != null) metadata.dataSignature = atKeyMetadata.dataSignature;
-            else if(metadataUtilMetadata.dataSignature != null) metadata.dataSignature = metadataUtilMetadata.dataSignature;
-
-            if(atKeyMetadata.sharedKeyStatus != null) metadata.sharedKeyStatus = atKeyMetadata.sharedKeyStatus;
-            else if(metadataUtilMetadata.sharedKeyStatus != null) metadata.sharedKeyStatus = metadataUtilMetadata.sharedKeyStatus;
-
-            if(atKeyMetadata.sharedKeyEnc != null) metadata.sharedKeyEnc = atKeyMetadata.sharedKeyEnc;
-            else if(metadataUtilMetadata.sharedKeyEnc != null) metadata.sharedKeyEnc = metadataUtilMetadata.sharedKeyEnc;
-
-            if(atKeyMetadata.isPublic != null) metadata.isPublic = atKeyMetadata.isPublic;
-            else if(metadataUtilMetadata.isPublic != null) metadata.isPublic = metadataUtilMetadata.isPublic;
-
-            if(atKeyMetadata.isEncrypted != null) metadata.isEncrypted = atKeyMetadata.isEncrypted;
-            else if(metadataUtilMetadata.isEncrypted != null) metadata.isEncrypted = metadataUtilMetadata.isEncrypted;
-
-            if(atKeyMetadata.isHidden != null) metadata.isHidden = atKeyMetadata.isHidden;
-            else if(metadataUtilMetadata.isHidden != null) metadata.isHidden = metadataUtilMetadata.isHidden;
-
-            if(atKeyMetadata.namespaceAware != null) metadata.namespaceAware = atKeyMetadata.namespaceAware;
-            else if(metadataUtilMetadata.namespaceAware != null) metadata.namespaceAware = metadataUtilMetadata.namespaceAware;
-
-            if(atKeyMetadata.isBinary != null) metadata.isBinary = atKeyMetadata.isBinary;
-            else if(metadataUtilMetadata.isBinary != null) metadata.isBinary = metadataUtilMetadata.isBinary;
-
-            if(atKeyMetadata.isCached != null) metadata.isCached = atKeyMetadata.isCached;
-            else if(metadataUtilMetadata.isCached != null) metadata.isCached = metadataUtilMetadata.isCached;
-
-            if(atKeyMetadata.sharedKeyEnc != null) metadata.sharedKeyEnc = atKeyMetadata.sharedKeyEnc;
-            else if(metadataUtilMetadata.sharedKeyEnc != null) metadata.sharedKeyEnc = metadataUtilMetadata.sharedKeyEnc;
-
-            if(atKeyMetadata.pubKeyCS != null) metadata.pubKeyCS = atKeyMetadata.pubKeyCS;
-            else if(metadataUtilMetadata.pubKeyCS != null) metadata.pubKeyCS = metadataUtilMetadata.pubKeyCS;
-
-            if(atKeyMetadata.encoding != null) metadata.encoding = atKeyMetadata.encoding;
-            else if(metadataUtilMetadata.encoding != null) metadata.encoding = metadataUtilMetadata.encoding;
-
-            return metadata;
-        }
-    }
-
     /**
      * Generate an AtKey object from a given full key name.
      * @param fullAtKeyName eg: @bob:phone@alice
@@ -359,7 +173,7 @@ public abstract class Keys {
                 atKey = new KeyBuilders.PrivateHiddenKeyBuilder(sharedBy).key(keyName).build();
                 break;
             default:
-                throw new AtException("Key \"" + fullAtKeyName + "\" was not given a KeyType");
+                throw new MalformedKeyException("Could not find KeyType for Key \"" + fullAtKeyName);
         }
         atKey.setNamespace(namespace);
         atKey.metadata.isCached = isCached;
@@ -370,83 +184,19 @@ public abstract class Keys {
     /**
      * Generate an AtKey object whose metadata is populated from the given `llookup:meta:<keyName>` response.
      * @param fullAtKeyName The full AtKey name, eg: `@bob:phone@alice`
-     * @param llookedUpMetadata `llookup:meta:<keyName>` rawResponse from secondary server
+     * @param metadataResponse `llookup:meta:<keyName>` rawResponse from secondary server
      * @return AtKey whose metadata is populated from the llookup:meta:<keyName> rawResponse from secondary server
      * @throws AtException
      * @throws ParseException
      */
     @SuppressWarnings("JavaDoc")
-    public static AtKey fromString(String fullAtKeyName, Secondary.Response llookedUpMetadata) throws AtException {
+    public static AtKey fromString(String fullAtKeyName, Secondary.Response metadataResponse) throws AtException, JsonProcessingException {
         AtKey atKey = fromString(fullAtKeyName);
-        atKey.metadata = Metadata.squash(atKey.metadata, Metadata.fromString(llookedUpMetadata));
+        atKey.metadata = Metadata.squash(atKey.metadata, Metadata.fromJson(metadataResponse.getRawDataResponse()));
         return atKey;
     }
 
-    public static AtKey fromString(Secondary.Response lookupAllResponse) throws AtException {
-        // TODO once transformers are done
-        return null;
+    public static AtKey fromString(Secondary.Response lookupAllResponse) {
+        throw new RuntimeException("Not implemented");
     }
 }
-
-//        static AtKey fromString(String key) {
-//            var atKey = AtKey();
-//            var metaData = Metadata();
-//            if (key.startsWith(AT_PKAM_PRIVATE_KEY) ||
-//                    key.startsWith(AT_PKAM_PUBLIC_KEY)) {
-//                atKey.key = key;
-//                atKey.metadata = metaData;
-//                return atKey;
-//            } else if (key.startsWith(AT_ENCRYPTION_PRIVATE_KEY)) {
-//                atKey.key = key.split('@')[0];
-//                atKey.sharedBy = key.split('@')[1];
-//                atKey.metadata = metaData;
-//                return atKey;
-//            }
-//            //If key does not contain '@'. or key has space, it is not a valid key.
-//            if (!key.contains('@') || key.contains(' ')) {
-//                throw InvalidSyntaxException('$key is not well-formed key');
-//            }
-//            var keyParts = key.split(':');
-//            // If key does not contain ':' Ex: phone@bob; then keyParts length is 1
-//            // where phone is key and @bob is sharedBy
-//            if (keyParts.length == 1) {
-//                atKey.sharedBy = keyParts[0].split('@')[1];
-//                atKey.key = keyParts[0].split('@')[0];
-//            } else {
-//                // Example key: public:phone@bob
-//                if (keyParts[0] == 'public') {
-//                    metaData.isPublic = true;
-//                }
-//                // Example key: cached:@alice:phone@bob
-//                else if (keyParts[0] == CACHED) {
-//                    metaData.isCached = true;
-//                    atKey.sharedWith = keyParts[1];
-//                } else {
-//                    atKey.sharedWith = keyParts[0];
-//                }
-//                List<String> keyArr = [];
-//                if (keyParts[0] == CACHED) {
-//                    keyArr = keyParts[2].split('@');
-//                } else {
-//                    keyArr = keyParts[1].split('@');
-//                }
-//                if (keyArr.length == 2) {
-//                    atKey.sharedBy = keyArr[1];
-//                    atKey.key = keyArr[0];
-//                } else {
-//                    atKey.key = keyArr[0];
-//                }
-//            }
-//            //remove namespace
-//            if (atKey.key != null && atKey.key !.contains('.')){
-//                var namespaceIndex = atKey.key !.lastIndexOf('.');
-//                if (namespaceIndex > -1) {
-//                    atKey.namespace = atKey.key !.substring(namespaceIndex + 1);
-//                    atKey.key = atKey.key !.substring(0, namespaceIndex);
-//                }
-//            } else{
-//                metaData.namespaceAware = false;
-//            }
-//            atKey.metadata = metaData;
-//            return atKey;
-//        }

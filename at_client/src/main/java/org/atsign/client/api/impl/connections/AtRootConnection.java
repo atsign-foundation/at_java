@@ -4,7 +4,7 @@ import org.atsign.client.api.AtEvents;
 import org.atsign.client.api.Secondary;
 import org.atsign.common.AtSign;
 import org.atsign.common.AtException;
-import org.atsign.common.NoSuchSecondaryException;
+import org.atsign.common.exceptions.AtSecondaryNotFoundException;
 
 import java.io.IOException;
 
@@ -39,11 +39,11 @@ public class AtRootConnection extends AtConnectionBase implements Secondary.Addr
      * @param atSign the AtSign being looked up
      * @return A {@link Secondary.Address}
      * @throws IOException if connection to root server is unavailable, encounters an error, or response is malformed
-     * @throws NoSuchSecondaryException if the root server returns the string 'null' as the lookup response,
+     * @throws AtSecondaryNotFoundException if the root server returns the string 'null' as the lookup response,
      * which means that the atsign is not known to the root server
      */
     @Override
-    public Secondary.Address findSecondary(AtSign atSign) throws IOException, NoSuchSecondaryException {
+    public Secondary.Address findSecondary(AtSign atSign) throws IOException, AtSecondaryNotFoundException {
         if (!isConnected()) {
             try {
                 connect();
@@ -55,7 +55,7 @@ public class AtRootConnection extends AtConnectionBase implements Secondary.Addr
         String response = executeCommand(atSign.withoutPrefix());
 
         if ("null".equals(response)) {
-            throw new NoSuchSecondaryException("Root lookup returned null for " + atSign);
+            throw new AtSecondaryNotFoundException("Root lookup returned null for " + atSign);
         } else {
             try {
                 return Secondary.Address.fromString(response);
@@ -68,7 +68,7 @@ public class AtRootConnection extends AtConnectionBase implements Secondary.Addr
     /**
      * Wrapper for {@link #findSecondary(AtSign)}
      */
-    public String lookupAtSign(AtSign atSign) throws IOException, NoSuchSecondaryException {
+    public String lookupAtSign(AtSign atSign) throws IOException, AtSecondaryNotFoundException {
         return this.findSecondary(atSign).toString();
     }
 }

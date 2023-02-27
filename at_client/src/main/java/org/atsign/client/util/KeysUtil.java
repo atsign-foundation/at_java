@@ -2,7 +2,7 @@ package org.atsign.client.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.atsign.common.AtException;
+import org.atsign.common.exceptions.AtClientConfigException;
 import org.atsign.common.AtSign;
 
 import java.io.File;
@@ -61,7 +61,7 @@ public class KeysUtil {
             file = getKeysFile(atSign, legacyKeysFilesLocation);
             // if file does not exist under current working directory, we're done - can't find the keys file
             if (!file.exists()) {
-                throw new AtException("loadKeys: No file called " + atSign + keysFileSuffix + " at ~/.atsign/keys or ./keys" +
+                throw new AtClientConfigException("loadKeys: No file called " + atSign + keysFileSuffix + " at ~/.atsign/keys or ./keys" +
                         "\t Keys files are expected to be in ~/.atsign/keys/ (canonical location) or ./keys/ (legacy location)");
             }
         }
