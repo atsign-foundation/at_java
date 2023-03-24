@@ -175,8 +175,8 @@ class GetFreeAtsign extends RegisterApiTask<RegisterApiResult<Map<String, String
             result.atException = e;
         } catch (Exception e) {
             result.atException = new AtRegistrarException("error while getting free atsign", e);
+            result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
         }
-        result.apiCallStatus = retryCount < maxRetries ? ApiCallStatus.retry : ApiCallStatus.failure;
         return result;
     }
 }
