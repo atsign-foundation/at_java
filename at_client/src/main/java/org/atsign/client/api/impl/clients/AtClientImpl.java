@@ -580,12 +580,64 @@ public class AtClientImpl implements AtClient {
 
     private byte[] _getBinary(SharedKey sharedKey) throws AtException {throw new RuntimeException("Not Implemented");}
     private byte[] _getBinary(SelfKey selfKey) throws AtException {throw new RuntimeException("Not Implemented");}
-    private byte[] _getBinary(PublicKey publicKey) throws AtException {throw new RuntimeException("Not Implemented");}
-    private byte[] _getBinary(PublicKey publicKey, GetRequestOptions getRequestOptions) throws AtException {throw new RuntimeException("Not Implemented");}
+    
+    private byte[] _getBinary(PublicKey publicKey) throws AtException {
+        return _getBinary(publicKey, null);
+    }
+    
+    private byte[] _getBinary(PublicKey publicKey, GetRequestOptions getRequestOptions) throws AtException {
+        String command;
+        if (atSign.toString().equals(publicKey.sharedBy.toString())) {
+            LlookupVerbBuilder builder = new LlookupVerbBuilder();
+            builder.with(publicKey, LlookupVerbBuilder.Type.ALL);
+            command = builder.build();
+        } else {
+            PlookupVerbBuilder builder = new PlookupVerbBuilder();
+            builder.with(publicKey, PlookupVerbBuilder.Type.ALL);
+            builder.setBypassCache(getRequestOptions != null && getRequestOptions.getBypassCache());
+            command = builder.build();
+        }
+
+        Response response;
+        try {
+            response = secondary.executeCommand(command, true);
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
+        }
+
+        LookupResponse fetched;
+        try {
+            fetched = json.readValue(response.getRawDataResponse(), LookupResponse.class);
+        } catch (JsonProcessingException e) {
+            throw new AtResponseHandlingException("Failed to parse JSON " + response.getRawDataResponse(), e);
+        }
+
+        publicKey.metadata = Metadata.squash(fetched.metaData, publicKey.metadata);
+        publicKey.metadata.isCached = fetched.key.contains("cached:");
+
+        return fetched.data.getBytes();    
+    
+    }
 
     private String _put(SharedKey sharedKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
     private String _put(SelfKey selfKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
-    private String _put(PublicKey publicKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
+    
+    private String _put(PublicKey publicKey, byte[] value) throws AtException {
+    
+        // 1. generate dataSignature for byte[]
+        publicKey.metadata.dataSignature = generateSignatureByte(value);
+
+        String command;
+        UpdateVerbBuilder builder = new UpdateVerbBuilder();
+        builder.with(publicKey, value);
+        command = builder.build();
+
+        try {
+            return secondary.executeCommand(command, true).toString();
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
+        }
+    }
 
     private List<AtKey> _getAtKeys(String regex) throws AtException {
         ScanVerbBuilder scanVerbBuilder = new ScanVerbBuilder();
@@ -754,6 +806,19 @@ public class AtClientImpl implements AtClient {
             signature = EncryptionUtil.signSHA256RSA(value, keys.get(KeysUtil.encryptionPrivateKeyName));
         } catch (Exception e) {
             throw new AtEncryptionException("Failed to sign value: " + value, e);
+        }
+        return signature;
+    }
+    
+     private String generateSignatureByte(byte[] byteValue) throws AtException {
+
+        String stringValue = new String(byteValue);
+        String signature;
+
+        try {
+            signature = EncryptionUtil.signSHA256RSA(stringValue, keys.get(KeysUtil.encryptionPrivateKeyName));
+        } catch (Exception e) {
+            throw new AtEncryptionException("Failed to sign value: " + byteValue, e);
         }
         return signature;
     }
