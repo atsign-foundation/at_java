@@ -376,7 +376,11 @@ public class AtClientImpl implements AtClient {
         String shareEncryptionKey = getEncryptionKeySharedByOther(sharedKey);
 
         Response rawResponse;
-        String command = "lookup:" + sharedKey;
+        String command = "lookup:" + sharedKey.name;
+        if(sharedKey.getNamespace() != null && !sharedKey.getNamespace().isEmpty()) {
+            command += "." + sharedKey.getNamespace();
+        }
+        command += sharedKey.sharedBy.toString();
         try {
             rawResponse = secondary.executeCommand(command, true);
         } catch (IOException e) {
