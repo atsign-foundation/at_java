@@ -89,7 +89,9 @@ public class REPL {
                 Secondary.Response response;
                 if (command.equals("help") || command.startsWith("_") || command.startsWith("/") || command.startsWith("\\")) {
                     // simple repl for get / put /
-                    command = command.substring(1);
+                    if (! command.equals("help")) {
+                        command = command.substring(1);
+                    }
                     String[] parts = command.split(" ");
                     String verb = parts[0];
                     try {
