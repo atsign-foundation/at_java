@@ -14,7 +14,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
 public class EncryptionUtil {
-    static final IvParameterSpec IV = new IvParameterSpec(new byte[16]);
+    static private final IvParameterSpec EMPTY_IV = new IvParameterSpec(new byte[16]);
 
     static {
         Security.addProvider(new BouncyCastleProvider());
@@ -23,17 +23,27 @@ public class EncryptionUtil {
     public static String aesEncryptToBase64(String clearText, String keyBase64) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchProviderException {
         SecretKey key = _aesKeyFromBase64(keyBase64);
         Cipher cipher = Cipher.getInstance("AES/SIC/PKCS7Padding", "BC");
-        cipher.init(Cipher.ENCRYPT_MODE, key, IV);
+        cipher.init(Cipher.ENCRYPT_MODE, key, EMPTY_IV);
         byte[] encrypted = cipher.doFinal(clearText.getBytes());
         return Base64.getEncoder().encodeToString(encrypted);
     }
 
-    public static String aesDecryptFromBase64(String cipherTextBase64, String keyBase64) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchProviderException {
+    public static String aesDecryptFromBase64(String cipherTextBase64, String keyBase64, String ivNonce) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchProviderException {
         SecretKey key = _aesKeyFromBase64(keyBase64);
         Cipher cipher = Cipher.getInstance("AES/SIC/PKCS7Padding", "BC");
-        cipher.init(Cipher.DECRYPT_MODE, key, IV);
+        IvParameterSpec iv;
+        if (ivNonce == null) {
+            iv = EMPTY_IV;
+        } else {
+            iv = _ivFromBase64(ivNonce);
+        }
+        cipher.init(Cipher.DECRYPT_MODE, key, iv);
         byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(cipherTextBase64));
         return new String(decrypted);
+    }
+
+    public static String aesDecryptFromBase64(String cipherTextBase64, String keyBase64) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchProviderException {
+        return aesDecryptFromBase64(cipherTextBase64, keyBase64, null);
     }
 
     public static KeyPair generateRSAKeyPair() throws NoSuchAlgorithmException {
@@ -71,12 +81,11 @@ public class EncryptionUtil {
 
     public static String signSHA256RSA(String value, String privateKeyBase64) throws NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException {
         PrivateKey privateKey = _privateKeyFromBase64(privateKeyBase64);
-        String signed = _signSHA256RSA(value, privateKey);
-        return signed;
+        return _signSHA256RSA(value, privateKey);
     }
 
     // non-public methods
-    static String _signSHA256RSA(String input, PrivateKey pk) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+    public static String _signSHA256RSA(String input, PrivateKey pk) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
         Signature privateSignature = Signature.getInstance("SHA256withRSA");
         privateSignature.initSign(pk);
         privateSignature.update(input.getBytes(StandardCharsets.UTF_8));
@@ -84,22 +93,27 @@ public class EncryptionUtil {
         return Base64.getEncoder().encodeToString(signedBytes);
     }
 
-    static PublicKey _publicKeyFromBase64 (String s) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    public static PublicKey _publicKeyFromBase64 (String s) throws NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] keyBytes = Base64.getDecoder().decode(s.getBytes(StandardCharsets.UTF_8));
         EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
         KeyFactory rsaKeyFactory = KeyFactory.getInstance("RSA");
         return rsaKeyFactory.generatePublic(keySpec);
     }
 
-    static PrivateKey _privateKeyFromBase64(String s) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    public static PrivateKey _privateKeyFromBase64(String s) throws NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] keyBytes = Base64.getDecoder().decode(s.getBytes(StandardCharsets.UTF_8));
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
         KeyFactory rsaKeyFactory = KeyFactory.getInstance("RSA");
         return rsaKeyFactory.generatePrivate(keySpec);
     }
 
-    static SecretKey _aesKeyFromBase64(String s) {
+    public static SecretKey _aesKeyFromBase64(String s) {
         byte[] keyBytes = Base64.getDecoder().decode(s.getBytes());
         return new SecretKeySpec(keyBytes, "AES");
+    }
+
+    public static IvParameterSpec _ivFromBase64(String s) {
+        byte[] ivBytes = Base64.getDecoder().decode(s.getBytes());
+        return new IvParameterSpec(ivBytes);
     }
 }

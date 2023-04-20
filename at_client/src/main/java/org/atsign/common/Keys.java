@@ -109,12 +109,12 @@ public abstract class Keys {
             }
             String[] splitByColon = key.split(":");
             if (splitByColon.length != 2) {
-                throw new IllegalArgumentException("SharedKey.fromString(key) : key must have structure @bob:shared_key@alice");
+                throw new IllegalArgumentException("SharedKey.fromString('" + key + "') : key must have structure @bob:foo.bar@alice");
             }
             String sharedWith = splitByColon[0];
             String[] splitByAtSign = splitByColon[1].split("@");
             if (splitByAtSign.length != 2) {
-                throw new IllegalArgumentException("SharedKey.fromString(key) : key must have structure @bob:shared_key@alice");
+                throw new IllegalArgumentException("SharedKey.fromString('" + key + "') : key must have structure @bob:foo.bar@alice");
             }
             String keyName = splitByAtSign[0];
             String sharedBy = splitByAtSign[1];

@@ -23,9 +23,6 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
 
     private boolean _shouldBeRunning = false;
     private void setShouldBeRunning(boolean b) {
-        if (_shouldBeRunning != b) {
-            System.err.println("Monitor setting shouldBeRunning to [" + b + "]");
-        }
         _shouldBeRunning = b;
     }
 
@@ -127,9 +124,6 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
     @SuppressWarnings("unchecked")
     @Override
     public void run() {
-        System.err.println("***");
-        System.err.println("*** Monitor thread starting");
-        System.err.println("***");
         String what = "";
         // 			call executeCommand("monitor:<time>")
         //			while scanner.nextLine()
