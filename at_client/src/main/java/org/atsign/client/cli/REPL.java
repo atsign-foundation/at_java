@@ -15,13 +15,15 @@ import org.atsign.common.Keys.SharedKey;
 import org.atsign.common.exceptions.AtIllegalArgumentException;
 import org.atsign.common.exceptions.AtInvalidSyntaxException;
 import org.atsign.common.exceptions.AtNotYetImplementedException;
+import org.fusesource.jansi.Ansi;
+import org.fusesource.jansi.AnsiConsole;
 
 import java.io.IOException;
-import java.time.OffsetDateTime;
 import java.util.*;
 
 import static org.atsign.client.api.AtEvents.AtEventType.decryptedUpdateNotification;
 import static org.atsign.client.api.AtEvents.AtEventType.updateNotification;
+import static org.fusesource.jansi.Ansi.ansi;
 
 /**
  * A command-line interface half-example half-utility which connects
@@ -30,6 +32,8 @@ import static org.atsign.client.api.AtEvents.AtEventType.updateNotification;
  */
 public class REPL {
     public static void main(String[] args) {
+        AnsiConsole.systemInstall();
+
         String rootUrl; // e.g. "root.atsign.org:64";
         AtSign atSign;  // e.g. "@alice";
         boolean verbose = false;
@@ -48,15 +52,16 @@ public class REPL {
 
         AtClient atClient;
         try {
+            System.out.print(ansi().cursorToColumn(0).bold().fg(Ansi.Color.BLUE).a("Connecting ... ").reset());
             atClient = AtClient.withRemoteSecondary(atSign, ArgsUtil.createAddressFinder(rootUrl), verbose);
 
-            System.out.println("org.atsign.client.core.Client connected OK");
+            System.out.println(ansi().fg(Ansi.Color.GREEN).a("connected. ").reset().a("Type '/help' to see help").reset());
 
             REPL repl = new REPL(atClient, seeEncryptedNotifications);
             repl.repl();
         } catch (IOException | AtException e) {
+            System.out.println(ansi().fg(Ansi.Color.RED).a("connection failed: " + e).reset());
             e.printStackTrace();
-            System.err.println("Calling System.exit");
             System.exit(1);
         }
     }
@@ -78,9 +83,9 @@ public class REPL {
     }
 
     public void repl() throws AtException {
-        System.out.println("Type '/help' to see help");
         Scanner cliScanner = new Scanner(System.in);
-        System.out.print(client.getAtSign() + "@ ");
+
+        writePrompt();
 
         while (cliScanner.hasNextLine()) {
             String command = cliScanner.nextLine() + "\n";
@@ -89,7 +94,9 @@ public class REPL {
                 Secondary.Response response;
                 if (command.equals("help") || command.startsWith("_") || command.startsWith("/") || command.startsWith("\\")) {
                     // simple repl for get / put /
-                    command = command.substring(1);
+                    if (! command.equals("help")) {
+                        command = command.substring(1);
+                    }
                     String[] parts = command.split(" ");
                     String verb = parts[0];
                     try {
@@ -141,7 +148,7 @@ public class REPL {
                         } else if ("scan".equals(verb)) {
                             String regex = "";
                             if(parts.length > 1) regex = parts[1];
-                            List<Keys.AtKey> value = client.getAtKeys(regex).get();
+                            List<Keys.AtKey> value = client.getAtKeys(regex, false).get();
                             System.out.println("  => \033[31m" + value + "\033[0m");
                         } else if("delete".equals(verb)) {
                             String fullKeyName = parts[1];
@@ -164,18 +171,6 @@ public class REPL {
                             } else {
                                 throw new AtIllegalArgumentException("Could not evaluate the key type of: " + fullKeyName);
                             }
-                        } else if("share".equals(verb)) {
-                            // _share <atSign> <keyName> <...data>
-                            // example: I am @bob, run _share @alice test hello world!! | will create a key "@alice:test@bob" with encrypted value "hello world!!"
-
-                            String atSign = parts[1];
-                            String keyName = parts[2];
-                            String value = command.substring(verb.length() + atSign.length() + keyName.length() + 3).trim();
-
-                            String fullKeyName = atSign + ":" + keyName + client.getAtSign();
-                            SharedKey sk = Keys.SharedKey.fromString(fullKeyName);
-                            String data = client.put(sk, value).get();
-                            System.out.println("  => \033[31m" + data + "\033[0m");
                         } else {
                             System.err.println("ERROR: command not recognized: [" + verb + "]");
                         }
@@ -192,14 +187,21 @@ public class REPL {
                     }
                 }
             }
-            System.out.print(client.getAtSign() + "@ ");
+            writePrompt();
         }
         cliScanner.close();
+    }
+
+    void writePrompt() {
+        System.out.print(ansi().bold().fg(Ansi.Color.MAGENTA).a(client.getAtSign() + "@ ").reset());
     }
 
     public static class REPLEventListener implements AtEvents.AtEventListener {
         private final AtClient client;
 
+        void writePrompt() {
+            System.out.print(ansi().bold().fg(Ansi.Color.MAGENTA).a(client.getAtSign() + "@ ").reset());
+        }
         public REPLEventListener(AtClient client) {
             this.client = client;
         }
@@ -215,15 +217,13 @@ public class REPL {
                     sharedKey = Keys.SharedKey.fromString((String) eventData.get("key"));
                     value = (String) eventData.get("value");
                     decryptedValue = (String) eventData.get("decryptedValue");
-                    System.out.println("\t" + OffsetDateTime.now()
-                            + " REPL NOTIFIED with value [" + decryptedValue + "]"
-                            + " for key [" + sharedKey + "]"
-                            + " (encryptedValue was [" + value + "])");
+                    System.out.println("  => Notification ==> \033[31m Key: [" + sharedKey + "]  ==> EncryptedValue [" + value + "]  ==> DecryptedValue [" + decryptedValue + "]" + "\033[0m");
+                    writePrompt();
                 }
                 break;
                 case updateNotificationText: {
                     System.out.println(eventData);
-                    System.out.print(client.getAtSign() + "@ ");
+                    writePrompt();
                 }
                 break;
                 case updateNotification: {
@@ -232,7 +232,7 @@ public class REPL {
                         String encryptedValue = (String) eventData.get("value");
                         decryptedValue = client.get(sharedKey).get();
                         System.out.println("  => Notification ==> \033[31m Key: [" + sharedKey + "]  ==> EncryptedValue [" + encryptedValue + "]  ==> DecryptedValue [" + decryptedValue + "]" + "\033[0m");
-                        System.out.print(client.getAtSign() + "@ ");
+                        writePrompt();
                     } catch (Exception e) {
                         System.err.println("Failed to retrieve " + sharedKey + " : " + e);
                     }
@@ -245,15 +245,26 @@ public class REPL {
     }
 
     public void printHelpInstructions() {
-        System.out.println("\nAtClient REPL | <> = required, [] = optional");
-        System.out.println("  By default, REPL treats input as atProtocol commands. Use / to use AtClient commands (see below)");
-        System.out.println("  AtClient Commands:");
-        System.out.println("    help or /help - print this help message");
-        System.out.println("    /put <key> <value> - put a value to the key (e.g. _put test@bob hello world)");
-        System.out.println("    /get <key> - get a value from the key (e.g. _get test@bob)");
-        System.out.println("    /delete <key> - delete a key (e.g. _delete test@bob)");
-        System.out.println("    /scan [regex] - scan for keys matching the regex (e.g. _scan test@bob.*)");
-        System.out.println("    /share <atSign> <keyName> <...data> - share a key with another atSign (e.g. _share @alice test hello world!!)");
+        System.out.println();
+        System.out.println("AtClient REPL");
+        System.out.println(ansi().render("  Notes:"));
+        System.out.println(ansi().render("    1) By default, REPL treats input as atProtocol commands. Use / for additional commands listed below"));
+        System.out.println(ansi().render("    2) In the usage examples below, it is assumed that the atSign being used is @|bold,green @alice|@"));
+        System.out.println();
+        System.out.println(ansi().render("  @|bold,magenta help|@ or @|bold,magenta /help|@ - print this help message"));
+        System.out.println();
+        System.out.println(ansi().render("  @|bold,magenta /scan|@ @|bold,green [regex]|@ - scan for all records, or all records whose keyNames match the regex (e.g. _scan test@alice.*)"));
+        System.out.println();
+        System.out.println(ansi().render("  @|bold,magenta /put|@ @|bold,green <atKeyName>|@ @|bold,blue <value>|@ - create or update a record with the given atKeyName and with the supplied value - for example:"));
+        System.out.println(ansi().render("    @|bold,magenta /put|@ @|bold,green test@alice|@ @|bold,blue secret secrets|@ will create or update a 'self' record (a record private just to @alice)"));
+        System.out.println(ansi().render("    @|bold,magenta /put|@ @|bold,green @bob:test@alice|@ @|bold,blue Hello, Bob!|@ will create or update a record encrypted for, and then shared with, @bob"));
+        System.out.println();
+        System.out.println(ansi().render("  @|bold,magenta /get|@ @|bold,green <atKeyName>|@ - retrieve a value from the record with this atKeyName - for example:"));
+        System.out.println(ansi().render("    @|bold,magenta /get|@ @|bold,green <atKeyName>|@ - retrieve a value from the record with this atKeyName (e.g. _get test@alice)"));
+        System.out.println();
+        System.out.println(ansi().render("  @|bold,magenta /delete|@ @|bold,green <atKeyName>|@ - delete the record with this atKeyName (e.g. _delete test@alice)"));
+        System.out.println();
+        System.out.println(ansi().render("  @|bold,red NOTE:|@ @|bold,magenta put, get|@ and @|bold,magenta delete|@ will append the current atSign to the atKeyName if not supplied"));
         System.out.println();
     }
 }

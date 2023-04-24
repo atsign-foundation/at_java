@@ -105,12 +105,14 @@ public class AtClientImpl implements AtClient {
                 if (eventData.get("value") != null) {
                     String key = (String) eventData.get("key");
                     String encryptedValue = (String) eventData.get("value");
+                    @SuppressWarnings("unchecked") Map<String, Object> metadata = (Map<String, Object>) eventData.get("metadata");
+                    String ivNonce = (String) metadata.get("ivNonce");
 
                     try {
                         // decrypt it with the symmetric key that the other atSign shared with me
                         String encryptionKeySharedByOther = getEncryptionKeySharedByOther(SharedKey.fromString(key));
 
-                        String decryptedValue = EncryptionUtil.aesDecryptFromBase64(encryptedValue, encryptionKeySharedByOther);
+                        String decryptedValue = EncryptionUtil.aesDecryptFromBase64(encryptedValue, encryptionKeySharedByOther, ivNonce);
                         HashMap<String, Object> newEventData = new HashMap<>(eventData);
                         newEventData.put("decryptedValue", decryptedValue);
                         eventBus.publishEvent(decryptedUpdateNotification, newEventData);
@@ -314,9 +316,14 @@ public class AtClientImpl implements AtClient {
 
     @Override
     public CompletableFuture<List<AtKey>> getAtKeys(String regex) {
+        return getAtKeys(regex, true);
+    }
+
+    @Override
+    public CompletableFuture<List<AtKey>> getAtKeys(String regex, boolean fetchMetadata) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return _getAtKeys(regex);
+                return _getAtKeys(regex, fetchMetadata);
             } catch (Exception e) {
                 throw new CompletionException(e);
             }
@@ -437,20 +444,7 @@ public class AtClientImpl implements AtClient {
         command = builder.build();
 
         // 2. execute command
-        Response response;
-        try {
-            response = secondary.executeCommand(command, true);
-        } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to execute " + command, e);
-        }
-
-        // 3. transform the data to a LlookupAllResponse object
-        LookupResponse fetched;
-        try {
-            fetched = json.readValue(response.getRawDataResponse(), LookupResponse.class);
-        } catch (JsonProcessingException e) {
-            throw new AtResponseHandlingException("Failed to parse JSON " + response.getRawDataResponse(), e);
-        }
+        LookupResponse fetched = getLookupResponse(command);
 
         // 3. decrypt the value
         String decryptedValue;
@@ -526,20 +520,7 @@ public class AtClientImpl implements AtClient {
         }
 
         // 2. run the command
-        Response response;
-        try {
-            response = secondary.executeCommand(command, true);
-        } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to execute " + command, e);
-        }
-
-        // 3. transform the data to a LlookupAllResponse object
-        LookupResponse fetched;
-        try {
-            fetched = json.readValue(response.getRawDataResponse(), LookupResponse.class);
-        } catch (JsonProcessingException e) {
-            throw new AtResponseHandlingException("Failed to parse JSON " + response.getRawDataResponse(), e);
-        }
+        LookupResponse fetched = getLookupResponse(command);
 
         // 4. update key object metadata
         key.metadata = Metadata.squash(fetched.metaData, key.metadata);
@@ -643,7 +624,7 @@ public class AtClientImpl implements AtClient {
         }
     }
 
-    private List<AtKey> _getAtKeys(String regex) throws AtException {
+    private List<AtKey> _getAtKeys(String regex, boolean fetchMetadata) throws AtException {
         ScanVerbBuilder scanVerbBuilder = new ScanVerbBuilder();
         scanVerbBuilder.setRegex(regex);
         scanVerbBuilder.setShowHidden(true); 
@@ -659,17 +640,19 @@ public class AtClientImpl implements AtClient {
         List<AtKey> atKeys = new ArrayList<>();
         for(String atKeyRaw : rawArray) { // eg atKeyRaw == @bob:phone@alice
             AtKey atKey = Keys.fromString(atKeyRaw);
-            String llookupCommand = "llookup:meta:" + atKeyRaw;
-            Response llookupMetaResponse;
-            try {
-                llookupMetaResponse = secondary.executeCommand(llookupCommand, true);
-            } catch (IOException e) {
-                throw new AtSecondaryConnectException("Failed to execute " + llookupCommand, e);
-            }
-            try {
-                atKey.metadata = Metadata.squash(atKey.metadata, Metadata.fromJson(llookupMetaResponse.getRawDataResponse())); // atKey.metadata has priority over llookupMetaRaw.data
-            } catch (JsonProcessingException e) {
-                throw new AtResponseHandlingException("Failed to parse JSON " + llookupMetaResponse.getRawDataResponse(), e);
+            if (fetchMetadata) {
+                String llookupCommand = "llookup:meta:" + atKeyRaw;
+                Response llookupMetaResponse;
+                try {
+                    llookupMetaResponse = secondary.executeCommand(llookupCommand, true);
+                } catch (IOException e) {
+                    throw new AtSecondaryConnectException("Failed to execute " + llookupCommand, e);
+                }
+                try {
+                    atKey.metadata = Metadata.squash(atKey.metadata, Metadata.fromJson(llookupMetaResponse.getRawDataResponse())); // atKey.metadata has priority over llookupMetaRaw.data
+                } catch (JsonProcessingException e) {
+                    throw new AtResponseHandlingException("Failed to parse JSON " + llookupMetaResponse.getRawDataResponse(), e);
+                }
             }
             atKeys.add(atKey);
         }
@@ -683,6 +666,25 @@ public class AtClientImpl implements AtClient {
     //
     // Internal utility methods. Will move these to another class later, so that other AtClient implementations can easily use them.
     //
+
+    private LookupResponse getLookupResponse(String command) throws AtException {
+        Response response;
+        try {
+            response = secondary.executeCommand(command, true);
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
+        }
+
+        // 3. transform the data to a LlookupAllResponse object
+        LookupResponse fetched;
+        try {
+            fetched = json.readValue(response.getRawDataResponse(), LookupResponse.class);
+        } catch (JsonProcessingException e) {
+            throw new AtResponseHandlingException("Failed to parse JSON " + response.getRawDataResponse(), e);
+        }
+        return fetched;
+    }
+
     private String getEncryptionKeySharedByMe(SharedKey key) throws AtException {
         // llookup:shared_key.bob@alice
         Secondary.Response rawResponse;

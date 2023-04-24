@@ -1,0 +1,37 @@
+#!/bin/bash
+
+function usage {
+  echo "Usage: $scriptName -a <atSign> [-d <atDirectory>] [-v(erbose)]"
+  echo "       When '-d' is not provided, we default to root.atsign.org:64"
+  exit 1
+}
+
+scriptName=$(basename -- "$0")
+cd "$(dirname -- "$0")"
+scriptDir=$(pwd)
+
+unset atSign
+atDirectory=root.atsign.org:64
+verbose="false"
+
+while getopts a:d:v opt; do
+  case $opt in
+    a) atSign=$OPTARG ;;
+    d) atDirectory=$OPTARG ;;
+    v) verbose="true" ;;
+    *) usage ;;
+  esac
+done
+
+shift "$(( OPTIND - 1 ))"
+
+if [ -z "$atSign" ] || [ -z "$atDirectory" ] ; then
+  usage
+fi
+
+# Script dir is <repo_root>/at_client/src/main/scripts
+# We want to run in <repo_root>/at_client
+cd "$scriptDir"/../../..
+
+java -cp "target/at_client-1.0-SNAPSHOT.jar:target/lib/*" org.atsign.client.cli.REPL "$atDirectory" "$atSign" false $verbose
+

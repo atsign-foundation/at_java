@@ -172,4 +172,5 @@ public interface AtClient extends Secondary, AtEvents.AtEventBus {
     CompletableFuture<String> put(PublicKey publicKey, byte[] value);
 
     CompletableFuture<List<AtKey>> getAtKeys(String regex);
+    CompletableFuture<List<AtKey>> getAtKeys(String regex, boolean fetchMetadata);
 }
