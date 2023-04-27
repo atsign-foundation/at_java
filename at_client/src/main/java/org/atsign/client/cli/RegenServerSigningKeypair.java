@@ -43,14 +43,14 @@ public class RegenServerSigningKeypair {
             // Save the signing keypair to the server
 
             // update:public:signing_publickey@alice <public key, base64-encoded>
-            System.out.printf("Updating public:signing_publickey%s", atSign);
+            System.out.printf("Updating public:signing_publickey%s\n", atSign);
             String publicKeyString = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
             atClient.executeCommand(
                     String.format("update:public:signing_publickey%s %s",atSign, publicKeyString),
                     true);
 
             // update:@alice:signing_privatekey@alice <private key, base64-encoded>
-            System.out.printf("Updating %s:signing_privatekey%s", atSign, atSign);
+            System.out.printf("Updating %s:signing_privatekey%s\n", atSign, atSign);
             String privateKeyString = Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded());
             atClient.executeCommand(
                     String.format("update:%s:signing_privatekey%s %s", atSign, atSign, privateKeyString),
