@@ -23,8 +23,9 @@ public class Share {
         String keyName;
         String toShare;
         int ttr;
+        int delayBeforeExit = 3000;
 
-        if (args.length != 6) {
+        if (args.length < 6) {
             System.err.println("Usage: Share <rootUrl> <your AtSign> <other AtSign> <keyName to share, including namespace> <keyValue to share, a string> <ttr>");
             System.exit(1);
         }
@@ -35,6 +36,9 @@ public class Share {
         keyName = args[3];
         toShare = args[4];
         ttr = Integer.parseInt(args[5]);
+        if (args.length >= 7) {
+            delayBeforeExit = Integer.parseInt(args[6]);
+        }
 
         Secondary.AddressFinder addressFinder = ArgsUtil.createAddressFinder(rootUrl);
         // Let's also look up the other one before we do anything, just in case
@@ -64,6 +68,7 @@ public class Share {
             System.out.println(OffsetDateTime.now() + " | calling atClient.put()");
             String putResponse = atClient.put(sharedKey, toShare).get();
             System.out.println(OffsetDateTime.now() + " | put response : " + putResponse);
+            Thread.sleep(delayBeforeExit);
         } catch (InterruptedException | ExecutionException e) {
             System.err.println("Failed to share : " + e.getMessage());
             e.printStackTrace(System.err);

@@ -31,6 +31,7 @@ public interface Secondary extends AtEvents.AtEventListener {
      * @throws IOException if one is encountered
      */
     Response executeCommand(String command, boolean throwExceptionOnErrorResponse) throws IOException, AtException;
+    Response executeCommand(String command, boolean throwExceptionOnErrorResponse, boolean retryOnException, boolean readTheResponse) throws IOException, AtException;
 
     void startMonitor();
     void stopMonitor();

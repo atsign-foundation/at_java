@@ -335,6 +335,21 @@ public class AtClientImpl implements AtClient {
      * @param command in @ protocol format
      * @param throwExceptionOnErrorResponse sometimes we want to inspect an error response,
      *        sometimes we want to just throw an exception
+     * @param retryOnException sometimes we want to automatically do a retry
+     * @return a Secondary Response
+     * @throws AtException if the response from the Secondary starts with 'error:', or
+     * if there is any other exception
+     */
+    @Override
+    public Response executeCommand(String command, boolean throwExceptionOnErrorResponse, boolean retryOnException, boolean readTheResponse) throws AtException, IOException {
+        return secondary.executeCommand(command, throwExceptionOnErrorResponse, retryOnException, readTheResponse);
+    }
+
+    /**
+     * Synchronous, talks @-protocol directly to the client's Secondary server
+     * @param command in @ protocol format
+     * @param throwExceptionOnErrorResponse sometimes we want to inspect an error response,
+     *        sometimes we want to just throw an exception
      * @return a Secondary Response
      * @throws AtException if the response from the Secondary starts with 'error:', or
      * if there is any other exception

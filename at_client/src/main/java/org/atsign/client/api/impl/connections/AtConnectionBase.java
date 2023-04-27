@@ -100,7 +100,7 @@ public abstract class AtConnectionBase implements AtConnection {
     public final synchronized String executeCommand(String command) throws IOException {
         return executeCommand(command, autoReconnect, true);
     }
-    protected synchronized String executeCommand(String command, boolean retryOnException, boolean readTheResponse) throws IOException {
+    public final synchronized String executeCommand(String command, boolean retryOnException, boolean readTheResponse) throws IOException {
         if (socket.isClosed()) {
             throw new IOException("executeCommand failed: socket is closed");
         }

@@ -31,6 +31,8 @@ public interface AtConnection {
 
     String executeCommand(String command) throws IOException;
 
+    String executeCommand(String command, boolean retryOnException, boolean readTheResponse) throws IOException;
+
     interface Authenticator {
         void authenticate(AtConnection connection) throws AtException, IOException;
     }

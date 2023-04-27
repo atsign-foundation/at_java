@@ -94,7 +94,7 @@ public class REPL {
                 Secondary.Response response;
                 if (command.equals("help") || command.startsWith("_") || command.startsWith("/") || command.startsWith("\\")) {
                     // simple repl for get / put /
-                    if (! command.equals("help")) {
+                    if (command.startsWith("_") || command.startsWith("/") || command.startsWith("\\")) {
                         command = command.substring(1);
                     }
                     String[] parts = command.split(" ");
@@ -102,6 +102,9 @@ public class REPL {
                     try {
                         if("help".equals(verb)) {
                             printHelpInstructions();
+                        } else if ("exit".equals(verb)) {
+                            client.executeCommand("@exit", false, false, false);
+                            System.exit(0);
                         } else if ("get".equals(verb)) {
                             String fullKeyName = parts[1];
                             KeyStringUtil keyStringUtil = new KeyStringUtil(fullKeyName);
@@ -130,14 +133,17 @@ public class REPL {
                             KeyStringUtil.KeyType keyType = keyStringUtil.getKeyType();
                             if(keyType.equals(KeyStringUtil.KeyType.PUBLIC_KEY)) {
                                 PublicKey pk = (PublicKey) Keys.fromString(fullKeyName);
+                                pk.metadata.ttr = 1; // mark it cacheable
                                 String data = client.put(pk, value).get();
                                 System.out.println("  => \033[31m" + data + "\033[0m");
                             } else if(keyType.equals(KeyStringUtil.KeyType.SELF_KEY)) {
                                 SelfKey sk = (SelfKey) Keys.fromString(fullKeyName);
+                                sk.metadata.ttr = 1; // mark it cacheable
                                 String data = client.put(sk, value).get();
                                 System.out.println("  => \033[31m" + data + "\033[0m");
                             } else if(keyType.equals(KeyStringUtil.KeyType.SHARED_KEY)) {
                                 SharedKey sk = Keys.SharedKey.fromString(fullKeyName);
+                                sk.metadata.ttr = 1; // mark it cacheable
                                 String data = client.put(sk, value).get();
                                 System.out.println("  => \033[31m" + data + "\033[0m");
                             } else if(keyType.equals(KeyStringUtil.KeyType.PRIVATE_HIDDEN_KEY)) {

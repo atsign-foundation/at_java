@@ -81,28 +81,35 @@ public class RemoteSecondary implements Secondary {
 
     @Override
     public Response executeCommand(String command, boolean throwExceptionOnErrorResponse) throws IOException, AtException {
+        return executeCommand(command, throwExceptionOnErrorResponse, true, true);
+    }
+
+    @Override
+    public Response executeCommand(String command, boolean throwExceptionOnErrorResponse, boolean retryOnException, boolean readTheResponse) throws IOException, AtException {
         Response response = new Response();
-        String rawResponse = connection.executeCommand(command);
+        String rawResponse = connection.executeCommand(command, retryOnException, readTheResponse);
 
-        if (rawResponse.startsWith("data:")) {
-            response.setRawDataResponse(rawResponse.substring("data:".length()));
-        } else if (rawResponse.startsWith("error:")) {
-            response.setRawErrorResponse(rawResponse.substring("error:".length()));
-            AtException theServerException = response.getException();
+        if (readTheResponse) {
+            if (rawResponse.startsWith("data:")) {
+                response.setRawDataResponse(rawResponse.substring("data:".length()));
+            } else if (rawResponse.startsWith("error:")) {
+                response.setRawErrorResponse(rawResponse.substring("error:".length()));
+                AtException theServerException = response.getException();
 
-            if (theServerException instanceof AtInvalidSyntaxException
-                    || theServerException instanceof AtIllegalArgumentException
-                    || theServerException instanceof AtInvalidAtKeyException) {
-                // Secondaries used to close connections for these exceptions so let's disconnect and reconnect
-                connection.disconnect();
-                connection.connect();
+                if (theServerException instanceof AtInvalidSyntaxException
+                        || theServerException instanceof AtIllegalArgumentException
+                        || theServerException instanceof AtInvalidAtKeyException) {
+                    // Secondaries used to close connections for these exceptions so let's disconnect and reconnect
+                    connection.disconnect();
+                    connection.connect();
+                }
+
+                if (throwExceptionOnErrorResponse) {
+                    throw theServerException;
+                }
+            } else {
+                throw new AtUnknownResponseException("Unknown response " + rawResponse + " from command " + command);
             }
-
-            if (throwExceptionOnErrorResponse) {
-                throw theServerException;
-            }
-        } else {
-            throw new AtUnknownResponseException("Unknown response " + rawResponse + " from command " + command);
         }
         return response;
     }
