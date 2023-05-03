@@ -563,16 +563,163 @@ public class AtClientImpl implements AtClient {
         }
     }
 
-    private byte[] _getBinary(SharedKey sharedKey) throws AtException {throw new RuntimeException("Not Implemented");}
-    private byte[] _getBinary(SelfKey selfKey) throws AtException {throw new RuntimeException("Not Implemented");}
-    private byte[] _getBinary(PublicKey publicKey) throws AtException {throw new RuntimeException("Not Implemented");}
-    private byte[] _getBinary(PublicKey publicKey, GetRequestOptions getRequestOptions) throws AtException {throw new RuntimeException("Not Implemented");}
+    private byte[] _getBinary(SharedKey sharedKey) throws AtException {
+        if (sharedKey.sharedBy.toString().equals(atSign.toString())) {
+            return _getSharedByMeWithOther(sharedKey).getBytes();
+        } else {
+            return _getSharedByOtherWithMe(sharedKey).getBytes();
+        }
+    }
 
-    private String _put(SharedKey sharedKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
-    private String _put(SelfKey selfKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
-    private String _put(PublicKey publicKey, byte[] value) throws AtException {throw new RuntimeException("Not Implemented");}
+    private byte[] _getBinary(SelfKey selfKey) throws AtException {
+        String command;
+        LlookupVerbBuilder builder = new LlookupVerbBuilder();
+        builder.with(selfKey, LlookupVerbBuilder.Type.ALL);
+        command = builder.build();
 
-    private List<AtKey> _getAtKeys(String regex, boolean fetchMetadata) throws AtException {
+        Response response;
+        try {
+            response = secondary.executeCommand(command, true);
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
+        }
+
+        LookupResponse fetched;
+        try {
+            fetched = json.readValue(response.getRawDataResponse(), LookupResponse.class);
+        } catch (JsonProcessingException e) {
+            throw new AtResponseHandlingException("Failed to parse JSON " + response.getRawDataResponse(), e);
+        }
+
+        String decryptedValue;
+        String encryptedValue = fetched.data;
+        String selfEncryptionKey = keys.get(KeysUtil.selfEncryptionKeyName);
+        try {
+            decryptedValue = EncryptionUtil.aesDecryptFromBase64(encryptedValue, selfEncryptionKey);
+        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException
+                | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException e) {
+            throw new AtDecryptionException("Failed to " + command, e);
+        }
+
+        selfKey.metadata = Metadata.squash(fetched.metaData, selfKey.metadata);
+
+        return decryptedValue.getBytes();
+    }
+
+    private byte[] _getBinary(PublicKey publicKey) throws AtException {
+        /*
+         * String test = "getting something";
+         * 
+         * byte[] testValue = test.getBytes();
+         * 
+         * return testValue;
+         */
+
+        return _getBinary(publicKey, null);
+    }
+
+    private byte[] _getBinary(PublicKey publicKey, GetRequestOptions getRequestOptions) throws AtException {
+
+        String command;
+        if (atSign.toString().equals(publicKey.sharedBy.toString())) {
+            LlookupVerbBuilder builder = new LlookupVerbBuilder();
+            builder.with(publicKey, LlookupVerbBuilder.Type.ALL);
+            command = builder.build();
+        } else {
+            PlookupVerbBuilder builder = new PlookupVerbBuilder();
+            builder.with(publicKey, PlookupVerbBuilder.Type.ALL);
+            builder.setBypassCache(getRequestOptions != null && getRequestOptions.getBypassCache());
+            command = builder.build();
+        }
+
+        Response response;
+        try {
+            response = secondary.executeCommand(command, true);
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
+        }
+
+        LookupResponse fetched;
+        try {
+            fetched = json.readValue(response.getRawDataResponse(), LookupResponse.class);
+        } catch (JsonProcessingException e) {
+            throw new AtResponseHandlingException("Failed to parse JSON " + response.getRawDataResponse(), e);
+        }
+
+        publicKey.metadata = Metadata.squash(fetched.metaData, publicKey.metadata);
+        publicKey.metadata.isCached = fetched.key.contains("cached:");
+
+        return fetched.data.getBytes();
+    }
+
+    private String _put(SharedKey sharedKey, byte[] value) throws AtException {
+        String stringValue = new String(value);
+        if (!this.atSign.equals(sharedKey.sharedBy)) {
+            throw new AtIllegalArgumentException(
+                    "sharedBy is [" + sharedKey.sharedBy + "] but should be this client's atSign [" + atSign + "]");
+        }
+        String what = "";
+        String cipherText;
+        try {
+            what = "fetch/create shared encryption key";
+            String shareToEncryptionKey = getEncryptionKeySharedByMe(sharedKey);
+
+            what = "encrypt value with shared encryption key";
+            cipherText = EncryptionUtil.aesEncryptToBase64(stringValue, shareToEncryptionKey);
+        } catch (Exception e) {
+            throw new AtEncryptionException("Failed to " + what, e);
+        }
+
+        String command = "update" + sharedKey.metadata.toString() + ":" + sharedKey + " " + cipherText;
+
+        try {
+            return secondary.executeCommand(command, true).toString();
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
+        }
+    }
+
+    private String _put(SelfKey selfKey, byte[] value) throws AtException {
+        String stringValue = new String(value);
+
+        selfKey.metadata.dataSignature = generateSignatureByte(value);
+
+        String cipherText;
+        try {
+            cipherText = EncryptionUtil.aesEncryptToBase64(stringValue, keys.get(KeysUtil.selfEncryptionKeyName));
+        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException
+                | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException e) {
+            throw new AtEncryptionException("Failed to encrypt value with self encryption key", e);
+        }
+
+        UpdateVerbBuilder builder = new UpdateVerbBuilder();
+        builder.with(selfKey, cipherText);
+        String command = builder.build();
+        try {
+            return secondary.executeCommand(command, true).toString();
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
+        }
+    }
+
+    private String _put(PublicKey publicKey, byte[] value) throws AtException {
+        // 1. generate dataSignature for byte[]
+        publicKey.metadata.dataSignature = generateSignatureByte(value);
+
+        String command;
+        UpdateVerbBuilder builder = new UpdateVerbBuilder();
+        builder.with(publicKey, value);
+        command = builder.build();
+
+        try {
+            return secondary.executeCommand(command, true).toString();
+        } catch (IOException e) {
+            throw new AtSecondaryConnectException("Failed to execute " + command, e);
+        }
+
+    }
+
+    private List<AtKey> _getAtKeys(String regex) throws AtException {
         ScanVerbBuilder scanVerbBuilder = new ScanVerbBuilder();
         scanVerbBuilder.setRegex(regex);
         scanVerbBuilder.setShowHidden(true); 
@@ -763,4 +910,18 @@ public class AtClientImpl implements AtClient {
         }
         return signature;
     }
+
+    private String generateSignatureByte(byte[] byteValue) throws AtException {
+
+        String stringValue = new String(byteValue);
+        String signature;
+
+        try {
+            signature = EncryptionUtil.signSHA256RSA(stringValue, keys.get(KeysUtil.encryptionPrivateKeyName));
+        } catch (Exception e) {
+            throw new AtEncryptionException("Failed to sign value: " + byteValue, e);
+        }
+        return signature;
+    }
+
 }
