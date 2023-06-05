@@ -64,8 +64,8 @@ public class RegisterUtil {
      * @throws IOException - thrown if anything goes wrong while using the
      *                     HttpsURLConnection.
      */
-    public Map<String, String> getAtsignV3(String registrarUrl, String apiKey) throws IOException, AtException {
-        return getAtsignV3(registrarUrl, apiKey, "", "");
+    public Map<String, String> getAtsignWithSuperApiKey(String registrarUrl, String apiKey) throws IOException, AtException {
+        return getAtsignWithSuperApiKey(registrarUrl, apiKey, "", "");
     }
 
     /**
@@ -85,8 +85,8 @@ public class RegisterUtil {
      * @throws IOException - thrown if anything goes wrong while using the
      *                     HttpsURLConnection.
      */
-    public Map<String, String> getAtsignV3(String registrarUrl, String apiKey, String atsign,
-            String activationKey)
+    public Map<String, String> getAtsignWithSuperApiKey(String registrarUrl, String apiKey, String atsign,
+                                                        String activationKey)
             throws AtException, IOException {
         Map<String, String> paramsMap = new HashMap<>();
         if (!atsign.isEmpty()) {
@@ -141,7 +141,7 @@ public class RegisterUtil {
             String response = bufferedReader.readLine();
             @SuppressWarnings("unchecked") Map<String, String> responseData = objectMapper.readValue(response, Map.class);
             String data = responseData.get("message");
-            System.out.println("Got response: " + data);
+            System.out.println("\tVerification code: " + data);
             return response.contains("Sent Successfully");
         } else {
             throw new AtRegistrarException(httpsConnection.getResponseCode() + " " + httpsConnection.getResponseMessage());
@@ -251,7 +251,7 @@ public class RegisterUtil {
      * @throws IOException - thrown if anything goes wrong while using the
      *                     HttpsURLConnection.
      */
-    public String activateAtsign(String registrarUrl, String apiKey, AtSign atsign, String activationKey)
+    public String activateAtsignWithSuperApiKey(String registrarUrl, String apiKey, AtSign atsign, String activationKey)
             throws AtException, IOException {
         Map<String, String> paramsMap = Stream.of(
                 new SimpleEntry<>("atSign", atsign.withoutPrefix()),
