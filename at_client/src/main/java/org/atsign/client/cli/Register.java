@@ -35,7 +35,7 @@ public class Register implements Callable<String> {
     static String apiKey = "";
 
     Map<String, String> params = new HashMap<>();
-    boolean isRegistrarV3 = false;
+    boolean superApiKeyMode = false;
 
     public static void main(String[] args) throws AtException {
         int status = new CommandLine(new Register()).execute(args);
@@ -50,8 +50,8 @@ public class Register implements Callable<String> {
     public String call() throws Exception {
 
         readParameters();
-        if (isRegistrarV3) {
-            new RegistrationFlow(params).add(new GetAtsignV3()).add(new ActivateAtsignV3()).start();
+        if (superApiKeyMode) {
+            new RegistrationFlow(params).add(new GetFreeAtsignWithSuperApiKey()).add(new ActivateAtsignWithSuperApiKey()).start();
 
         } else {
             // parameter confirmation needs to be manually inserted into the params map
@@ -70,14 +70,16 @@ public class Register implements Callable<String> {
     void readParameters() throws IOException {
 
         // checks to ensure only either of email or super-API key are provided as args.
-        // if super-API key is provided uses registrar v3, otherwise uses registrar v2.
+        // if super-API key is provided sets superApiKeyMode to true
         if ("".equals(email) && !"".equals(apiKey)) {
-            isRegistrarV3 = true;
+            superApiKeyMode = true;
         } else if ("".equals(apiKey) && !"".equals(email)) {
-            isRegistrarV3 = false;
+            superApiKeyMode = false;
         } else {
             System.err.println(
-                    "Usage: Register -e <email@email.com> (or)\nRegister -k <Your API Key>\nNOTE: Use email if you prefer activating using OTP. Go for API key option if you have your own SuperAPI key. You cannot use both.");
+                    "Usage: Register -e <email@email.com> (or)\nRegister -k <Your API Key>"
+                    + "\nNOTE: Use email if you prefer activating using verification code." 
+                    + " Use API key option if you have a SuperAPI key. You can NOT use both.");
             System.exit(1);
         }
 
@@ -92,15 +94,15 @@ public class Register implements Callable<String> {
             // reading config from older configuration syntax for backwards compatibility
             params.put("rootPort", ConfigReader.getProperty("ROOT_PORT"));
         }
+        System.out.println("RootServer is " + params.get("rootDomain") + ":" + params.get("rootPort"));
 
-        params.put("registrarUrl", isRegistrarV3 ? ConfigReader.getProperty("registrarV3", "url")
-                : ConfigReader.getProperty("registrar", "url"));
+        params.put("registrarUrl", ConfigReader.getProperty("registrarV3", "url"));
         if (params.get("registrarUrl") == null) {
             // reading config from older configuration syntax for backwards compatibility
             params.put("registrarUrl", ConfigReader.getProperty("REGISTRAR_URL"));
         }
 
-        if (!isRegistrarV3 && "".equals(apiKey)) {
+        if (!superApiKeyMode && "".equals(apiKey)) {
             params.put("apiKey", ConfigReader.getProperty("registrar", "apiKey"));
             if (params.get("apiKey") == null) {
                 // reading config from older configuration syntax for backwards compatibility
@@ -109,7 +111,7 @@ public class Register implements Callable<String> {
         }
 
         // adding email/apiKey to params whichever is passed through command line args
-        if (!isRegistrarV3) {
+        if (!superApiKeyMode) {
             params.put("email", email);
         } else {
             params.put("apiKey", apiKey);
@@ -165,12 +167,12 @@ class GetFreeAtsign extends RegisterApiTask<RegisterApiResult<Map<String, String
 
     @Override
     public RegisterApiResult<Map<String, String>> run() {
-        System.out.println("Getting free atsign ...");
+        System.out.println("Fetching free atsign ...");
         try {
             result.data.put("atSign",
                     registerUtil.getFreeAtsign(params.get("registrarUrl"), params.get("apiKey")));
             result.apiCallStatus = ApiCallStatus.success;
-            System.out.println("Got atsign: " + result.data.get("atSign"));
+            System.out.println("\tFetched new atsign: " + "@" + result.data.get("atSign"));
         } catch (AtRegistrarException e) {
             result.atException = e;
         } catch (Exception e) {
@@ -185,7 +187,7 @@ class RegisterAtsign extends RegisterApiTask<RegisterApiResult<Map<String, Strin
 
     @Override
     public RegisterApiResult<Map<String, String>> run() {
-        System.out.println("Sending one-time-password to :" + params.get("email"));
+        System.out.println("Sending verification code to: " + params.get("email"));
         try {
             result.data.put("otpSent",
                     registerUtil.registerAtsign(params.get("email"), new AtSign(params.get("atSign")),
@@ -204,14 +206,14 @@ class ValidateOtp extends RegisterApiTask<RegisterApiResult<Map<String, String>>
 
     @Override
     public RegisterApiResult<Map<String, String>> run() {
-        System.out.println("Enter OTP received on " + params.get("email") + " [note: otp is case sensitive]");
-        try {
-            // only ask for user input the first time. use the otp entry in params map in
-            // subsequent api requests
-            if (!params.containsKey("otp")) {
-                params.put("otp", scanner.nextLine());
-            }
-            System.out.println("Validating OTP ...");
+       try {
+               // only ask for user input the first time. use the otp entry in params map in
+               // subsequent api requests
+               if (!params.containsKey("otp")) {
+                   System.out.println("Enter verification code received on " + params.get("email") + " [verification code is case sensitive]");
+                   params.put("otp", scanner.nextLine());
+                   System.out.println("Validating verification code ...");
+               }
             String apiResponse = registerUtil.validateOtp(params.get("email"), new AtSign(params.get("atSign")),
                     params.get("otp"), params.get("registrarUrl"), params.get("apiKey"),
                     Boolean.parseBoolean(params.get("confirmation")));
@@ -225,7 +227,7 @@ class ValidateOtp extends RegisterApiTask<RegisterApiResult<Map<String, String>>
                 result.apiCallStatus = ApiCallStatus.retry;
             } else if (apiResponse.startsWith("@")) {
                 result.data.put("cram", apiResponse.split(":")[1]);
-                System.out.println("your cram secret: " + result.data.get("cram"));
+                System.out.println("\tRCVD cram: " + result.data.get("cram"));
                 System.out.println("Done.");
                 result.apiCallStatus = ApiCallStatus.success;
                 scanner.close();
@@ -241,12 +243,12 @@ class ValidateOtp extends RegisterApiTask<RegisterApiResult<Map<String, String>>
     }
 }
 
-class GetAtsignV3 extends RegisterApiTask<RegisterApiResult<Map<String, String>>> {
+class GetFreeAtsignWithSuperApiKey extends RegisterApiTask<RegisterApiResult<Map<String, String>>> {
     @Override
     public RegisterApiResult<Map<String, String>> run() {
         System.out.println("Getting atSign ...");
         try {
-            result.data.putAll(registerUtil.getAtsignV3(params.get("registrarUrl"), params.get("apiKey")));
+            result.data.putAll(registerUtil.getAtsignWithSuperApiKey(params.get("registrarUrl"), params.get("apiKey")));
             System.out.println("Got atsign: " + result.data.get("atSign"));
             result.apiCallStatus = ApiCallStatus.success;
         } catch (AtRegistrarException e) {
@@ -260,11 +262,11 @@ class GetAtsignV3 extends RegisterApiTask<RegisterApiResult<Map<String, String>>
     }
 }
 
-class ActivateAtsignV3 extends RegisterApiTask<RegisterApiResult<Map<String, String>>> {
+class ActivateAtsignWithSuperApiKey extends RegisterApiTask<RegisterApiResult<Map<String, String>>> {
     @Override
     public RegisterApiResult<Map<String, String>> run() {
         try {
-            result.data.put("cram", registerUtil.activateAtsign(params.get("registrarUrl"), params.get("apiKey"),
+            result.data.put("cram", registerUtil.activateAtsignWithSuperApiKey(params.get("registrarUrl"), params.get("apiKey"),
                     new AtSign(params.get("atSign")), params.get("ActivationKey")).split(":")[1]);
             result.apiCallStatus = ApiCallStatus.success;
             System.out.println("Your cram secret: " + result.data.get("cram"));
