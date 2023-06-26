@@ -218,7 +218,7 @@ class ValidateOtp extends RegisterApiTask<RegisterApiResult<Map<String, String>>
                     params.get("otp"), params.get("registrarUrl"), params.get("apiKey"),
                     Boolean.parseBoolean(params.get("confirmation")));
             if (apiResponse.equals("retry")) {
-                System.out.println("Incorrect OTP!!! Please re-enter your OTP");
+                System.err.println("Incorrect OTP!!! Please re-enter your OTP");
                 params.put("otp", scanner.nextLine());
                 result.apiCallStatus = ApiCallStatus.retry;
                 result.atException = new AtRegistrarException("Only 3 retries allowed to re-enter OTP - Incorrect OTP entered");
