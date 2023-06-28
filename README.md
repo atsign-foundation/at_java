@@ -63,4 +63,4 @@ and have used the Dart/Flutter packages
     * **Get** - gets data which was shared by another @-sign
     * **Delete** - deletes data that this Atsign previously shared with another
   * To run them, having done a mvn install 
-    `java -cp "target/client-1.0-SNAPSHOT.jar:target/lib/*" org.atsign.client.cli.REPL` (or Onboard/Share/Get/Delete )
+    `java -cp "target/at_client-1.0-SNAPSHOT.jar:target/lib/*" org.atsign.client.cli.REPL` (or Onboard/Share/Get/Delete/Register )

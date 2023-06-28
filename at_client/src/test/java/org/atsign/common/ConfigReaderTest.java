@@ -8,14 +8,14 @@ import org.junit.Test;
 import java.io.IOException;
 
 public class ConfigReaderTest {
-    
+
     @Test
     public void getRegistrarUrl() throws IOException {
 
-        assertEquals("https://my.atsign.com/api/app/v2", ConfigReader.getProperty("REGISTRAR_URL"));
+        assertEquals("https://my.atsign.com/api/app/v3", ConfigReader.getProperty("REGISTRAR_URL"));
         assertEquals("https://my.atsign.com/api/app/v2", ConfigReader.getProperty("registrar", "url"));
         //test regsitrar_v3 url
-        assertEquals("https://my.atsign.wtf/api/app/v3", ConfigReader.getProperty("registrarV3", "url"));
+        assertEquals("https://my.atsign.com/api/app/v3", ConfigReader.getProperty("registrarV3", "url"));
     }
 
     @Test
