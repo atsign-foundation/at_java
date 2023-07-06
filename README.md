@@ -11,6 +11,26 @@ to work with the atPlatform from Java code.
 NB: As of May 3 2022, the Java client library can still be considered a 1.0.0-Beta version - i.e. there may occasionally
 be breaking changes, based on feedback from users of the library, until we get to a final version 1.0.0
 
+# Maven Depdendency
+
+The Java SDK can be added to your project through a compiled JAR or by Maven!
+
+```xml
+<repositories>
+    <repository>
+        <id>ossrh</id>
+        <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+    </repository>
+</repositories>
+<dependencies>
+  <dependency>
+      <groupId>io.github.atsign-foundation</groupId>
+      <artifactId>at_client</artifactId>
+      <version>1.0-SNAPSHOT</version>
+    </dependency>
+</dependencies>
+```
+
 ### Contributions welcome!
 
 All of our software is open with intent. We welcome contributions - we want pull requests, and we want
