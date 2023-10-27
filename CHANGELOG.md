@@ -1,21 +1,3 @@
-<img width=250px src="https://atsign.dev/assets/img/atPlatform_logo_gray.svg?sanitize=true">
-
-[![gitHub license](https://img.shields.io/badge/license-BSD3-blue.svg)](./LICENSE)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/atsign-foundation/at_java/badge)](https://api.securityscorecards.dev/projects/github.com/atsign-foundation/at_java)
-
-# The atPlatform for Java developers
-
-This repo contains libraries, tools, samples and examples for developers who wish
-to work with the atPlatform from Java code.
-
-NB: As of May 3 2022, the Java client library can still be considered a 1.0.0-Beta version - i.e. there may occasionally
-be breaking changes, based on feedback from users of the library, until we get to a final version 1.0.0
-
-### Contributions welcome!
-
-All of our software is open with intent. We welcome contributions - we want pull requests, and we want
-to hear about issues. See also [CONTRIBUTING.md](CONTRIBUTING.md)
-
 ## What's here / changelog
 ### Next ...
 * Getting started guide - from nothing to end-to-end-encrypted chat session in < 5 minutes
@@ -62,5 +44,7 @@ to hear about issues. See also [CONTRIBUTING.md](CONTRIBUTING.md)
         * **Share** - a simple 'sender' client - shares some data with another @-sign
         * **Get** - gets data which was shared by another @-sign
         * **Delete** - deletes data that this Atsign previously shared with another
-    * To run them, having done a mvn install
-      `java -cp "target/at_client-1.0-SNAPSHOT.jar:target/lib/*" org.atsign.client.cli.REPL` (or Onboard/Share/Get/Delete )
+
+#### Note:
+As of May 3 2022, the Java client library can still be considered a 1.0.0-Beta version - i.e. there may occasionally
+be breaking changes, based on feedback from users of the library, until we get to a final version 1.0.0
