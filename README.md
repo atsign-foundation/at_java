@@ -2,6 +2,7 @@
 
 [![gitHub license](https://img.shields.io/badge/license-BSD3-blue.svg)](./LICENSE)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/atsign-foundation/at_java/badge)](https://api.securityscorecards.dev/projects/github.com/atsign-foundation/at_java)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8116/badge)](https://www.bestpractices.dev/projects/8116)
 
 # The atPlatform for Java developers
 
