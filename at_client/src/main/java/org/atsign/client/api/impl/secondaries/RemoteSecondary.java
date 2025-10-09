@@ -109,7 +109,7 @@ public class RemoteSecondary implements Secondary {
 
     @Override public void startMonitor() {ensureMonitorRunning();}
     @Override public void stopMonitor() {ensureMonitorNotRunning();}
-    @Override public boolean isMonitorRunning() {return monitorConnection.isRunning();}
+    @Override public boolean isMonitorRunning() {return monitorConnection != null && monitorConnection.isRunning();}
 
     @Override
     public synchronized void handleEvent(AtEventType eventType, Map<String, Object> eventData) {

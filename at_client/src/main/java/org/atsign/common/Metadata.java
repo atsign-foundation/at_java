@@ -1,5 +1,6 @@
 package org.atsign.common;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -14,6 +15,8 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Metadata {
     static final ObjectMapper mapper = new ObjectMapper();
 

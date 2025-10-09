@@ -1,0 +1,17 @@
+services:
+  virtualenv:
+    image: atsigncompany/virtualenv:dev_env
+    ports:
+      - "127.0.0.1:6379:6379"
+      - "64:64"
+      - "127.0.0.1:9001:9001"
+      - "25000-25040:25000-25040"
+    extra_hosts:
+      - "vip.ve.atsign.zone:127.0.0.1"
+    command: >
+      sh -c '
+        supervisord -n & PID=$! &&
+        sleep 5 &&
+        /usr/local/bin/install_PKAM_Keys
+        wait $PID
+      '
