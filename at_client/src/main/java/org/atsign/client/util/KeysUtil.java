@@ -13,11 +13,25 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public class KeysUtil {
+
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    public static final String expectedKeysFilesLocation = System.getProperty("user.home") + "/.atsign/keys/";
+    public static final String ATSIGN_KEYS_DIR = "ATSIGN_KEYS_DIR";
+    public static final String ATSIGN_KEYS_SUFFIX = "ATSIGN_KEYS_SUFFIX";
+
+    public static String expectedKeysFilesLocation = getFirstNonEmpty(
+        System.getProperty(ATSIGN_KEYS_DIR),
+        System.getenv(ATSIGN_KEYS_DIR),
+        System.getProperty("user.home") + "/.atsign/keys/"
+    );
+
     public static final String legacyKeysFilesLocation = System.getProperty("user.dir") + "/keys/";
-    public static final String keysFileSuffix = "_key.atKeys";
+
+    public static String keysFileSuffix = getFirstNonEmpty(
+        System.getProperty(ATSIGN_KEYS_SUFFIX),
+        System.getenv(ATSIGN_KEYS_SUFFIX),
+        "_key.atKeys"
+    );
 
     public static final String pkamPublicKeyName = "aesPkamPublicKey";
     public static final String pkamPrivateKeyName = "aesPkamPrivateKey";
@@ -61,7 +75,8 @@ public class KeysUtil {
             file = getKeysFile(atSign, legacyKeysFilesLocation);
             // if file does not exist under current working directory, we're done - can't find the keys file
             if (!file.exists()) {
-                throw new AtClientConfigException("loadKeys: No file called " + atSign + keysFileSuffix + " at ~/.atsign/keys or ./keys" +
+                throw new AtClientConfigException("loadKeys: No file called " + atSign + keysFileSuffix
+                    + " at " + expectedKeysFilesLocation + " or " + legacyKeysFilesLocation +
                         "\t Keys files are expected to be in ~/.atsign/keys/ (canonical location) or ./keys/ (legacy location)");
             }
         }
@@ -86,6 +101,15 @@ public class KeysUtil {
     }
 
     public static File getKeysFile(AtSign atSign, String folderToLookIn) {
-        return new File(folderToLookIn + atSign + keysFileSuffix);
+        return new File(folderToLookIn, atSign + keysFileSuffix);
+    }
+
+    private static String getFirstNonEmpty(String... candidates) {
+        for (String candidate : candidates) {
+            if (candidate != null && candidate.trim().length() > 0) {
+                return candidate;
+            }
+        }
+        throw new IllegalArgumentException("all candidates are null");
     }
 }

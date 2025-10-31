@@ -20,6 +20,9 @@
 		<skipUnitTests>${skipTests}</skipUnitTests>
 		<skipIntegrationTests>${skipTests}</skipIntegrationTests>
 		<gpg.skip>true</gpg.skip>
+
+		<version.cucumber>7.14.0</version.cucumber>
+		<version.at_demo_data>1.2.0</version.at_demo_data>
 	</properties>
 
 	<licenses>
@@ -79,6 +82,29 @@
 					</execution>
 				</executions>
 			</plugin>
+
+
+			<plugin>
+				<groupId>com.googlecode.maven-download-plugin</groupId>
+				<artifactId>download-maven-plugin</artifactId>
+				<version>1.6.8</version>
+				<executions>
+					<execution>
+						<id>download-at_demo_data</id>
+						<phase>generate-test-resources</phase>
+						<goals>
+							<goal>wget</goal>
+						</goals>
+						<configuration>
+							<url>https://pub.dev/packages/at_demo_data/versions/${version.at_demo_data}.tar.gz</url>
+							<outputDirectory>${project.build.directory}/at_demo_data</outputDirectory>
+							<outputName>at_demo_data.tar.gz</outputName>
+							<unpack>true</unpack>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
@@ -266,6 +292,56 @@
 			<artifactId>jansi</artifactId>
 			<version>2.4.0</version>
 		</dependency>
+
+		<dependency>
+			<groupId>io.cucumber</groupId>
+			<artifactId>cucumber-java</artifactId>
+			<version>${version.cucumber}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>io.cucumber</groupId>
+			<artifactId>cucumber-junit</artifactId>
+			<version>${version.cucumber}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>io.cucumber</groupId>
+			<artifactId>cucumber-picocontainer</artifactId>
+			<version>${version.cucumber}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers</artifactId>
+			<version>1.21.3</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>2.0.7</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-simple</artifactId>
+			<version>2.0.7</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hamcrest</groupId>
+			<artifactId>hamcrest-all</artifactId>
+			<version>1.3</version>
+			<scope>test</scope>
+		</dependency>
+
 	</dependencies>
 
 </project>
