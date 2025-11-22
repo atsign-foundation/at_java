@@ -5,7 +5,7 @@ Feature: AtClient API Monitor tests
     And root server is running
     And atsign keys path is target/at_demo_data/lib/assets/atkeys
     And atsign keys suffix is .atKeys
-    And verbose logging is on
+    And verbose logging is off
     And AtClient and startMonitor for gary
 
   Scenario: PublicKey put triggers a statsNotification
