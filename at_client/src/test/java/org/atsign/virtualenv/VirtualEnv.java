@@ -31,7 +31,7 @@ public class VirtualEnv {
   public static void setUp() {
     try {
       URL resource = VirtualEnv.class.getResource("docker-compose.yml");
-      StartUpLatch latch = new StartUpLatch(Pattern.compile("install_PKAM_Keys .*successful"), 10);
+      StartUpLatch latch = new StartUpLatch(Pattern.compile("install_PKAM_Keys .*successful"), 40);
       CONTAINER = new ComposeContainer(new File(resource.toURI())).withLogConsumer("virtualenv", latch);
       CONTAINER.start();
       latch.await(20, SECONDS);
