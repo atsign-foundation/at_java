@@ -9,7 +9,7 @@
 This repo contains libraries, tools, samples and examples for developers who wish
 to work with the atPlatform from Java code.
 
-# Maven Depdendency
+# Maven Dependency
 
 The Java SDK can be added to your project through a compiled JAR or by Maven!
 
