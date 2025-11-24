@@ -5,7 +5,7 @@ Feature: AtClient API test for PublicKeys
     And root server is running
     And atsign keys path is target/at_demo_data/lib/assets/atkeys
     And atsign keys suffix is .atKeys
-    And verbose logging is on
+    And verbose logging is off
     And AtClient for gary
 
   Scenario: PublicKey get throws AtKeyNotFoundException if no key
