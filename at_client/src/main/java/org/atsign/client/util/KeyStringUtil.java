@@ -183,7 +183,7 @@ public class KeyStringUtil {
 
         }
 
-        Matcher matcher = NAMESPACE_QUALIFIED_KEY_NAME.matcher(_keyName);
+        Matcher matcher = createNamespaceQualifiedKeyNameMatcher(_keyName);
         if (matcher.matches()) {
             _keyName = matcher.group(1);
             _namespace = matcher.group(2);
@@ -194,5 +194,9 @@ public class KeyStringUtil {
         if(_sharedBy != null) _sharedBy = "@" + _sharedBy; // add atSign in front
         if(_sharedWith != null) _sharedWith = "@" + _sharedWith; // add atSign in front
         if(!_isHidden)  _isHidden = _keyName.startsWith("_"); 
+    }
+
+    public static Matcher createNamespaceQualifiedKeyNameMatcher(String s) {
+        return NAMESPACE_QUALIFIED_KEY_NAME.matcher(s);
     }
 }

@@ -4,6 +4,7 @@ import org.atsign.common.AtException;
 import org.atsign.common.exceptions.*;
 import org.atsign.common.AtSign;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 /**
@@ -21,7 +22,7 @@ import java.io.IOException;
  * interface is effectively the same as when interacting with a cloud secondary via openssl
  * from command line.
  */
-public interface Secondary extends AtEvents.AtEventListener {
+public interface Secondary extends AtEvents.AtEventListener, Closeable {
     /**
      * @param command in @ protocol format
      * @param throwExceptionOnErrorResponse sometimes we want to inspect an error response,

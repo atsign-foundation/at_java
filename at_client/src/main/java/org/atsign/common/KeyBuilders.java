@@ -27,7 +27,7 @@ public class KeyBuilders {
         /// Each app should write to a specific namespace.
         /// This is required, unless the key already includes some '.' delimiters
         public BaseKeyBuilder namespace(String namespace) {
-            namespace = namespace.trim();
+            namespace = namespace != null ? namespace.trim() : null;
             _atKey.setNamespace(namespace);
             return this;
         }

@@ -3,140 +3,219 @@ package org.atsign.cucumber.steps;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import org.atsign.common.AtException;
+import org.atsign.client.api.AtClient;
+import org.atsign.client.util.KeyStringUtil;
 import org.atsign.common.AtSign;
 import org.atsign.common.KeyBuilders;
 import org.atsign.common.Keys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.regex.Matcher;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.hamcrest.Matchers.equalTo;
 
 public class SharedAtKeySteps {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(SharedAtKeySteps.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SharedAtKeySteps.class);
 
-  private final AtClientContext context;
+    private final AtClientContext context;
 
-  private final Map<AtSign, Set<Keys.SharedKey>> keys = new HashMap<>();
-
-  @After
-  public void teardown() {
-    int count = 0;
-    for (Map.Entry<AtSign, Set<Keys.SharedKey>> entry : keys.entrySet()) {
-      for (Keys.SharedKey key : entry.getValue()) {
-        try {
-          context.getAtClient(entry.getKey()).delete(key);
-          count++;
-        } catch (AtException e) {
-          LOGGER.warn("unexpected exception attempting to delete shared key {}", key);
-        }
-      }
+    public SharedAtKeySteps(AtClientContext context) {
+        this.context = context;
     }
-    keys.clear();
-    LOGGER.info("deleted {} shared keys", count);
-  }
 
-  public SharedAtKeySteps(AtClientContext context) {
-    this.context = context;
-  }
+    // put
 
-  @When("{atsign} AtClient.put for SharedKey {word} shared with {atsign} and value {string}")
-  public void putSharedKey(AtSign atSign, String name, AtSign sharedWith, String value) throws Exception {
-    Keys.SharedKey key = toKey(atSign, name, sharedWith);
-    context.getAtClient(atSign).put(key, value).get();
-    keys.computeIfAbsent(atSign, k -> new HashSet<>()).add(key);
-  }
+    @When("{ordinal} {atsign} AtClient.put for SharedKey {word} shared with {atsign} and value {string}")
+    public void putAsOwner(Integer ordinal, AtSign clientAtSign, String name, AtSign sharedWith, String value) throws Exception {
+        AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
+        putKeyValue(atClient, clientAtSign, name, sharedWith, value);
+    }
 
-  @When("AtClient.put for SharedKey {word} shared with {atsign} and value {string}")
-  public void putSharedKey(String name, AtSign sharedWith, String value) throws Exception {
-    putSharedKey(context.getCurrentAtSign(), name, sharedWith, value);
-  }
+    @Then("{ordinal} {atsign} AtClient.put fails for SharedKey {word} shared with {atsign} and value {string}")
+    public void putAsOwnerFails(Integer ordinal, AtSign clientAtSign, String name, AtSign sharedWith, String value) throws Exception {
+        AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
+        context.assertException(() -> putKeyValue(atClient, clientAtSign, name, sharedWith, value));
+    }
 
-  @When("{atsign} AtClient.delete for SharedKey {word} shared with {atsign}")
-  public void deleteSharedKey(AtSign atSign, String name, AtSign sharedWith) throws Exception {
-    Keys.SharedKey key = toKey(atSign, name, sharedWith);
-    context.getAtClient(atSign).delete(key).get();
-    keys.computeIfAbsent(atSign, k -> new HashSet<>()).remove(key);
-  }
+    @When("{atsign} AtClient.put for SharedKey {word} shared with {atsign} and value {string}")
+    public void putAsOwner(AtSign clientAtSign, String name, AtSign sharedWith, String value) throws Exception {
+        AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
+        putKeyValue(atClient, clientAtSign, name, sharedWith, value);
+    }
 
-  @When("AtClient.delete for SharedKey {word} shared with {atsign}")
-  public void deleteSharedKey(String name, AtSign sharedWith) throws Exception {
-    deleteSharedKey(context.getCurrentAtSign(), name, sharedWith);
-  }
+    @Then("{atsign} AtClient.put fails for SharedKey {word} shared with {atsign} and value {string}")
+    public void putAsOwnerFails(AtSign clientAtSign, String name, AtSign sharedWith, String value) throws Exception {
+        AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
+        context.assertException(() -> putKeyValue(atClient, clientAtSign, name, sharedWith, value));
+    }
 
-  @Then("{atsign} AtClient.get for SharedKey {word} shared with {atsign} returns value that matches {string}")
-  public void assertGetSharedKeyResultForOwner(AtSign atSign, String name, AtSign sharedWith, String expected) throws Exception {
-    String actual = context.getAtClient(atSign).get(toKey(atSign, name, sharedWith)).get();
-    assertThat(actual, equalTo(expected));
-  }
+    @When("AtClient.put for SharedKey {word} shared with {atsign} and value {string}")
+    public void putAsOwner(String name, AtSign sharedWith, String value) throws Exception {
+        QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
+        AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
+        putKeyValue(atClient, currentQualifiedAtSign.getAtSign(), name, sharedWith, value);
+    }
 
-  @Then("{atsign} AtClient.get for SharedKey {word} shared by {atsign} returns value that matches {string}")
-  public void assertGetSharedKeyResultForRecipient(AtSign atSign, String name, AtSign sharedBy, String expected) throws Exception {
-    String actual = context.getAtClient(atSign).get(toKey(sharedBy, name, atSign)).get();
-    assertThat(actual, equalTo(expected));
-  }
+    @Then("AtClient.put for fails SharedKey {word} shared with {atsign} and value {string}")
+    public void putAsOwnerFails(String name, AtSign sharedWith, String value) throws Exception {
+        QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
+        AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
+        context.assertException(() -> putKeyValue(atClient, currentQualifiedAtSign.getAtSign(), name, sharedWith, value));
+    }
 
-  @Then("AtClient.get for SharedKey {word} shared with {atsign} returns value that matches {string}")
-  public void assertGetSharedKeyResultForOwner(String name, AtSign sharedWith, String expected) throws Exception {
-    assertGetSharedKeyResultForOwner(context.getCurrentAtSign(), name, sharedWith, expected);
-  }
+    // delete
 
-  @Then("AtClient.get for SharedKey {word} shared by {atsign} returns value that matches {string}")
-  public void assertGetSharedKeyResultForRecipient(String name, AtSign sharedBy, String expected) throws Exception {
-    assertGetSharedKeyResultForRecipient(context.getCurrentAtSign(), name, sharedBy, expected);
-  }
+    @When("{ordinal} {atsign} AtClient.delete for SharedKey {word} shared with {atsign}")
+    public void deleteAsOwner(Integer ordinal, AtSign clientAtSign, String name, AtSign sharedWith) throws Exception {
+        AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
+        deleteKeyValue(atClient, clientAtSign, name, sharedWith);
+    }
 
-  @Then("{atsign} AtClient.get for SharedKey {word} shared with {atsign} receives {exception} with message {string}")
-  public void assertGetSharedKeyExceptionForOwner(AtSign atSign,
-                                          String name,
-                                          AtSign sharedWith,
-                                          Class<AtException> expectedException,
-                                          String expectedMessage) {
-    Exception ex = assertThrows(Exception.class,
-        () -> context.getAtClient(atSign).get(toKey(atSign, name, sharedWith)).get());
-    assertThat(ex.getCause().getClass(), typeCompatibleWith(expectedException));
-    assertThat(ex.getMessage(), containsString(expectedMessage));
-  }
+    @Then("{ordinal} {atsign} AtClient.delete fails for SharedKey {word} shared with {atsign}")
+    public void deleteAsOwnerFails(Integer ordinal, AtSign clientAtSign, String name, AtSign sharedWith) throws Exception {
+        AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
+        context.assertException(() -> deleteKeyValue(atClient, clientAtSign, name, sharedWith));
+    }
 
-  @Then("AtClient.get for SharedKey {word} shared with {atsign} receives {exception} and message {string}")
-  public void assertGetSharedKeyExceptionForOwner(String name,
-                                          AtSign sharedWith,
-                                          Class<AtException> expectedException,
-                                          String expectedMessage) {
-    assertGetSharedKeyExceptionForOwner(context.getCurrentAtSign(), name, sharedWith, expectedException, expectedMessage);
-  }
+    @When("{atsign} AtClient.delete for SharedKey {word} shared with {atsign}")
+    public void deleteAsOwner(AtSign clientAtSign, String name, AtSign sharedWith) throws Exception {
+        AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
+        deleteKeyValue(atClient, clientAtSign, name, sharedWith);
+    }
 
-  @Then("{atsign} AtClient.get for SharedKey {word} shared by {atsign} receives {exception} and message {string}")
-  public void assertGetSharedKeyExceptionForRecipient(AtSign atSign,
-                                          String name,
-                                          AtSign sharedBy,
-                                          Class<AtException> expectedException,
-                                          String expectedMessage) {
-    Exception ex = assertThrows(Exception.class,
-        () -> context.getAtClient(atSign).get(toKey(sharedBy, name, atSign)).get());
-    assertThat(ex.getCause().getClass(), typeCompatibleWith(expectedException));
-    assertThat(ex.getMessage(), containsString(expectedMessage));
-  }
+    @Then("{atsign} AtClient.delete fails for SharedKey {word} shared with {atsign}")
+    public void deleteAsOwnerFails(AtSign clientAtSign, String name, AtSign sharedWith) throws Exception {
+        AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
+        context.assertException(() -> deleteKeyValue(atClient, clientAtSign, name, sharedWith));
+    }
 
-  @Then("AtClient.get for SharedKey {word} shared by {atsign} receives {exception} with message {string}")
-  public void assertGetSharedKeyExceptionForRecipient(String name,
-                                          AtSign sharedBy,
-                                          Class<AtException> expectedException,
-                                          String expectedMessage) {
-    assertGetSharedKeyExceptionForRecipient(context.getCurrentAtSign(), name, sharedBy, expectedException, expectedMessage);
-  }
+    @When("AtClient.delete for SharedKey {word} shared with {atsign}")
+    public void deleteAsOwner(String name, AtSign sharedWith) throws Exception {
+        QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
+        AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
+        deleteKeyValue(atClient, currentQualifiedAtSign.getAtSign(), name, sharedWith);
+    }
 
-  private Keys.SharedKey toKey(AtSign atSign, String name, AtSign sharedWith) {
-    Keys.SharedKey key = new KeyBuilders.SharedKeyBuilder(atSign, sharedWith).key(name).build();
-    key.metadata.ttl = (int) context.getKeyTtl();
-    return key;
-  }
+    // get as owner
+
+    @Then("{ordinal} {atsign} AtClient.get for SharedKey {word} shared with {atsign} returns value that matches {string}")
+    public void assertGetAsOwner(Integer ordinal, AtSign clientAtSign, String name, AtSign sharedWith, String expected) throws Exception {
+        AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
+        String keyValue = getKeyValue(atClient, clientAtSign, name, sharedWith);
+        assertThat(keyValue, equalTo(expected));
+    }
+
+    @Then("{ordinal} {atsign} AtClient.get fails for SharedKey {word} shared with {atsign}")
+    public void assertGetExceptionAsOwner(Integer ordinal, AtSign clientAtSign, String name, AtSign sharedWith) {
+        AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
+        context.assertException(() -> getKeyValue(atClient, clientAtSign, name, sharedWith));
+    }
+
+    @Then("{atsign} AtClient.get for SharedKey {word} shared with {atsign} returns value that matches {string}")
+    public void assertGetAsOwner(AtSign clientAtSign, String name, AtSign sharedWith, String expected) throws Exception {
+        AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
+        String keyValue = getKeyValue(atClient, clientAtSign, name, sharedWith);
+        assertThat(keyValue, equalTo(expected));
+    }
+
+    @Then("{atsign} AtClient.get fails for SharedKey {word} shared with {atsign}")
+    public void assertGetExceptionAsOwner(AtSign clientAtSign, String name, AtSign sharedWith) throws Exception {
+        AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
+        context.assertException(() -> getKeyValue(atClient, clientAtSign, name, sharedWith));
+    }
+
+    @Then("AtClient.get for SharedKey {word} shared with {atsign} returns value that matches {string}")
+    public void assertGetAsOwner(String name, AtSign sharedWith, String expected) throws Exception {
+        QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
+        AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
+        String keyValue = getKeyValue(atClient, currentQualifiedAtSign.getAtSign(), name, sharedWith);
+        assertThat(keyValue, equalTo(expected));
+    }
+
+    @Then("AtClient.get fails for SharedKey {word} shared with {atsign}")
+    public void assertGetExceptionAsOwner(String name, AtSign sharedWith) {
+        QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
+        AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
+        context.assertException(() -> getKeyValue(atClient, currentQualifiedAtSign.getAtSign(), name, sharedWith));
+    }
+
+    // get as recipient
+
+    @Then("{ordinal} {atsign} AtClient.get for SharedKey {word} shared by {atsign} returns value that matches {string}")
+    public void assertGetAsRecipient(Integer ordinal, AtSign clientAtSign, String name, AtSign sharedBy, String expected) throws Exception {
+        AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
+        String keyValue = getKeyValue(atClient, sharedBy, name, clientAtSign);
+        assertThat(keyValue, equalTo(expected));
+    }
+
+    @Then("{ordinal} {atsign} AtClient.get fails for SharedKey {word} shared by {atsign}}")
+    public void assertGetSharedKeyResultForRecipientFails(Integer ordinal, AtSign clientAtSign, String name, AtSign sharedBy) throws Exception {
+        AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
+        context.assertException(() -> getKeyValue(atClient, sharedBy, name, clientAtSign));
+    }
+
+    @Then("{atsign} AtClient.get for SharedKey {word} shared by {atsign} returns value that matches {string}")
+    public void assertGetAsRecipient(AtSign clientAtSign, String name, AtSign sharedBy, String expected) throws Exception {
+        AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
+        String keyValue = getKeyValue(atClient, sharedBy, name, clientAtSign);
+        assertThat(keyValue, equalTo(expected));
+    }
+
+    @Then("{atsign} AtClient.get fails for SharedKey {word} shared by {atsign}")
+    public void assertGetAsRecipientFails(AtSign clientAtSign, String name, AtSign sharedBy) throws Exception {
+        AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
+        context.assertException(() -> getKeyValue(atClient, sharedBy, name, clientAtSign));
+    }
+
+    @Then("AtClient.get for SharedKey {word} shared by {atsign} returns value that matches {string}")
+    public void assertGetAsRecipient(String name, AtSign sharedBy, String expected) throws Exception {
+        QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
+        AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
+        String keyValue = getKeyValue(atClient, sharedBy, name, currentQualifiedAtSign.getAtSign());
+        assertThat(keyValue, equalTo(expected));
+    }
+
+    @Then("AtClient.get fails for SharedKey {word} shared by {atsign}")
+    public void assertGetAsRecipientFails(String name, AtSign sharedBy, String expected) throws Exception {
+        QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
+        AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
+        context.assertException(() -> getKeyValue(atClient, sharedBy, name, currentQualifiedAtSign.getAtSign()));
+    }
+
+    private void putKeyValue(AtClient atClient, AtSign sharedBy, String name, AtSign sharedWith, String value) throws Exception {
+        Keys.SharedKey key = createKey(sharedBy, name, sharedWith);
+        atClient.put(key, value).get();
+    }
+
+    private String getKeyValue(AtClient atClient, AtSign sharedBy, String name,AtSign sharedWith) throws Exception {
+        Keys.SharedKey key = createKey(sharedBy, name, sharedWith);
+        return atClient.get(key).get();
+    }
+
+    private void deleteKeyValue(AtClient atClient, AtSign sharedBy, String name,AtSign sharedWith) throws Exception {
+        Keys.SharedKey key = createKey(sharedBy, name, sharedWith);
+        atClient.delete(key).get();
+    }
+
+    private Keys.SharedKey createKey(AtSign sharedBy, String s, AtSign sharedWith) {
+        KeyBuilders.SharedKeyBuilder builder = new KeyBuilders.SharedKeyBuilder(sharedBy, sharedWith);
+        Matcher matcher = KeyStringUtil.createNamespaceQualifiedKeyNameMatcher(s);
+        if (matcher.matches()) {
+            if (context.isNamespaceSet()) {
+                throw new IllegalArgumentException("context has namespace set, intention is ambiguous");
+            }
+            builder.namespace(matcher.group(2)).key(matcher.group(1));
+        } else if (context.isNamespaceSet()) {
+            builder.namespace(context.getNamespace()).key(s);
+        } else {
+            builder.key(s);
+        }
+        Keys.SharedKey key = builder.build();
+        key.metadata.ttl = (int) context.getKeyTtl();
+        return key;
+    }
+
 }

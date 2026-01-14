@@ -76,6 +76,16 @@ public class Helpers {
     return key.toLowerCase().replaceAll("\\s+", "");
   }
 
+  public static String getFirstValue(Map<String, String> map, String... keys) {
+      String value = null;
+      for (String key : keys) {
+          if ((value = map.get(toCanonicalKey(key))) != null) {
+              break;
+          }
+      }
+      return value;
+  }
+
   public static boolean isMatch(Map<String, String> actual, Map<String, String> expected) {
     for (Map.Entry<String, String> entry : expected.entrySet()) {
       if (!isMatch(actual.get(entry.getKey()), entry.getValue())) {

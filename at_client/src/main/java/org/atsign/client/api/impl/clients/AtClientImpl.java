@@ -7,8 +7,9 @@ import org.atsign.client.api.AtEvents.AtEventBus;
 import org.atsign.client.api.AtEvents.AtEventListener;
 import org.atsign.client.api.AtEvents.AtEventType;
 import org.atsign.client.api.Secondary;
+import org.atsign.client.api.AtKeys;
 import org.atsign.client.util.EncryptionUtil;
-import org.atsign.client.util.KeysUtil;
+import org.atsign.client.util.KeyStringUtil;
 import org.atsign.common.*;
 import org.atsign.common.Keys.AtKey;
 import org.atsign.common.Keys.PublicKey;
@@ -31,8 +32,10 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeUnit;
 
 import static org.atsign.client.api.AtEvents.AtEventType.decryptedUpdateNotification;
+import static org.atsign.client.util.Preconditions.checkNotNull;
 
 /**
  * @see org.atsign.client.api.AtClient
@@ -46,18 +49,18 @@ public class AtClientImpl implements AtClient {
     private final AtSign atSign;
     @Override public AtSign getAtSign() {return atSign;}
 
-    private final Map<String, String> keys;
-    @Override public Map<String, String> getEncryptionKeys() {return keys;}
+    private final AtKeys keys;
+    @Override public AtKeys getEncryptionKeys() {return keys;}
     private final Secondary secondary;
     @Override public Secondary getSecondary() {return secondary;}
 
     private final AtEventBus eventBus;
-    public AtClientImpl(AtEventBus eventBus, AtSign atSign, Map<String, String> keys, Secondary secondary) {
+    public AtClientImpl(AtEventBus eventBus, AtSign atSign, AtKeys keys, Secondary secondary) {
         this.eventBus = eventBus;
         this.atSign = atSign;
         this.keys = keys;
         this.secondary = secondary;
-
+        checkNotNull(keys.getEncryptPrivateKey(), "AtKeys have not been fully enrolled");
         eventBus.addEventListener(this, EnumSet.allOf(AtEventType.class));
     }
 
@@ -92,7 +95,7 @@ public class AtClientImpl implements AtClient {
                     String sharedSharedKeyEncryptedValue = (String) eventData.get("value");
                     // decrypt it with our encryption private key
                     try {
-                        String sharedKeyDecryptedValue = EncryptionUtil.rsaDecryptFromBase64(sharedSharedKeyEncryptedValue, keys.get(KeysUtil.encryptionPrivateKeyName));
+                        String sharedKeyDecryptedValue = EncryptionUtil.rsaDecryptFromBase64(sharedSharedKeyEncryptedValue, keys.getEncryptPrivateKey());
                         keys.put(sharedSharedKeyName, sharedKeyDecryptedValue);
                     } catch (Exception e) {
                         System.err.println(OffsetDateTime.now() + ": caught exception " + e + " while decrypting received shared key " + sharedSharedKeyName);
@@ -344,7 +347,13 @@ public class AtClientImpl implements AtClient {
         return secondary.executeCommand(command, throwExceptionOnErrorResponse);
     }
 
-// ============================================================================================================================================
+    @Override
+    public void close() throws IOException {
+        stopMonitor();
+        secondary.close();
+    }
+
+    // ============================================================================================================================================
     // ============================================================================================================================================
     // ============================================================================================================================================
 
@@ -352,7 +361,7 @@ public class AtClientImpl implements AtClient {
     // Synchronous methods which do the actual work
     //
     private String _get(SharedKey sharedKey) throws AtException {
-        if (sharedKey.sharedBy.toString().equals(atSign.toString())) {
+        if (sharedKey.sharedBy.equals(atSign)) {
             return _getSharedByMeWithOther(sharedKey);
         } else {
             return _getSharedByOtherWithMe(sharedKey);
@@ -363,16 +372,12 @@ public class AtClientImpl implements AtClient {
         String shareEncryptionKey = getEncryptionKeySharedByMe(sharedKey);
 
         // fetch local - e.g. if I'm @bob, I would first "llookup:@alice:some.key.name@bob"
-        Response rawResponse;
-        String command = "llookup:" + sharedKey;
-        try {
-            rawResponse = secondary.executeCommand(command, true);
-        } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to execute " + command, e);
-        }
+        LlookupVerbBuilder commandBuilder = new LlookupVerbBuilder();
+        commandBuilder.with(sharedKey, LlookupVerbBuilder.Type.ALL);
+        LookupResponse response = getLookupResponse(commandBuilder.build());
 
         try {
-            return EncryptionUtil.aesDecryptFromBase64(rawResponse.getRawDataResponse(), shareEncryptionKey);
+            return EncryptionUtil.aesDecryptFromBase64(response.data, shareEncryptionKey, response.metaData.ivNonce);
         } catch (Exception e) {
             throw new AtDecryptionException("Failed to decrypt value with shared encryption key", e);
         }
@@ -382,21 +387,13 @@ public class AtClientImpl implements AtClient {
         String what;
         String shareEncryptionKey = getEncryptionKeySharedByOther(sharedKey);
 
-        Response rawResponse;
-        String command = "lookup:" + sharedKey.name;
-        if(sharedKey.getNamespace() != null && !sharedKey.getNamespace().isEmpty()) {
-            command += "." + sharedKey.getNamespace();
-        }
-        command += sharedKey.sharedBy.toString();
-        try {
-            rawResponse = secondary.executeCommand(command, true);
-        } catch (IOException e) {
-            throw new AtSecondaryConnectException("Failed to execute " + command, e);
-        }
+        LookupVerbBuilder commandBuilder = new LookupVerbBuilder();
+        commandBuilder.with(sharedKey, LookupVerbBuilder.Type.ALL);
+        LookupResponse response = getLookupResponse(commandBuilder.build());
 
         what = "decrypt value with shared encryption key";
         try {
-            return EncryptionUtil.aesDecryptFromBase64(rawResponse.getRawDataResponse(), shareEncryptionKey);
+            return EncryptionUtil.aesDecryptFromBase64(response.data, shareEncryptionKey, response.metaData.ivNonce);
         } catch (Exception e) {
             throw new AtDecryptionException("Failed to " + what, e);
         }
@@ -413,7 +410,9 @@ public class AtClientImpl implements AtClient {
             String shareToEncryptionKey = getEncryptionKeySharedByMe(sharedKey);
 
             what = "encrypt value with shared encryption key";
-            cipherText = EncryptionUtil.aesEncryptToBase64(value, shareToEncryptionKey);
+            String iv = EncryptionUtil.generateRandomIvBase64(16);
+            sharedKey.metadata.ivNonce = iv;
+            cipherText = EncryptionUtil.aesEncryptToBase64(value, shareToEncryptionKey, iv);
         } catch (Exception e) {
             throw new AtEncryptionException("Failed to " + what, e);
         }
@@ -449,9 +448,10 @@ public class AtClientImpl implements AtClient {
         // 3. decrypt the value
         String decryptedValue;
         String encryptedValue = fetched.data;
-        String selfEncryptionKey = keys.get(KeysUtil.selfEncryptionKeyName);
+        String selfEncryptionKey = keys.getSelfEncryptKey();
+        String iv = fetched.metaData.ivNonce;
         try {
-            decryptedValue = EncryptionUtil.aesDecryptFromBase64(encryptedValue, selfEncryptionKey);
+            decryptedValue = EncryptionUtil.aesDecryptFromBase64(encryptedValue, selfEncryptionKey, iv);
         } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException e) {
             throw new AtDecryptionException("Failed to " + command, e);
         }
@@ -465,11 +465,11 @@ public class AtClientImpl implements AtClient {
     private String _put(SelfKey selfKey, String value) throws AtException {
         // 1. generate dataSignature
         selfKey.metadata.dataSignature = generateSignature(value);
-
+        selfKey.metadata.ivNonce = EncryptionUtil.generateRandomIvBase64(16);
         // 2. encrypt data with self encryption key
         String cipherText;
         try {
-            cipherText = EncryptionUtil.aesEncryptToBase64(value, keys.get(KeysUtil.selfEncryptionKeyName));
+            cipherText = EncryptionUtil.aesEncryptToBase64(value, keys.getSelfEncryptKey(), selfKey.metadata.ivNonce);
         } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException e) {
             throw new AtEncryptionException("Failed to encrypt value with self encryption key", e);
         }
@@ -583,8 +583,10 @@ public class AtClientImpl implements AtClient {
         } catch (IOException e) {
             throw new AtSecondaryConnectException("Failed to execute " + scanCommand, e);
         }
-        ResponseTransformers.ScanResponseTransformer scanResponseTransformer = new ResponseTransformers.ScanResponseTransformer();
+        ResponseTransformers.ScanResponseTransformer scanResponseTransformer
+            = new ResponseTransformers.ScanResponseTransformer(AtClientImpl::isNotManagementKey);
         List<String> rawArray = scanResponseTransformer.transform(scanRawResponse);
+
         List<AtKey> atKeys = new ArrayList<>();
         for(String atKeyRaw : rawArray) { // eg atKeyRaw == @bob:phone@alice
             AtKey atKey = Keys.fromString(atKeyRaw);
@@ -656,7 +658,7 @@ public class AtClientImpl implements AtClient {
 
         // When we stored it, we encrypted it with our encryption public key; so we need to decrypt it now with our encryption private key
         try {
-            return EncryptionUtil.rsaDecryptFromBase64(rawResponse.getRawDataResponse(), keys.get(KeysUtil.encryptionPrivateKeyName));
+            return EncryptionUtil.rsaDecryptFromBase64(rawResponse.getRawDataResponse(), keys.getEncryptPrivateKey());
         } catch (Exception e) {
             throw new AtDecryptionException("Failed to decrypt " + toLookup, e);
         }
@@ -683,7 +685,7 @@ public class AtClientImpl implements AtClient {
 
         String sharedSharedKeyDecryptedValue;
         try {
-            sharedSharedKeyDecryptedValue = EncryptionUtil.rsaDecryptFromBase64(rawResponse.getRawDataResponse(), keys.get(KeysUtil.encryptionPrivateKeyName));
+            sharedSharedKeyDecryptedValue = EncryptionUtil.rsaDecryptFromBase64(rawResponse.getRawDataResponse(), keys.getEncryptPrivateKey());
         } catch (Exception e) {
             throw new AtDecryptionException("Failed to decrypt the shared_key with our encryption private key", e);
         }
@@ -715,14 +717,14 @@ public class AtClientImpl implements AtClient {
 
             what = "encrypt new shared key with our public key";
             // Encrypt key with our publickey and save it shared_key.bob@alice
-            String encryptedForUs = EncryptionUtil.rsaEncryptToBase64(aesKey, keys.get(KeysUtil.encryptionPublicKeyName));
+            String encryptedForUs = EncryptionUtil.rsaEncryptToBase64(aesKey, keys.getEncryptPublicKey());
 
             what = "save encrypted shared key for us";
             secondary.executeCommand("update:" + "shared_key." + sharedKey.sharedWith.withoutPrefix() + sharedKey.sharedBy
                     + " " + encryptedForUs, true);
 
             what = "save encrypted shared key for them";
-            int ttr = 24 * 60 * 60 * 1000;
+            long ttr = TimeUnit.HOURS.toMillis(24);
             secondary.executeCommand("update:ttr:" + ttr + ":" + sharedKey.sharedWith + ":shared_key" + sharedKey.sharedBy
                     + " " + encryptedForOther, true);
         } catch (Exception e) {
@@ -757,10 +759,14 @@ public class AtClientImpl implements AtClient {
     private String generateSignature(String value) throws AtException {
         String signature;
         try {
-            signature = EncryptionUtil.signSHA256RSA(value, keys.get(KeysUtil.encryptionPrivateKeyName));
+            signature = EncryptionUtil.signSHA256RSA(value, keys.getEncryptPrivateKey());
         } catch (Exception e) {
             throw new AtEncryptionException("Failed to sign value: " + value, e);
         }
         return signature;
+    }
+
+    private static boolean isNotManagementKey(String s) {
+        return !s.matches(".+\\.__manage@.+");
     }
 }

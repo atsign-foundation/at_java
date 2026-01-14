@@ -1,6 +1,8 @@
 package org.atsign.common;
 
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.atsign.client.api.Secondary.Response;
 
@@ -16,7 +18,17 @@ public class ResponseTransformers {
 
 	public static class ScanResponseTransformer implements ResponseTransformer<Response, List<String>> {
 
-		@Override
+        private final Predicate<String> filter;
+
+        public ScanResponseTransformer(Predicate<String> filter) {
+            this.filter = filter;
+        }
+
+        public ScanResponseTransformer() {
+            this(k -> true);
+        }
+
+        @Override
 		public List<String> transform(Response value) {
 
 			if (value.getRawDataResponse() == null || value.getRawDataResponse().isEmpty()) {
@@ -24,7 +36,8 @@ public class ResponseTransformers {
 			}
 
 			try {
-				return mapper.readerForListOf(String.class).readValue(value.getRawDataResponse());
+                List<String> keys = mapper.readerForListOf(String.class).readValue(value.getRawDataResponse());
+                return keys.stream().filter(filter).collect(Collectors.toList());
 			} catch (Exception e) {
 				e.printStackTrace();
 				return null;
@@ -47,5 +60,4 @@ public class ResponseTransformers {
 			throw new RuntimeException("Not Implemented");
 		}
 	}
-
 }

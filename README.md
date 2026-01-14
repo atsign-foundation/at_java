@@ -70,7 +70,7 @@ java -cp "target/at_client-1.0-SNAPSHOT.jar:target/lib/*" org.atsign.client.cli.
 3) Get
 4) Delete
 5) Register
-6) Onboard
+6) Activate
 
 #### Note: Each of these classes requires a different set of arguments, make sure to read the help text and provide necessary arguments
 ** Text about the remaining functionalities coming soon **

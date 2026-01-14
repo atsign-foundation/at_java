@@ -4,6 +4,7 @@ import org.atsign.client.api.AtConnectionFactory;
 import org.atsign.client.api.Secondary;
 import org.atsign.client.api.impl.connections.AtMonitorConnection;
 import org.atsign.client.api.impl.connections.AtSecondaryConnection;
+import org.atsign.client.api.AtKeys;
 import org.atsign.client.util.AuthUtil;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
@@ -33,7 +34,7 @@ public class RemoteSecondary implements Secondary {
     @SuppressWarnings("unused")
     public AtSecondaryConnection getConnection() {return connection;}
 
-    private AtMonitorConnection monitorConnection;
+    private volatile AtMonitorConnection monitorConnection;
     @SuppressWarnings("unused")
     public AtMonitorConnection getMonitorConnection() {return monitorConnection;}
 
@@ -58,11 +59,11 @@ public class RemoteSecondary implements Secondary {
 
     @SuppressWarnings("unused")
     public RemoteSecondary(AtEventBus eventBus, AtSign atSign, Secondary.Address secondaryAddress,
-                           Map<String, String> keys, AtConnectionFactory connectionFactory) throws IOException, AtException {
+                           AtKeys keys, AtConnectionFactory connectionFactory) throws IOException, AtException {
         this(eventBus, atSign, secondaryAddress, keys, connectionFactory, false);
     }
     public RemoteSecondary(AtEventBus eventBus, AtSign atSign, Secondary.Address secondaryAddress,
-                           Map<String, String> keys, AtConnectionFactory connectionFactory,
+                           AtKeys keys, AtConnectionFactory connectionFactory,
                            boolean verbose) throws IOException, AtException {
         this.eventBus = eventBus;
         this.atSign = atSign;
@@ -114,6 +115,12 @@ public class RemoteSecondary implements Secondary {
     @Override
     public synchronized void handleEvent(AtEventType eventType, Map<String, Object> eventData) {
 //        if (eventType == )
+    }
+
+    @Override
+    public void close() throws IOException {
+        ensureMonitorNotRunning();
+        connection.close();
     }
 
     private void ensureMonitorRunning() {

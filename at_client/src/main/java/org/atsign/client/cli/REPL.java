@@ -6,6 +6,7 @@ import org.atsign.client.api.AtEvents.AtEventType;
 import org.atsign.client.api.Secondary;
 import org.atsign.client.util.ArgsUtil;
 import org.atsign.client.util.KeyStringUtil;
+import org.atsign.client.util.KeysUtil;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
 import org.atsign.common.Keys;
@@ -53,7 +54,7 @@ public class REPL {
         AtClient atClient;
         try {
             System.out.print(ansi().cursorToColumn(0).bold().fg(Ansi.Color.BLUE).a("Connecting ... ").reset());
-            atClient = AtClient.withRemoteSecondary(atSign, ArgsUtil.createAddressFinder(rootUrl), verbose);
+            atClient = AtClient.withRemoteSecondary(atSign, KeysUtil.loadKeys(atSign), ArgsUtil.createAddressFinder(rootUrl), verbose);
 
             System.out.println(ansi().fg(Ansi.Color.GREEN).a("connected. ").reset().a("Type '/help' to see help").reset());
 

@@ -49,6 +49,7 @@ public class Metadata {
     public String sharedKeyEnc;
     public String pubKeyCS;
     public String encoding;
+    public String ivNonce;
 
     public static Metadata fromJson(String json) throws JsonProcessingException {
         return mapper.readValue(json, Metadata.class);
@@ -68,6 +69,9 @@ public class Metadata {
         if (isBinary != null) s += ":isBinary:" + isBinary;
         if (isEncrypted != null) s += ":isEncrypted:" + isEncrypted;
         if (encoding != null) s += ":encoding:" + encoding;
+        if (ivNonce != null && !ivNonce.isEmpty()) {
+            s += ":ivNonce:" + ivNonce;
+        }
         return s;
     }
 
@@ -142,6 +146,12 @@ public class Metadata {
 
         if (firstMetadata.encoding != null) metadata.encoding = firstMetadata.encoding;
         else if (secondMetadata.encoding != null) metadata.encoding = secondMetadata.encoding;
+
+        if (firstMetadata.ivNonce != null)  {
+            metadata.ivNonce = firstMetadata.ivNonce;
+        } else if (secondMetadata.ivNonce != null) {
+            metadata.ivNonce = secondMetadata.ivNonce;
+        }
 
         return metadata;
     }

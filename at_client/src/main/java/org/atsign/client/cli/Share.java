@@ -3,6 +3,7 @@ package org.atsign.client.cli;
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.Secondary;
 import org.atsign.client.util.ArgsUtil;
+import org.atsign.client.util.KeysUtil;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
 import org.atsign.common.Keys;
@@ -48,7 +49,7 @@ public class Share {
 
         AtClient atClient = null;
         try {
-            atClient = AtClient.withRemoteSecondary(atSign, addressFinder);
+            atClient = AtClient.withRemoteSecondary(atSign, KeysUtil.loadKeys(atSign), addressFinder);
         } catch (AtException e) {
             System.err.println("Failed to create AtClientImpl : " + e.getMessage());
             e.printStackTrace(System.err);
