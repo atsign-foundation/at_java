@@ -1,5 +1,7 @@
 package org.atsign.common;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
 
 import org.atsign.client.util.KeyStringUtil;
@@ -331,8 +333,8 @@ public class KeyStringUtilTest {
         String KEY_NAME = "atconnections.hacktheleague.smoothalligator.at_contact.mospherepro.hacktheleague@smoothalligator";
         KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
         assertEquals("atconnections.hacktheleague.smoothalligator.at_contact.mospherepro.hacktheleague@smoothalligator", keyStringUtil.getFullKeyName());
-        assertEquals("atconnections.hacktheleague.smoothalligator.at_contact.mospherepro.hacktheleague", keyStringUtil.getKeyName());
-        assertEquals(null, keyStringUtil.getNamespace());
+        assertEquals("atconnections.hacktheleague.smoothalligator.at_contact.mospherepro", keyStringUtil.getKeyName());
+        assertEquals("hacktheleague", keyStringUtil.getNamespace());
 
     }
 
@@ -445,13 +447,56 @@ public class KeyStringUtilTest {
         String KEY_NAME = "atconnections.abbcservicesinc.smoothalligator.at_contact.mospherepro.abbcservicesinc@smoothalligator";
         KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
         assertEquals("atconnections.abbcservicesinc.smoothalligator.at_contact.mospherepro.abbcservicesinc@smoothalligator", keyStringUtil.getFullKeyName());
-        assertEquals("atconnections.abbcservicesinc.smoothalligator.at_contact.mospherepro.abbcservicesinc", keyStringUtil.getKeyName());
-        assertEquals(null, keyStringUtil.getNamespace());
+        assertEquals("atconnections.abbcservicesinc.smoothalligator.at_contact.mospherepro", keyStringUtil.getKeyName());
+        assertEquals("abbcservicesinc", keyStringUtil.getNamespace());
         assertEquals(KeyType.SELF_KEY, keyStringUtil.getKeyType());
         assertEquals("@smoothalligator", keyStringUtil.getSharedBy());
         assertEquals(null, keyStringUtil.getSharedWith());
         assertEquals(false, keyStringUtil.isCached());
         assertEquals(false, keyStringUtil.isHidden());
-        assertEquals(null, keyStringUtil.getNamespace());
     }
+
+    @Test
+    public void testGetNamespaceReturnsNullForKeyStringsWithNoNamespace() {
+        assertNamespace("public:location@alice", null);
+        assertNamespace("selfkey1@alice", null);
+        assertNamespace("@bob:phone@alice", null);
+
+        assertNamespace("public:_hiddenlocation@alice", null);
+        assertNamespace("_hiddenselfkey1@alice", null);
+        assertNamespace("@bob:__hiddenphone@alice", null);
+
+        assertNamespace("cached:@bob:phone@alice", null);
+    }
+
+    @Test
+    public void testGetNamespaceReturnsNullForReservedSharedKeyPrefix() {
+        assertNamespace("shared_key.bob@alice", null);
+    }
+
+    @Test
+    public void testGetNamespaceReturnsNamespaceForKeyStringWithNamespace() {
+        assertNamespace("public:location.ns@alice", "ns");
+        assertNamespace("public:a.location.ns@alice", "ns");
+        assertNamespace("a.b.selfkey1.ns@alice", "ns");
+        assertNamespace("@bob:a.phone.ns@alice", "ns");
+        assertNamespace("@bob:a.b.c.phone.ns@alice", "ns");
+
+        assertNamespace("public:_a.hiddenlocation.ns@alice", "ns");
+        assertNamespace("_a.hiddenselfkey1.ns@alice", "ns");
+        assertNamespace("@bob:__a.b.hiddenphone.ns@alice", "ns");
+    }
+
+    private static void assertNamespace(String fullKeyName, String expected) {
+        KeyStringUtil util = new KeyStringUtil(fullKeyName);
+        assertThat(util.getNamespace(), equalTo(expected));
+    }
+
+    private static void assertGetKeyNameAndGetNamespace(String fullKeyName, String expectedKeyName, String expectedNamespace) {
+        KeyStringUtil util = new KeyStringUtil(fullKeyName);
+        assertThat(util.getKeyName(), equalTo(expectedKeyName));
+        assertThat(util.getNamespace(), equalTo(expectedNamespace));
+    }
+
+
 }
