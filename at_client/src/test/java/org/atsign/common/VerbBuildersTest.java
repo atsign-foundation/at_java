@@ -1,5 +1,7 @@
 package org.atsign.common;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
@@ -20,6 +22,7 @@ import org.atsign.common.VerbBuilders.PlookupVerbBuilder;
 import org.atsign.common.VerbBuilders.ScanVerbBuilder;
 import org.atsign.common.VerbBuilders.UpdateVerbBuilder;
 import org.atsign.common.VerbBuilders.PlookupVerbBuilder.Type;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -161,7 +164,43 @@ public class VerbBuildersTest {
 		// TODO with private hidden key when implemented
 	}
 
-	@Test
+    @Test
+    public void testUpdateVerbBuilderForPublicKeyWithNamespace() {
+        PublicKey key = new KeyBuilders.PublicKeyBuilder(new AtSign("@alice"))
+            .key("test")
+            .namespace("testns")
+            .build();
+        UpdateVerbBuilder builder = new UpdateVerbBuilder();
+        builder.with(key, "testvalue");
+
+        assertThat(builder.build(), equalTo("update:isBinary:false:isEncrypted:false:public:test.testns@alice testvalue"));
+    }
+
+    @Test
+    public void testUpdateVerbBuilderForSelfKeyWithNamespace() {
+        SelfKey key = new KeyBuilders.SelfKeyBuilder(new AtSign("@alice"))
+            .key("test")
+            .namespace("testns")
+            .build();
+        UpdateVerbBuilder builder = new UpdateVerbBuilder();
+        builder.with(key, "testvalue");
+
+        assertThat(builder.build(), equalTo("update:isBinary:false:isEncrypted:true:test.testns@alice testvalue"));
+    }
+
+    @Test
+    public void testUpdateVerbBuilderForSharedKeyWithNamespace() {
+        SharedKey key = new KeyBuilders.SharedKeyBuilder(new AtSign("@alice"), new AtSign("@bob"))
+            .key("test")
+            .namespace("testns")
+            .build();
+        UpdateVerbBuilder builder = new UpdateVerbBuilder();
+        builder.with(key, "testvalue");
+
+        assertThat(builder.build(), equalTo("update:isBinary:false:isEncrypted:true:@bob:test.testns@alice testvalue"));
+    }
+
+    @Test
 	public void llookupVerbBuilderTest() {
 		LlookupVerbBuilder builder;
 		String command;
@@ -273,7 +312,43 @@ public class VerbBuildersTest {
 
 	}
 
-	@Test
+    @Test
+    public void testLlookupVerbBuilderFoPublicKeyWithNamespace() {
+        PublicKey key = new KeyBuilders.PublicKeyBuilder(new AtSign("@alice"))
+            .key("test")
+            .namespace("testns")
+            .build();
+        LlookupVerbBuilder builder = new LlookupVerbBuilder();
+        builder.with(key, LlookupVerbBuilder.Type.METADATA);
+
+        assertThat(builder.build(), equalTo("llookup:meta:public:test.testns@alice"));
+    }
+
+    @Test
+    public void testLlookupVerbBuilderForSelfKeyWithNamespace() {
+        SelfKey key = new KeyBuilders.SelfKeyBuilder(new AtSign("@alice"))
+            .key("test")
+            .namespace("testns")
+            .build();
+        LlookupVerbBuilder builder = new LlookupVerbBuilder();
+        builder.with(key, LlookupVerbBuilder.Type.METADATA);
+
+        assertThat(builder.build(), equalTo("llookup:meta:test.testns@alice"));
+    }
+
+    @Test
+    public void testLlookupVerbBuilderForSharedKeyWithNamespace() {
+        SharedKey key = new KeyBuilders.SharedKeyBuilder(new AtSign("@alice"), new AtSign("@bob"))
+            .key("test")
+            .namespace("testns")
+            .build();
+        LlookupVerbBuilder builder = new LlookupVerbBuilder();
+        builder.with(key, LlookupVerbBuilder.Type.METADATA);
+
+        assertThat(builder.build(), equalTo("llookup:meta:@bob:test.testns@alice"));
+    }
+
+    @Test
 	public void lookupVerbBuilderTest() {
 		LookupVerbBuilder builder;
 		String command;
@@ -331,7 +406,19 @@ public class VerbBuildersTest {
 		assertEquals("lookup:meta:test@sharedwith", command);
 	}
 
-	@Test
+    @Test
+    public void testLookupVerbBuilderForSharedKeyWithNamespace() {
+        SharedKey key = new KeyBuilders.SharedKeyBuilder(new AtSign("@alice"), new AtSign("@bob"))
+            .key("test")
+            .namespace("testns")
+            .build();
+        LookupVerbBuilder builder = new LookupVerbBuilder();
+        builder.with(key, LookupVerbBuilder.Type.METADATA);
+
+        assertThat(builder.build(), equalTo("lookup:meta:test.testns@bob"));
+    }
+
+    @Test
 	public void plookupVerbBuilderTest() {
 		PlookupVerbBuilder builder;
 		String command;
@@ -399,7 +486,20 @@ public class VerbBuildersTest {
 		assertEquals("plookup:bypassCache:true:all:publickey@alice", command);
 	}
 
-	@Test
+    @Test
+    public void testPlookupVerbBuilderForPublicKeyWithNamespace() {
+        PublicKey key = new KeyBuilders.PublicKeyBuilder(new AtSign("@alice"))
+            .key("test")
+            .namespace("testns")
+            .build();
+        PlookupVerbBuilder builder = new PlookupVerbBuilder();
+        builder.with(key, PlookupVerbBuilder.Type.METADATA);
+
+        assertThat(builder.build(), equalTo("plookup:meta:test.testns@alice"));
+    }
+
+
+    @Test
 	public void deleteVerbBuilderTest() {
 		DeleteVerbBuilder builder;
 		String command;
@@ -496,7 +596,43 @@ public class VerbBuildersTest {
 
 	}
 
-	@Test
+    @Test
+    public void testDeleteVerbBuilderForPublicKeyWithNamespace() {
+        PublicKey key = new KeyBuilders.PublicKeyBuilder(new AtSign("@alice"))
+            .key("test")
+            .namespace("testns")
+            .build();
+        DeleteVerbBuilder builder = new DeleteVerbBuilder();
+        builder.with(key);
+
+        assertThat(builder.build(), equalTo("delete:public:test.testns@alice"));
+    }
+
+    @Test
+    public void testDeleteVerbBuilderForSelfKeyWithNamespace() {
+        SelfKey key = new KeyBuilders.SelfKeyBuilder(new AtSign("@alice"))
+            .key("test")
+            .namespace("testns")
+            .build();
+        DeleteVerbBuilder builder = new DeleteVerbBuilder();
+        builder.with(key);
+
+        assertThat(builder.build(), equalTo("delete:test.testns@alice"));
+    }
+
+    @Test
+    public void testDeleteVerbBuilderForSharedKeyWithNamespace() {
+        SharedKey key = new KeyBuilders.SharedKeyBuilder(new AtSign("@alice"), new AtSign("@bob"))
+            .key("test")
+            .namespace("testns")
+            .build();
+        DeleteVerbBuilder builder = new DeleteVerbBuilder();
+        builder.with(key);
+
+        assertThat(builder.build(), equalTo("delete:@bob:test.testns@alice"));
+    }
+
+    @Test
 	public void scanVerbBuilderTest() {
 
 		// Test not setting any parameters
