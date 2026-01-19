@@ -190,7 +190,7 @@ public class VerbBuilders {
 		}
 
 		public void with(AtKey atKey, Object value) {
-			setKeyName(atKey.name);
+			setKeyName(atKey.getFullyQualifiedKeyName());
 			setSharedBy(atKey.sharedBy.toString());
 			if(atKey.sharedWith != null && !atKey.sharedWith.toString().isEmpty()) setSharedWith(atKey.sharedWith.toString());
 			setIsCached(atKey.metadata.isCached);
@@ -293,7 +293,7 @@ public class VerbBuilders {
 		}
 
 		public void with(AtKey atKey, LlookupVerbBuilder.Type type) {
-			setKeyName(atKey.name);
+			setKeyName(atKey.getFullyQualifiedKeyName());
 			setSharedBy(atKey.sharedBy.toString());
 			if(atKey.sharedWith != null && !atKey.sharedWith.toString().isEmpty()) setSharedWith(atKey.sharedWith.toString());
 			setIsHidden(atKey.metadata.isHidden);
@@ -368,7 +368,7 @@ public class VerbBuilders {
 		}
 
 		public void with(SharedKey sharedKey, LookupVerbBuilder.Type type) {
-			setKeyName(sharedKey.name);
+			setKeyName(sharedKey.getFullyQualifiedKeyName());
 			setSharedWith(sharedKey.sharedWith.toString());
 			setType(type);
 		}
@@ -432,7 +432,7 @@ public class VerbBuilders {
 		}
 
 		public void with(PublicKey atKey, PlookupVerbBuilder.Type type) {
-			setKeyName(atKey.name);
+			setKeyName(atKey.getFullyQualifiedKeyName());
 			setSharedBy(atKey.sharedBy.toString());
 			setType(type);
 		}
@@ -498,7 +498,7 @@ public class VerbBuilders {
 		}
 
 		public void with(AtKey atKey) {
-			setKeyName(atKey.name);
+			setKeyName(atKey.getFullyQualifiedKeyName());
 			setSharedBy(atKey.sharedBy.toString());
 			if(atKey.sharedWith != null && !atKey.sharedWith.toString().isEmpty()) setSharedWith(atKey.sharedWith.toString());
 			setIsHidden(atKey.metadata.isHidden);
