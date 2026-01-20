@@ -1,6 +1,13 @@
 package org.atsign.client.util;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static org.atsign.client.util.Preconditions.checkNotNull;
+
 public class KeyStringUtil {
+
+    private static final Pattern NAMESPACE_QUALIFIED_KEY_NAME = Pattern.compile("^(?!shared_key)(.+)\\.([^.]+)$");
 
     public enum KeyType {
         PUBLIC_KEY, // PublicKey
@@ -97,7 +104,8 @@ public class KeyStringUtil {
     }
 
     /**
-     * Given the fullKeyName, this method will evaluate all of the properties that can be exactracted from the fullKeyName. Example: fullKeyName "test@bob" will evaluate sharedBy to be "@bob" and keyName to be "test"
+     * Given the fullKeyName, this method will evaluate all of the properties that can be exactracted from the
+     * fullKeyName. Example: fullKeyName "test@bob" will evaluate sharedBy to be "@bob" and keyName to be "test"
      * @param fullKeyName the fullKeyName to be evaluated (e.g. "test@bob")
      */
     private void _evaluate(String fullKeyName) {
@@ -118,16 +126,6 @@ public class KeyStringUtil {
         // 5 == {"_latestnotificationid.fourballcorporate9@smoothalligator"} [len 1]
         // 6 == {"shared_key.wildgreen@smoothalligator"} [len 1]
         
-
-        // all keys may have a namespace [uncomment here to add partial namespace support]
-        // if(fullKeyName.contains(".")) {
-        //     String[] split2 = fullKeyName.split("\\.");
-        //     // atconnections.wildgreen.smoothalligator.at_contact.mospherepro@smoothalligator
-        //     if(split2.length == 1) {
-        //         String[] split3 = split2[1].split("@");
-        //         _namespace = split3[0];
-        //     }
-        // }
 
         if(split1.length > 1) {
             // must be scenarios 1, 2, 3, 4, 
@@ -156,8 +154,8 @@ public class KeyStringUtil {
             // 2 == {"publickey", "denise"}
             // 3 == {"shared_key", "smoothalligator"}
             // 4 == {"shared_key", "abbcservicesinc"}
-            _keyName = split2[0];
-            _sharedBy = split2[1];
+            _keyName = checkNotNull(split2[0], "key name is null");
+            _sharedBy = checkNotNull(split2[1], "shared by is null");
 
             // PublicKey and SharedKey can be cacheable!
             if(split1[0].equals("cached")) {
@@ -180,18 +178,21 @@ public class KeyStringUtil {
             String[] split2 = split1[0].split("@");
             // 5 == {"_latestnotificationid.fourballcorporate9", "smoothalligator"}
             // 6 == {"shared_key.wildgreen", "smoothalligator"}
-            _keyName = split2[0];
-            _sharedBy = split2[1];
+            _keyName = checkNotNull(split2[0], "key name is null");
+            _sharedBy = checkNotNull(split2[1], "shared by is null");
 
-            if(_keyName.startsWith("shared_key")) {
-                // SelfKey with _keyName (like `shared_key.bob@alice`) are keys with no namespace
-                _namespace = null;
-            }
+        }
+
+        Matcher matcher = NAMESPACE_QUALIFIED_KEY_NAME.matcher(_keyName);
+        if (matcher.matches()) {
+            _keyName = matcher.group(1);
+            _namespace = matcher.group(2);
+        } else {
+            _namespace = null;
         }
 
         if(_sharedBy != null) _sharedBy = "@" + _sharedBy; // add atSign in front
         if(_sharedWith != null) _sharedWith = "@" + _sharedWith; // add atSign in front
         if(!_isHidden)  _isHidden = _keyName.startsWith("_"); 
     }
-
 }
