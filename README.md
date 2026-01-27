@@ -14,19 +14,27 @@ to work with the atPlatform from Java code.
 The Java SDK can be added to your project through a compiled JAR or by Maven!
 
 ```xml
-<repositories>
+  <repositories>
     <repository>
-        <id>ossrh</id>
-        <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+      <name>Central Portal Snapshots</name>
+      <id>central-portal-snapshots</id>
+      <url>https://central.sonatype.com/repository/maven-snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
     </repository>
-</repositories>
-<dependencies>
-  <dependency>
-      <groupId>io.github.atsign-foundation</groupId>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.atsign</groupId>
       <artifactId>at_client</artifactId>
-      <version>1.0-SNAPSHOT</version>
+      <version>0.0.1-SNAPSHOT</version>
     </dependency>
-</dependencies>
+  </dependencies>
 ```
 
 ## Getting Started

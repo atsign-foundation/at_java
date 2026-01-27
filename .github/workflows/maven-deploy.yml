@@ -1,13 +1,13 @@
 # This workflow will build a package using Maven and then publish it to GitHub packages when a release is created
 # For more information see: https://github.com/actions/setup-java/blob/main/docs/advanced-usage.md#apache-maven-with-a-settings-path
 
-name: Maven Deploy `at_client` to Nexus OSSRH
+name: Maven Deploy `at_client` to Central Portal
 
 on:
   push:
     branches:
       - trunk
-  
+
 permissions:  # added using https://github.com/step-security/secure-workflows
   contents: read
 
@@ -24,15 +24,11 @@ jobs:
       with:
         java-version: '8'
         distribution: 'adopt'
-        server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
-        server-username: "MAVEN_USERNAME" # env variable for username in deploy
-        server-password: "MAVEN_PASSWORD" # env variable for token in deploy
+        server-id: central # Value of the distributionManagement/repository/id field of the pom.xml
+        server-username: "CENTRAL_USERNAME" # env variable for username in deploy
+        server-password: "CENTRAL_TOKEN" # env variable for token in deploy
         gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }} # Value of the GPG private key to import
         gpg-passphrase: "GPG_PASSPHRASE" # env variable for GPG private key passphrase
-      env:
-        MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
-        MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
-        GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
     - name: Print folder
       run: ls -al .
@@ -41,15 +37,13 @@ jobs:
       continue-on-error: true
       run: cat ~/.m2/settings.xml
 
-    - name: Publish to Apache Maven Central
+    - name: Publish to Central
       run: |
         mvn \
-        install \
         deploy \
         --batch-mode \
         --no-transfer-progress \
-        -Dgpg.skip=false
       env:
-        MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
-        MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+        CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+        CENTRAL_TOKEN: ${{ secrets.CENTRAL_TOKEN }}
         GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
