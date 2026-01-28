@@ -22,7 +22,9 @@ public class Helpers {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Helpers.class);
 
-  public static boolean testContains(List<Map<String, String>> actualMaps, List<Map<String, String>> expectedMaps, boolean exactMatch) {
+  public static boolean testContains(List<Map<String, String>> actualMaps,
+                                     List<Map<String, String>> expectedMaps,
+                                     boolean exactMatch) {
     List<Map<String, String>> actuals = toCanonicalMaps(actualMaps);
     List<Map<String, String>> expecteds = toCanonicalMaps(expectedMaps);
     for (Map<String, String> expected : expecteds) {
@@ -36,7 +38,9 @@ public class Helpers {
     return !exactMatch || actuals.isEmpty();
   }
 
-  public static void assertContains(List<Map<String, String>> actualMaps, List<Map<String, String>> expectedMaps, boolean exactMatch) {
+  public static void assertContains(List<Map<String, String>> actualMaps,
+                                    List<Map<String, String>> expectedMaps,
+                                    boolean exactMatch) {
     List<Map<String, String>> actuals = toCanonicalMaps(actualMaps);
     List<Map<String, String>> expecteds = toCanonicalMaps(expectedMaps);
     for (Map<String, String> expected : expecteds) {
@@ -77,13 +81,13 @@ public class Helpers {
   }
 
   public static String getFirstValue(Map<String, String> map, String... keys) {
-      String value = null;
-      for (String key : keys) {
-          if ((value = map.get(toCanonicalKey(key))) != null) {
-              break;
-          }
+    String value = null;
+    for (String key : keys) {
+      if ((value = map.get(toCanonicalKey(key))) != null) {
+        break;
       }
-      return value;
+    }
+    return value;
   }
 
   public static boolean isMatch(Map<String, String> actual, Map<String, String> expected) {

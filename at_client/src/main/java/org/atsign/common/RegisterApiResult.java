@@ -9,9 +9,9 @@ package org.atsign.common;
  */
 public class RegisterApiResult<T> {
 
-    public T data;
+  public T data;
 
-    public ApiCallStatus apiCallStatus;
+  public ApiCallStatus apiCallStatus;
 
-    public AtException atException;
+  public AtException atException;
 }

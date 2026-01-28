@@ -15,8 +15,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 @CucumberOptions(
     features = "src/test/resources/features",
     glue = {"org.atsign.cucumber.steps"},
-    plugin = {"pretty", "org.atsign.cucumber.CucumberTests"}
-)
+    plugin = {"pretty", "org.atsign.cucumber.CucumberTests"})
 public class CucumberTests implements EventListener {
 
   @Override

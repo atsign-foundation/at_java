@@ -4,13 +4,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.atsign.common.Metadata;
 
 public class LookupResponse {
-    
-    @JsonProperty
-    public String key;
 
-    @JsonProperty
-    public String data;
+  @JsonProperty
+  public String key;
 
-    @JsonProperty
-    public Metadata metaData;
+  @JsonProperty
+  public String data;
+
+  @JsonProperty
+  public Metadata metaData;
 }

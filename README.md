@@ -117,8 +117,35 @@ When using the SUPER_API Key to register an atsign, the following sequence of ca
     * Users should keep this file safe, as there's only one copy of this file and losing it would mean the user would be unable to log in to the atsign
     * If lost, users can reset the atsign and get a new atKeys file. This would result in loss of all data stored in the atsign's server
 
+### Code Style And Formatting
+The maven pom contains the following plugins to enforce a consistent coding style and format
 
+* checkstyle https://checkstyle.org
+* spotless https://github.com/diffplug/spotless
+
+The rules which configure the respective plugins are here
+
+* [config/checkstyle.xml](checkstyle.xml)
+* [config/java-format.xml](java-format.xml)
+
+
+You can run the following maven command run the checks
+~~~
+mvn validate
+~~~
+
+You can run the following maven command to fix the spotless violations
+~~~
+mvn spotless:apply
+~~~
+
+#### Intellij
+To configure Intellij to use the same settings
+1. Add the **Adaptor for Eclopse Code Formatter** plugin and configure in 
+**Settings -> Adaptor for Eclipse Code Formatter** by setting **Eclipse workspace/project folder or config file** as config/java-format.xml
+2. Add **CheckStyle-IDEA** plugin and configure in **Settings -> Tools -> Checkstyle** by adding config/checkstyle.xml
 ### Contributions welcome!
 
 All of our software is open with intent. We welcome contributions - we want pull requests, and we want
 to hear about issues. See also [CONTRIBUTING.md](CONTRIBUTING.md)
+
