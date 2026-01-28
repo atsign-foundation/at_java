@@ -9,55 +9,56 @@ import org.atsign.client.api.Secondary.Response;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ResponseTransformers {
-	static final ObjectMapper mapper = new ObjectMapper();
+  static final ObjectMapper mapper = new ObjectMapper();
 
-	/// Transforms the data from type T to type V
-	public interface ResponseTransformer<T, V> {
-		V transform(T value);
-	}
+  /// Transforms the data from type T to type V
+  public interface ResponseTransformer<T, V> {
+    V transform(T value);
+  }
 
-	public static class ScanResponseTransformer implements ResponseTransformer<Response, List<String>> {
+  public static class ScanResponseTransformer implements ResponseTransformer<Response, List<String>> {
 
-        private final Predicate<String> filter;
+    private final Predicate<String> filter;
 
-        public ScanResponseTransformer(Predicate<String> filter) {
-            this.filter = filter;
-        }
+    public ScanResponseTransformer(Predicate<String> filter) {
+      this.filter = filter;
+    }
 
-        public ScanResponseTransformer() {
-            this(k -> true);
-        }
+    public ScanResponseTransformer() {
+      this(k -> true);
+    }
 
-        @Override
-		public List<String> transform(Response value) {
+    @Override
+    public List<String> transform(Response value) {
 
-			if (value.getRawDataResponse() == null || value.getRawDataResponse().isEmpty()) {
-				return null;
-			}
+      if (value.getRawDataResponse() == null || value.getRawDataResponse().isEmpty()) {
+        return null;
+      }
 
-			try {
-                List<String> keys = mapper.readerForListOf(String.class).readValue(value.getRawDataResponse());
-                return keys.stream().filter(filter).collect(Collectors.toList());
-			} catch (Exception e) {
-				e.printStackTrace();
-				return null;
-			}
-		}
+      try {
+        List<String> keys = mapper.readerForListOf(String.class).readValue(value.getRawDataResponse());
+        return keys.stream().filter(filter).collect(Collectors.toList());
+      } catch (Exception e) {
+        e.printStackTrace();
+        return null;
+      }
+    }
 
-	}
+  }
 
-	public static class NotifyResponseTransformer implements ResponseTransformer<Response, String> {
-		@Override
-		public String transform(Response value) {
-			throw new RuntimeException("Not Implemented");
-		}
-	}
-	
-	
-	public static class NotificationStatusResponseTransformer implements ResponseTransformer<Response, NotificationStatus> {
-		@Override
-		public NotificationStatus transform(Response value) {
-			throw new RuntimeException("Not Implemented");
-		}
-	}
+  public static class NotifyResponseTransformer implements ResponseTransformer<Response, String> {
+    @Override
+    public String transform(Response value) {
+      throw new RuntimeException("Not Implemented");
+    }
+  }
+
+
+  public static class NotificationStatusResponseTransformer
+      implements ResponseTransformer<Response, NotificationStatus> {
+    @Override
+    public NotificationStatus transform(Response value) {
+      throw new RuntimeException("Not Implemented");
+    }
+  }
 }

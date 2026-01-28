@@ -8,22 +8,22 @@ import java.util.function.Predicate;
  */
 public class Preconditions {
 
-    public static <T> T checkNotNull(T instance, String message) {
-        if (instance == null) {
-            throw new RuntimeException(message);
-        }
-        return instance;
+  public static <T> T checkNotNull(T instance, String message) {
+    if (instance == null) {
+      throw new RuntimeException(message);
     }
+    return instance;
+  }
 
-    public static <T> T checkNotNull(T instance) {
-        return checkNotNull(instance, "null");
+  public static <T> T checkNotNull(T instance) {
+    return checkNotNull(instance, "null");
+  }
+
+  public static File checkFile(File f, Predicate<File> predicate, String message) {
+    if (!predicate.test(f)) {
+      throw new IllegalArgumentException(message);
     }
-
-    public static File checkFile(File f, Predicate<File> predicate, String message) {
-      if (!predicate.test(f)) {
-          throw new IllegalArgumentException(message);
-      }
-      return f;
+    return f;
   }
 
 }

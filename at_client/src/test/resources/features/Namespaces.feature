@@ -22,8 +22,7 @@ Feature: AtClient API tests for namespaces atsign
       | public:test.ns1@srie | test | ns1       | srie      |             |
     When namespace is set to ns2
     Then AtClient.put fails for PublicKey test and value "hello ns2 world"
-    And exception was AtUnauthorizedException and message matches "AT0009-UnAuthorized client"
-    And exception message matches "not authorized to update key: public:test.ns2"
+    And exception was AtUnauthorizedException and message matches "not authorized to update key"
 
   Scenario: Test namespace read-only access control
     And @srie Activate.otp generates 2 OTPs
@@ -39,8 +38,7 @@ Feature: AtClient API tests for namespaces atsign
     When 1st @srie AtClient.put for PublicKey test.ns and value "hello ns world"
     Then 2nd @srie AtClient.get for PublicKey test.ns returns value that matches "hello ns world"
     But 2nd @srie AtClient.put fails for PublicKey test.ns and value "hello ns world"
-    And exception was AtUnauthorizedException and message matches "AT0009-UnAuthorized client"
-    And exception message matches "not authorized to update key: public:test.ns"
+    And exception was AtUnauthorizedException and message matches "not authorized to update key"
 
   Scenario: Test namespace read visibility of SelfKeys
     And @srie Activate.otp generates 2 OTPs

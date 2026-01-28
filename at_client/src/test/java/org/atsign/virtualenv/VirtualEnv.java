@@ -1,9 +1,7 @@
 package org.atsign.virtualenv;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.ComposeContainer;
-import org.testcontainers.containers.output.OutputFrame;
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.io.File;
 import java.net.URL;
@@ -13,7 +11,10 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static java.util.concurrent.TimeUnit.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.ComposeContainer;
+import org.testcontainers.containers.output.OutputFrame;
 
 public class VirtualEnv {
 

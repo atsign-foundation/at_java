@@ -1,4 +1,11 @@
-<a href="https://atsign.com#gh-light-mode-only"><img width=250px src="https://atsign.com/wp-content/uploads/2022/05/atsign-logo-horizontal-color2022.svg#gh-light-mode-only" alt="The Atsign Foundation"></a><a href="https://atsign.com#gh-dark-mode-only"><img width=250px src="https://atsign.com/wp-content/uploads/2023/08/atsign-logo-horizontal-reverse2022-Color.svg#gh-dark-mode-only" alt="The Atsign Foundation"></a>
+<a href="https://atsign.com#gh-light-mode-only">
+<img width=250px
+    src="https://atsign.com/wp-content/uploads/2022/05/atsign-logo-horizontal-color2022.svg#gh-light-mode-only"
+    alt="The Atsign Foundation"></a><a href="https://atsign.com#gh-dark-mode-only">
+<img width=250px
+    src="https://atsign.com/wp-content/uploads/2023/08/atsign-logo-horizontal-reverse2022-Color.svg#gh-dark-mode-only"
+    alt="The Atsign Foundation">
+</a>
 
 # Contributing guidelines
 
@@ -8,12 +15,11 @@ for fixing issues or adding features. Thanks for your contribution!
 Please read our [code of conduct](code_of_conduct.md), which is based on
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](code_of_conduct.md)
 
-
 For small changes, especially documentation, you can simply use the "Edit" button
 to update the Markdown file, and start the
 [pull request](https://help.github.com/articles/about-pull-requests/) process.
 Use the preview tab in GitHub to make sure that it is properly
-formatted before committing. Please use conventional commits and follow the semantic PR format as documented 
+formatted before committing. Please use conventional commits and follow the semantic PR format as documented
 [here](https://github.com/atsign-foundation/.github/blob/trunk/atGitHub.md#semantic-prs).
 A pull request will cause integration tests to run automatically, so please review
 the results of the pipeline and correct any mistakes that are reported.
@@ -25,76 +31,69 @@ describe. The atsign-foundation GitHub organization's conventions and configurat
 
 ## Development Environment Setup
 
-
-### Prerequisites
-
-   ``` sh
-   # show how to install the tools needed to work with the code here
-   ```
-
+See [README.md](README.md)
 
 ### GitHub Repository Clone
 
 To prepare your dedicated GitHub repository:
 
-1. Fork in GitHub https://github.com/atsign-foundation/REPO
+1. Fork in GitHub [https://github.com/atsign-foundation/REPO](https://github.com/atsign-foundation/REPO)
 2. Clone *your forked repository* (e.g., `git clone git@github.com:yourname/REPO`)
 3. Set your remotes as follows:
 
-   ```sh
-   cd REPO
-   git remote add upstream git@github.com:atsign-foundation/REPO.git
-   git remote set-url upstream --push DISABLED
-   ```
+```shell
+cd REPO
+git remote add upstream git@github.com:atsign-foundation/REPO.git
+git remote set-url upstream --push DISABLED
+```
 
-   Running `git remote -v` should give something similar to:
+Running `git remote -v` should give something similar to:
 
-   ```text
-   origin  git@github.com:yourname/REPO.git (fetch)
-   origin  git@github.com:yourname/REPO.git (push)
-   upstream        git@github.com:atsign-foundation/REPO.git (fetch)
-   upstream        DISABLED (push)
-   ```
+```text
+origin  git@github.com:yourname/REPO.git (fetch)
+origin  git@github.com:yourname/REPO.git (push)
+upstream        git@github.com:atsign-foundation/REPO.git (fetch)
+upstream        DISABLED (push)
+```
 
-   The use of `upstream --push DISABLED` is to prevent those
-   with `write` access to the main repository from accidentally pushing changes
-   directly.
-   
+The use of `upstream --push DISABLED` is to prevent those
+with `write` access to the main repository from accidentally pushing changes
+directly.
+
 ### Development Process
 
 1. Fetch latest changes from main repository:
 
-   ```sh
-   git fetch upstream
-   ```
+```shell
+git fetch upstream
+```
 
 1. Reset your fork's `trunk` branch to exactly match upstream `trunk`:
 
-   ```sh
-   git checkout trunk
-   git reset --hard upstream/trunk
-   git push --force
-   ```
+```shell
+git checkout trunk
+git reset --hard upstream/trunk
+git push --force
+```
 
-   **IMPORTANT**: Do this only once, when you start working on new feature as
-   the commands above will completely overwrite any local changes in `trunk` content.
+**IMPORTANT**: Do this only once, when you start working on new feature as
+the commands above will completely overwrite any local changes in `trunk` content.
 1. Edit, edit, edit, and commit your changes to Git:
 
-   ```sh
-   # edit, edit, edit
-   git add *
-   git commit -m 'A useful commit message'
-   git push
-   ```
+```shell
+# edit, edit, edit
+git add *
+git commit -m 'A useful commit message'
+git push
+```
 
 1. How to run tests:
 
-   ``` sh
-   # explain tests here
-   ```
+```shell
+# explain tests here
+```
 
 1. Open a new Pull Request to the main repository using your `trunk` branch
-
 
 ## @‎library release process
 
@@ -120,7 +119,7 @@ chronological order.
 
 ## Reporting a bug
 
-The best place to start reporting bugs on the libraries published by 
+The best place to start reporting bugs on the libraries published by
 @‎protocol would be the “View/report issues” link available on
 [pub.dev](https://pub.dev/publishers/atsign.org/packages).
 
@@ -158,13 +157,15 @@ release to pub.dev
 
 ## Closure of the bug
 
-* Where possible the issue associated with the bug should be closed by mutual
+Where possible the issue associated with the bug should be closed by mutual
 consent with the reporter. This could be:
-    * The reporter closing the issue because they have found a workaround.
-    * The reporter closing the issue because they are satisfied with a fix
-    provided.
-    * A team member closes the issue after the reporter leaves a comment
-    indicating that they are happy for it to be closed.
-* If the reporter does not respond within 14 calendar days then we must assume
+
+* The reporter closing the issue because they have found a workaround.
+* The reporter closing the issue because they are satisfied with a fix
+  provided.
+* A team member closes the issue after the reporter leaves a comment
+  indicating that they are happy for it to be closed.
+
+If the reporter does not respond within 14 calendar days then we must assume
 that they no longer have an interest in fixing the bug and work in progress can
 be closed out at the team’s discretion.
