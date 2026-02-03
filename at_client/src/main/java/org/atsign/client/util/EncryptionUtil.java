@@ -14,36 +14,24 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
 public class EncryptionUtil {
-    static private final IvParameterSpec EMPTY_IV = new IvParameterSpec(new byte[16]);
+
+    public static final String SIGNING_ALGO_RSA = "rsa2048";
+    public static final String HASHING_ALGO_SHA256 = "sha256";
 
     static {
         Security.addProvider(new BouncyCastleProvider());
     }
 
-    public static String aesEncryptToBase64(String clearText, String keyBase64) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchProviderException {
-        SecretKey key = _aesKeyFromBase64(keyBase64);
-        Cipher cipher = Cipher.getInstance("AES/SIC/PKCS7Padding", "BC");
-        cipher.init(Cipher.ENCRYPT_MODE, key, EMPTY_IV);
+    public static String aesEncryptToBase64(String clearText, String keyBase64, String ivNonce) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchProviderException {
+        Cipher cipher = createAesCipher(Cipher.ENCRYPT_MODE, keyBase64, ivNonce);
         byte[] encrypted = cipher.doFinal(clearText.getBytes());
         return Base64.getEncoder().encodeToString(encrypted);
     }
 
     public static String aesDecryptFromBase64(String cipherTextBase64, String keyBase64, String ivNonce) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchProviderException {
-        SecretKey key = _aesKeyFromBase64(keyBase64);
-        Cipher cipher = Cipher.getInstance("AES/SIC/PKCS7Padding", "BC");
-        IvParameterSpec iv;
-        if (ivNonce == null) {
-            iv = EMPTY_IV;
-        } else {
-            iv = _ivFromBase64(ivNonce);
-        }
-        cipher.init(Cipher.DECRYPT_MODE, key, iv);
+        Cipher cipher = createAesCipher(Cipher.DECRYPT_MODE, keyBase64, ivNonce);
         byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(cipherTextBase64));
         return new String(decrypted);
-    }
-
-    public static String aesDecryptFromBase64(String cipherTextBase64, String keyBase64) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchProviderException {
-        return aesDecryptFromBase64(cipherTextBase64, keyBase64, null);
     }
 
     public static KeyPair generateRSAKeyPair() throws NoSuchAlgorithmException {
@@ -116,4 +104,20 @@ public class EncryptionUtil {
         byte[] ivBytes = Base64.getDecoder().decode(s.getBytes());
         return new IvParameterSpec(ivBytes);
     }
+
+    public static String generateRandomIvBase64(int length) {
+        byte[] iv = new byte[length];
+        SecureRandom secureRandom = new SecureRandom();
+        secureRandom.nextBytes(iv);
+        return Base64.getEncoder().encodeToString(iv);
+    }
+
+    private static Cipher createAesCipher(int mode, String keyBase64, String ivNonce) throws NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException {
+        SecretKey key = _aesKeyFromBase64(keyBase64);
+        IvParameterSpec iv =_ivFromBase64(ivNonce);
+        Cipher cipher = Cipher.getInstance("AES/SIC/PKCS7Padding", "BC");
+        cipher.init(mode, key, iv);
+        return cipher;
+    }
+
 }

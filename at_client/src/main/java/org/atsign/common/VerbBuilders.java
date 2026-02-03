@@ -102,6 +102,7 @@ public class VerbBuilders {
 		private String sharedKeyEnc = null; // will be set only when [sharedWith] is set. Will be encrypted using the public key of [sharedWith] atsign
 		private String pubKeyCS = null; // checksum of the public of of [sharedWith] atSign. Will be set only when [sharedWith] is set.
 		private String encoding = null; // indicates if public data is encoded. If the public data contains a new line character, the data will be encoded and the encoding will be set to given type of encoding
+        private String ivNonce = null;
 
 		private Object value; // the value to set [required]
 
@@ -187,6 +188,7 @@ public class VerbBuilders {
 			this.sharedKeyEnc = metadata.sharedKeyEnc;
 			this.pubKeyCS = metadata.pubKeyCS;
 			this.encoding = metadata.encoding;
+            this.ivNonce = metadata.ivNonce;
 		}
 
 		public void with(AtKey atKey, Object value) {
@@ -242,6 +244,7 @@ public class VerbBuilders {
 			metadata.sharedKeyEnc = sharedKeyEnc;
 			metadata.pubKeyCS = pubKeyCS;
 			metadata.encoding = encoding;
+            metadata.ivNonce = ivNonce;
 			return metadata.toString();
 		}
 		
@@ -351,7 +354,7 @@ public class VerbBuilders {
 		}
 		
 		private String key; // key name e.g. "test", "location", "email" [required]
-		private String sharedWith; // sharedBy atSign e.g. "@alice" [required] (not your atSign, the atSign of another secondary, get)
+		private String sharedBy; // sharedBy atSign e.g. "@alice" [required] (not your atSign, the atSign of another secondary, get)
 
 		private Type type = Type.NONE;
 		
@@ -359,8 +362,8 @@ public class VerbBuilders {
 			this.key = key;
 		}
 
-		public void setSharedWith(String sharedWith) {
-			this.sharedWith = sharedWith;
+		public void setSharedBy(String sharedBy) {
+			this.sharedBy = sharedBy;
 		}
 
 		public void setType(Type type) {
@@ -369,14 +372,14 @@ public class VerbBuilders {
 
 		public void with(SharedKey sharedKey, LookupVerbBuilder.Type type) {
 			setKeyName(sharedKey.getFullyQualifiedKeyName());
-			setSharedWith(sharedKey.sharedWith.toString());
+			setSharedBy(sharedKey.sharedBy.toString());
 			setType(type);
 		}
 		
 		@Override
 		public String build() {
-			if(key == null || key.isEmpty() || sharedWith == null || sharedWith.isEmpty()) {
-				throw new IllegalArgumentException("keyName and sharedWith cannot be null or empty");
+			if(key == null || key.isEmpty() || sharedBy == null || sharedBy.isEmpty()) {
+				throw new IllegalArgumentException("keyName and sharedBy cannot be null or empty");
 			}
 			String s = "lookup:";
 			switch (type) {
@@ -390,7 +393,7 @@ public class VerbBuilders {
 					break;
 			}
 			s += this.key;
-			s += AtSign.formatAtSign(this.sharedWith);
+			s += AtSign.formatAtSign(this.sharedBy);
 			return s; // eg: "lookup:meta:test@bob"
 		}
 	}

@@ -1,6 +1,7 @@
 package org.atsign.client.util;
 
 import org.atsign.client.api.AtConnection;
+import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.impl.connections.AtSecondaryConnection;
 import org.atsign.common.AtSign;
 import org.atsign.common.exceptions.AtClientConfigException;
@@ -13,7 +14,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.util.Map;
 
 /**
  *
@@ -39,9 +39,9 @@ public class AuthUtil {
         }
     }
 
-    public void authenticateWithPkam(AtConnection connection, AtSign atSign, Map<String, String> keys) throws AtException, IOException {
-        if (! keys.containsKey(KeysUtil.pkamPrivateKeyName)) {
-            throw new AtClientConfigException("Cannot authenticate with PKAM: Keys file does not contain " + KeysUtil.pkamPrivateKeyName);
+    public void authenticateWithPkam(AtConnection connection, AtSign atSign, AtKeys keys) throws AtException, IOException {
+        if (! keys.hasPkamKeys()) {
+            throw new AtClientConfigException("Cannot authenticate with PKAM: Keys file does not contain PKAM keys");
         }
 
         String fromResponse = connection.executeCommand("from:" + atSign);
@@ -54,7 +54,7 @@ public class AuthUtil {
 
         PrivateKey privateKey;
         try {
-            privateKey = EncryptionUtil._privateKeyFromBase64(keys.get(KeysUtil.pkamPrivateKeyName));
+            privateKey = EncryptionUtil._privateKeyFromBase64(keys.getApkamPrivateKey());
         } catch (Exception e) {
             throw new AtClientConfigException("Failed to get private key from stored string");
         }
@@ -66,7 +66,15 @@ public class AuthUtil {
             throw new AtEncryptionException("Failed to create SHA256 signature");
         }
 
-        String pkamResponse = connection.executeCommand("pkam:" + signature);
+        StringBuilder builder = new StringBuilder().append("pkam");
+        if (keys.hasEnrollmentId()) {
+            builder.append(":signingAlgo:").append(EncryptionUtil.SIGNING_ALGO_RSA)
+                .append(":hashingAlgo:").append(EncryptionUtil.HASHING_ALGO_SHA256)
+                .append(":enrollmentId:").append(keys.getEnrollmentId());
+        }
+        builder.append(":").append(signature);
+
+        String pkamResponse = connection.executeCommand(builder.toString());
 
         if (! pkamResponse.startsWith("data:success")) {
             throw new AtUnauthenticatedException("PKAM command failed: " + pkamResponse);

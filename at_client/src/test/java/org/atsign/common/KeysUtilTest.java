@@ -1,19 +1,22 @@
 package org.atsign.common;
 
+import org.atsign.client.api.AtKeys;
 import org.atsign.client.util.KeysUtil;
-import org.atsign.client.util.OnboardingUtil;
-import org.junit.*;
-import static org.junit.Assert.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
+
+import static org.atsign.client.util.EncryptionUtil.generateAESKeyBase64;
+import static org.atsign.client.util.EncryptionUtil.generateRSAKeyPair;
+import static org.junit.Assert.*;
 
 public class KeysUtilTest {
+
     AtSign testAtSign = new AtSign("@testSaveKeysFile");
 
     @Before
@@ -32,11 +35,10 @@ public class KeysUtilTest {
         assertFalse(expected.exists());
 
         // Given a Map of keys (like Onboard creates)
-        Map<String, String> keys = new HashMap<>();
-        OnboardingUtil onboardingUtil = new OnboardingUtil();
-        onboardingUtil.generateEncryptionKeypair(keys);
-        onboardingUtil.generatePkamKeypair(keys);
-        onboardingUtil.generateSelfEncryptionKey(keys);
+        AtKeys keys = new AtKeys()
+            .setEncryptKeyPair(generateRSAKeyPair())
+            .setApkamKeyPair(generateRSAKeyPair())
+            .setSelfEncryptKey(generateAESKeyBase64());
 
         // When we call KeysUtil.saveKeys
         KeysUtil.saveKeys(testAtSign, keys);
@@ -48,27 +50,25 @@ public class KeysUtilTest {
     @Test
     public void testLoadKeysFile() throws Exception {
         // Given a correctly formatted keys file in the canonical location
-        Map<String, String> keys = new HashMap<>();
-        OnboardingUtil onboardingUtil = new OnboardingUtil();
-        onboardingUtil.generateEncryptionKeypair(keys);
-        onboardingUtil.generatePkamKeypair(keys);
-        onboardingUtil.generateSelfEncryptionKey(keys);
+        AtKeys keys = new AtKeys()
+            .setEncryptKeyPair(generateRSAKeyPair())
+            .setApkamKeyPair(generateRSAKeyPair())
+            .setSelfEncryptKey(generateAESKeyBase64());
         KeysUtil.saveKeys(testAtSign, keys);
 
         // When we call KeysUtil.loadKeys
-        Map<String, String> loadedKeys = KeysUtil.loadKeys(testAtSign);
+        AtKeys loadedKeys = KeysUtil.loadKeys(testAtSign);
 
         // Then the keys are loaded successfully
-        assertEquals(keys, loadedKeys);
+        assertContentsMatch(keys, loadedKeys);
     }
 
     @Test
     public void testLoadKeysFileLegacy() throws Exception {
-        Map<String, String> keys = new HashMap<>();
-        OnboardingUtil onboardingUtil = new OnboardingUtil();
-        onboardingUtil.generateEncryptionKeypair(keys);
-        onboardingUtil.generatePkamKeypair(keys);
-        onboardingUtil.generateSelfEncryptionKey(keys);
+        AtKeys keys = new AtKeys()
+            .setEncryptKeyPair(generateRSAKeyPair())
+            .setApkamKeyPair(generateRSAKeyPair())
+            .setSelfEncryptKey(generateAESKeyBase64());
 
         KeysUtil.saveKeys(testAtSign, keys);
         File expected = KeysUtil.getKeysFile(testAtSign, KeysUtil.expectedKeysFilesLocation);
@@ -92,7 +92,17 @@ public class KeysUtilTest {
 
         // When we call KeysUtil.loadKeys
         // Then the keys are loaded successfully from the legacy location
-        Map<String, String> loadedKeys = KeysUtil.loadKeys(testAtSign);
-        assertEquals(keys, loadedKeys);
+        AtKeys loadedKeys = KeysUtil.loadKeys(testAtSign);
+        assertContentsMatch(keys, loadedKeys);
+    }
+
+    private static void assertContentsMatch(AtKeys keys1, AtKeys keys2) {
+        assertEquals(keys1.getEnrollmentId(), keys2.getEnrollmentId());
+        assertEquals(keys1.getApkamPublicKey(), keys2.getApkamPublicKey());
+        assertEquals(keys1.getApkamPrivateKey(), keys2.getApkamPrivateKey());
+        assertEquals(keys1.getEncryptPublicKey(), keys2.getEncryptPublicKey());
+        assertEquals(keys1.getEncryptPrivateKey(), keys2.getEncryptPrivateKey());
+        assertEquals(keys1.getSelfEncryptKey(), keys2.getSelfEncryptKey());
+        assertEquals(keys1.getApkamSymmetricKey(), keys2.getApkamSymmetricKey());
     }
 }

@@ -5,8 +5,11 @@ import io.cucumber.junit.CucumberOptions;
 import io.cucumber.plugin.EventListener;
 import io.cucumber.plugin.event.EventPublisher;
 import io.cucumber.plugin.event.TestRunStarted;
+import org.atsign.cucumber.helpers.Helpers;
 import org.atsign.virtualenv.VirtualEnv;
 import org.junit.runner.RunWith;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
@@ -18,6 +21,8 @@ public class CucumberTests implements EventListener {
 
   @Override
   public void setEventPublisher(EventPublisher publisher) {
-    publisher.registerHandlerFor(TestRunStarted.class, e -> VirtualEnv.setUp());
+    if (!Helpers.isHostPortReachable("vip.ve.atsign.zone:64", SECONDS.toMillis(2))) {
+      publisher.registerHandlerFor(TestRunStarted.class, e -> VirtualEnv.setUp());
+    }
   }
 }

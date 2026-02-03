@@ -5,13 +5,14 @@ import org.atsign.client.api.AtEvents;
 import org.atsign.client.api.Secondary;
 import org.atsign.common.AtSign;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 /**
  * A connection which understands how to talk with the secondary server.
  * @see org.atsign.client.api.AtConnection
  */
-public class AtSecondaryConnection extends AtConnectionBase {
+public class AtSecondaryConnection extends AtConnectionBase implements Closeable {
     private final AtSign atSign;
     public AtSign getAtSign() {return atSign;}
 
@@ -50,5 +51,10 @@ public class AtSecondaryConnection extends AtConnectionBase {
         } else {
             throw new IOException("Invalid response from server: " + rawResponse);
         }
+    }
+
+    @Override
+    public void close() throws IOException {
+        disconnect();
     }
 }

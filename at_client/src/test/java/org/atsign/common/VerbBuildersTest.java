@@ -356,14 +356,14 @@ public class VerbBuildersTest {
 		// Type.NONE
 		builder = new LookupVerbBuilder();
 		builder.setKeyName("test");
-		builder.setSharedWith("@alice");
+		builder.setSharedBy("@alice");
 		command = builder.build(); // "lookup:test@alice"
 		assertEquals("lookup:test@alice", command);
 
 		// Type.METADATA
 		builder = new LookupVerbBuilder();
 		builder.setKeyName("test");
-		builder.setSharedWith("@alice");
+		builder.setSharedBy("@alice");
 		builder.setType(LookupVerbBuilder.Type.METADATA);
 		command = builder.build(); // "lookup:meta:test@alice"
 		assertEquals("lookup:meta:test@alice", command);
@@ -371,7 +371,7 @@ public class VerbBuildersTest {
 		// Type.ALL
 		builder = new LookupVerbBuilder();
 		builder.setKeyName("test");
-		builder.setSharedWith("@alice");
+		builder.setSharedBy("@alice");
 		builder.setType(LookupVerbBuilder.Type.ALL);
 		command = builder.build(); // "lookup:test@alice"
 		assertEquals("lookup:all:test@alice", command);
@@ -380,7 +380,7 @@ public class VerbBuildersTest {
 		assertThrows(IllegalArgumentException.class, () -> {
 			LookupVerbBuilder b = new LookupVerbBuilder();
 			b = new LookupVerbBuilder();
-			b.setSharedWith("@alice");
+			b.setSharedBy("@alice");
 			b.build();
 		});
 
@@ -403,7 +403,7 @@ public class VerbBuildersTest {
 		SharedKey sk = new KeyBuilders.SharedKeyBuilder(new AtSign("@sharedby"), new AtSign("@sharedwith")).key("test").build();
 		builder.with(sk, LookupVerbBuilder.Type.METADATA);
 		command = builder.build(); // "lookup:meta:test@sharedby"
-		assertEquals("lookup:meta:test@sharedwith", command);
+		assertEquals("lookup:meta:test@sharedby", command);
 	}
 
     @Test
@@ -415,7 +415,7 @@ public class VerbBuildersTest {
         LookupVerbBuilder builder = new LookupVerbBuilder();
         builder.with(key, LookupVerbBuilder.Type.METADATA);
 
-        assertThat(builder.build(), equalTo("lookup:meta:test.testns@bob"));
+        assertThat(builder.build(), equalTo("lookup:meta:test.testns@alice"));
     }
 
     @Test

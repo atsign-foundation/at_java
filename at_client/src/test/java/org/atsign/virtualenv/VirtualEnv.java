@@ -13,8 +13,7 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.*;
 
 public class VirtualEnv {
 
@@ -24,8 +23,10 @@ public class VirtualEnv {
 
   public static void main(String[] args) throws Exception {
     setUp();
-    LOGGER.info("running for 1 hour...");
+    LOGGER.info("sleeping for 1 hour, after which container will be torn down...");
     Thread.sleep(HOURS.toMillis(1));
+    LOGGER.info("tearing down");
+    tearDown();
   }
 
   public static void setUp() {
@@ -36,9 +37,8 @@ public class VirtualEnv {
       CONTAINER.start();
       latch.await(20, SECONDS);
     } catch (Exception e) {
-      throw new RuntimeException(e);
-    } finally {
       CONTAINER = null;
+      throw new RuntimeException(e);
     }
   }
 

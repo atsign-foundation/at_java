@@ -1,20 +1,33 @@
 package org.atsign.client.util;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.atsign.client.api.AtKeys;
 import org.atsign.common.exceptions.AtClientConfigException;
 import org.atsign.common.AtSign;
 
+import javax.crypto.spec.IvParameterSpec;
 import java.io.File;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 import java.nio.file.Files;
-import java.util.HashMap;
+import java.util.Base64;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.atsign.client.util.EncryptionUtil.aesDecryptFromBase64;
+import static org.atsign.client.util.EncryptionUtil.aesEncryptToBase64;
+import static org.atsign.client.util.EnrollmentId.createEnrollmentId;
+
 public class KeysUtil {
 
-    private static final ObjectMapper mapper = new ObjectMapper();
+    static private final String EMPTY_IV = Base64.getEncoder().encodeToString(new byte[16]);
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    private static final TypeReference<Map<String, String>> STRING_MAP_TYPE = new TypeReference<Map<String, String>>() {
+    };
 
     public static final String ATSIGN_KEYS_DIR = "ATSIGN_KEYS_DIR";
     public static final String ATSIGN_KEYS_SUFFIX = "ATSIGN_KEYS_SUFFIX";
@@ -33,40 +46,45 @@ public class KeysUtil {
         "_key.atKeys"
     );
 
-    public static final String pkamPublicKeyName = "aesPkamPublicKey";
-    public static final String pkamPrivateKeyName = "aesPkamPrivateKey";
-    public static final String encryptionPublicKeyName = "aesEncryptPublicKey";
-    public static final String encryptionPrivateKeyName = "aesEncryptPrivateKey";
-    public static final String selfEncryptionKeyName = "selfEncryptionKey";
+    /**
+     * NB: These values are used in the JSON representation (atKeys file contents) and MUST match those used in other SDK impls
+     */
+    private static final String VERSION_KEY = "version";
+    private static final String VERSION_1 = "1";
+    private static final String PKAM_PUBLIC_KEY = "aesPkamPublicKey";
+    private static final String PKAM_PRIVATE_KEY = "aesPkamPrivateKey";
+    private static final String ENCRYPT_PUBLIC_KEY = "aesEncryptPublicKey";
+    private static final String ENCRYPT_PRIVATE_KEY = "aesEncryptPrivateKey";
+    private static final String SELF_ENCRYPT_KEY = "selfEncryptionKey";
+    private static final String APKAM_SYMMETRIC_KEY = "apkamSymmetricKey";
+    private static final String ENROLLMENT_ID = "enrollmentId";
 
-    public static void saveKeys(AtSign atSign, Map<String, String> keys) throws Exception {
-        File expectedKeysDirectory = new File(expectedKeysFilesLocation);
-        if (! expectedKeysDirectory.exists()) {
-            Files.createDirectories(expectedKeysDirectory.toPath());
-        }
-        File file = getKeysFile(atSign, expectedKeysFilesLocation);
-        System.out.println("Saving keys to " + file.getAbsolutePath());
-
-        String selfEncryptionKey = keys.get(selfEncryptionKeyName);
-
-        Map<String, String> encryptedKeys = new TreeMap<>();
-
-        // We encrypt all the keys with the AES self encryption key (which is left unencrypted)
-        encryptedKeys.put(selfEncryptionKeyName, selfEncryptionKey);
-        encryptedKeys.put(pkamPublicKeyName,
-                EncryptionUtil.aesEncryptToBase64(keys.get(pkamPublicKeyName), selfEncryptionKey));
-        encryptedKeys.put(pkamPrivateKeyName,
-                EncryptionUtil.aesEncryptToBase64(keys.get(pkamPrivateKeyName), selfEncryptionKey));
-        encryptedKeys.put(encryptionPublicKeyName,
-                EncryptionUtil.aesEncryptToBase64(keys.get(encryptionPublicKeyName), selfEncryptionKey));
-        encryptedKeys.put(encryptionPrivateKeyName,
-                EncryptionUtil.aesEncryptToBase64(keys.get(encryptionPrivateKeyName), selfEncryptionKey));
-
-        String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(encryptedKeys);
-        Files.write(file.toPath(), json.getBytes(StandardCharsets.UTF_8));
+    public static void saveKeys(AtSign atSign, AtKeys keys) throws Exception {
+        saveKeys(keys, getKeysFile(atSign));
     }
 
-    public static Map<String, String> loadKeys(AtSign atSign) throws Exception {
+    public static void saveKeys(AtKeys keys, File file) throws IOException {
+        if (file.getParentFile() != null && !file.getParentFile().exists()) {
+            Files.createDirectories(file.getParentFile().toPath());
+        }
+        System.out.println("Saving keys to " + file.getAbsolutePath());
+
+        Files.write(file.toPath(), getAsJson(keys).getBytes(UTF_8));
+    }
+
+    public static AtKeys loadKeys(AtSign atSign) throws AtClientConfigException {
+        return loadKeys(getKeysFileFallbackToLegacyLocation(atSign));
+    }
+
+    public static AtKeys loadKeys(File file) throws AtClientConfigException {
+        try {
+            return setAtKeysFromJson(new AtKeys(), new String(Files.readAllBytes(file.toPath()), UTF_8));
+        } catch (IOException e) {
+            throw new AtClientConfigException("failed to read " + file, e);
+        }
+    }
+
+    private static File getKeysFileFallbackToLegacyLocation(AtSign atSign) throws AtClientConfigException {
         // check first if file exists at canonical location ~/.atsign/keys/$atSign_key.atKeys
         File file = getKeysFile(atSign, expectedKeysFilesLocation);
 
@@ -80,24 +98,11 @@ public class KeysUtil {
                         "\t Keys files are expected to be in ~/.atsign/keys/ (canonical location) or ./keys/ (legacy location)");
             }
         }
-        String json = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
-        @SuppressWarnings("unchecked")
-        Map<String, String> encryptedKeys = mapper.readValue(json, Map.class);
+        return file;
+    }
 
-        // All the keys are encrypted with the AES self encryption key (which is left unencrypted)
-        String selfEncryptionKey = encryptedKeys.get(selfEncryptionKeyName);
-
-        Map<String, String> keys = new HashMap<>();
-        keys.put(selfEncryptionKeyName, selfEncryptionKey);
-        keys.put(pkamPublicKeyName,
-                EncryptionUtil.aesDecryptFromBase64(encryptedKeys.get(pkamPublicKeyName), selfEncryptionKey));
-        keys.put(pkamPrivateKeyName,
-                EncryptionUtil.aesDecryptFromBase64(encryptedKeys.get(pkamPrivateKeyName), selfEncryptionKey));
-        keys.put(encryptionPublicKeyName,
-                EncryptionUtil.aesDecryptFromBase64(encryptedKeys.get(encryptionPublicKeyName), selfEncryptionKey));
-        keys.put(encryptionPrivateKeyName,
-                EncryptionUtil.aesDecryptFromBase64(encryptedKeys.get(encryptionPrivateKeyName), selfEncryptionKey));
-        return keys;
+    public static File getKeysFile(AtSign atSign) {
+        return getKeysFile(atSign, expectedKeysFilesLocation);
     }
 
     public static File getKeysFile(AtSign atSign, String folderToLookIn) {
@@ -106,10 +111,109 @@ public class KeysUtil {
 
     private static String getFirstNonEmpty(String... candidates) {
         for (String candidate : candidates) {
-            if (candidate != null && candidate.trim().length() > 0) {
+            if (candidate != null && !candidate.trim().isEmpty()) {
                 return candidate;
             }
         }
         throw new IllegalArgumentException("all candidates are null");
+    }
+
+    private static String getAsJson(AtKeys keys) {
+        try {
+            Map<String, String> map = new TreeMap<>();
+
+            mapPut(map, SELF_ENCRYPT_KEY, keys.getSelfEncryptKey());
+            mapPut(map, ENROLLMENT_ID, keys.getEnrollmentId());
+            mapPut(map, APKAM_SYMMETRIC_KEY, keys.getApkamSymmetricKey());
+
+            mapPutEncrypted(map, PKAM_PUBLIC_KEY, keys.getApkamPublicKey(), keys.getSelfEncryptKey());
+            mapPutEncrypted(map, PKAM_PRIVATE_KEY, keys.getApkamPrivateKey(), keys.getSelfEncryptKey());
+            mapPutEncrypted(map, ENCRYPT_PUBLIC_KEY, keys.getEncryptPublicKey(), keys.getSelfEncryptKey());
+            mapPutEncrypted(map, ENCRYPT_PRIVATE_KEY, keys.getEncryptPrivateKey(), keys.getSelfEncryptKey());
+
+            map.put(VERSION_KEY, VERSION_1);
+
+            return MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(map);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static AtKeys setAtKeysFromJson(AtKeys keys, String json) {
+        try {
+            Map<String, String> map = MAPPER.readValue(json, STRING_MAP_TYPE);
+            String version = map.getOrDefault(VERSION_KEY, VERSION_1);
+            if (version.equals(VERSION_1)) {
+                setAtKeysVersion1(keys, map);
+            } else {
+                throw new RuntimeException("unsupported version of atKeys json : " + version);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return keys;
+    }
+
+    private static void setAtKeysVersion1(AtKeys keys, Map<String, String> map) throws Exception {
+        keys.setSelfEncryptKey(mapGet(map, SELF_ENCRYPT_KEY));
+        keys.setEnrollmentId(mapGetEnrollmentId(map, ENROLLMENT_ID));
+        keys.setApkamSymmetricKey(mapGet(map, APKAM_SYMMETRIC_KEY));
+
+        keys.setApkamPublicKey(mapGetDecrypted(map, PKAM_PUBLIC_KEY, keys.getSelfEncryptKey()));
+        keys.setApkamPrivateKey(mapGetDecrypted(map, PKAM_PRIVATE_KEY, keys.getSelfEncryptKey()));
+        keys.setEncryptPublicKey(mapGetDecrypted(map, ENCRYPT_PUBLIC_KEY, keys.getSelfEncryptKey()));
+        keys.setEncryptPrivateKey(mapGetDecrypted(map, ENCRYPT_PRIVATE_KEY, keys.getSelfEncryptKey()));
+    }
+
+    private static void mapPut(Map<String, String> map, String key, String value) {
+        if (value != null) {
+            map.put(key, value);
+        }
+    }
+
+    private static void mapPut(Map<String, String> map, String key, TypedString value) {
+        if (value != null) {
+            map.put(key, value.toString());
+        }
+    }
+
+    private static void mapPutEncrypted(Map<String, String> map, String key, String value, String encryptKey) throws Exception {
+        if (value != null) {
+            map.put(key, aesEncryptToBase64(value, encryptKey, EMPTY_IV));
+        }
+    }
+
+    private static EnrollmentId mapGetEnrollmentId(Map<String, String> map, String key) {
+        return createEnrollmentId(map.get(key));
+    }
+
+    private static String mapGet(Map<String, String> map, String key) {
+        return map.get(key);
+    }
+
+    private static String mapGetDecrypted(Map<String, String> map, String key, String decryptKey) throws Exception {
+        String value = map.get(key);
+        return value != null ? aesDecryptFromBase64(value, decryptKey, EMPTY_IV) : null;
+    }
+
+    public static String dump(AtKeys keys) {
+        StringBuilder builder = new StringBuilder();
+        builderAppend(builder, ENROLLMENT_ID, keys.getEnrollmentId());
+        builderAppend(builder, PKAM_PUBLIC_KEY, keys.getApkamPublicKey());
+        builderAppend(builder, PKAM_PRIVATE_KEY, keys.getApkamPrivateKey());
+        builderAppend(builder, ENCRYPT_PUBLIC_KEY, keys.getEncryptPublicKey());
+        builderAppend(builder, ENCRYPT_PRIVATE_KEY, keys.getEncryptPrivateKey());
+        builderAppend(builder, APKAM_SYMMETRIC_KEY, keys.getApkamSymmetricKey());
+        builderAppend(builder, SELF_ENCRYPT_KEY, keys.getSelfEncryptKey());
+        for (Map.Entry<String, String> entry : keys.getCache().entrySet()) {
+            builderAppend(builder, entry.getKey(), entry.getValue());
+        }
+        return builder.toString();
+    }
+
+    private static void builderAppend(StringBuilder builder, String key, Object value) {
+        if (value != null) {
+            builder.append("\tkey: ").append(key).append("\n\t\tvalue: ").append(value).append("\n");
+        }
     }
 }

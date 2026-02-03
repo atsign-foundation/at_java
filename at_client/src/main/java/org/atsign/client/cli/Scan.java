@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.Secondary;
 import org.atsign.client.util.ArgsUtil;
+import org.atsign.client.util.KeysUtil;
 import org.atsign.common.AtSign;
 import org.atsign.common.Keys.AtKey;
 import org.atsign.common.Metadata;
@@ -54,7 +55,7 @@ public class Scan {
         AtClient atClient = null;
         try {
             what = "initialize AtClient";
-            atClient = AtClient.withRemoteSecondary(atSign, sAddress, verbose);
+            atClient = AtClient.withRemoteSecondary(atSign, KeysUtil.loadKeys(atSign), sAddress, verbose);
         } catch (AtException e) {
             System.err.println("Failed to " + what + " " + e.getMessage());
             e.printStackTrace(System.err);

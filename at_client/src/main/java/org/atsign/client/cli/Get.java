@@ -2,6 +2,7 @@ package org.atsign.client.cli;
 
 import org.atsign.client.api.AtClient;
 import org.atsign.client.util.ArgsUtil;
+import org.atsign.client.util.KeysUtil;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
 import org.atsign.common.KeyBuilders;
@@ -32,7 +33,7 @@ public class Get {
 
         AtClient atClient = null;
         try {
-            atClient = AtClient.withRemoteSecondary(atSign, ArgsUtil.createAddressFinder(rootUrl));
+            atClient = AtClient.withRemoteSecondary(atSign, KeysUtil.loadKeys(atSign), ArgsUtil.createAddressFinder(rootUrl));
         } catch (AtException e) {
             System.err.println("Failed to create AtClientImpl : " + e.getMessage());
             e.printStackTrace(System.err);
