@@ -1,11 +1,8 @@
-<a href="https://atsign.com#gh-light-mode-only">
-<img width=250px
-    src="https://atsign.com/wp-content/uploads/2022/05/atsign-logo-horizontal-color2022.svg#gh-light-mode-only"
-    alt="The Atsign Foundation"></a><a href="https://atsign.com#gh-dark-mode-only">
-<img width=250px
-    src="https://atsign.com/wp-content/uploads/2023/08/atsign-logo-horizontal-reverse2022-Color.svg#gh-dark-mode-only"
-    alt="The Atsign Foundation">
-</a>
+<!-- pyml disable-num-lines 4 md013,md033-->
+<h1><a href="https://atsign.com#gh-light-mode-only">
+   <img width=250px src="https://atsign.com/wp-content/uploads/2022/05/atsign-logo-horizontal-color2022.svg#gh-light-mode-only" alt="The Atsign Foundation"></a>
+<a href="https://atsign.com#gh-dark-mode-only">
+   <img width=250px src="https://atsign.com/wp-content/uploads/2023/08/atsign-logo-horizontal-reverse2022-Color.svg#gh-dark-mode-only" alt="The Atsign Foundation"></a></h1>
 
 # Contributing guidelines
 
@@ -19,14 +16,16 @@ For small changes, especially documentation, you can simply use the "Edit" butto
 to update the Markdown file, and start the
 [pull request](https://help.github.com/articles/about-pull-requests/) process.
 Use the preview tab in GitHub to make sure that it is properly
-formatted before committing. Please use conventional commits and follow the semantic PR format as documented
+formatted before committing. Please use conventional commits and follow the
+semantic PR format as documented
 [here](https://github.com/atsign-foundation/.github/blob/trunk/atGitHub.md#semantic-prs).
 A pull request will cause integration tests to run automatically, so please review
 the results of the pipeline and correct any mistakes that are reported.
 
 If you plan to contribute often or have a larger change to make, it is best to
-setup an environment for contribution, which is what the rest of these guidelines
-describe. The atsign-foundation GitHub organization's conventions and configurations are documented
+setup an environment for contribution, which is what the rest of these
+guidelines describe. The atsign-foundation GitHub organization's conventions
+and configurations are documented
 [here](https://github.com/atsign-foundation/.github/blob/trunk/atGitHub.md).
 
 ## Development Environment Setup
