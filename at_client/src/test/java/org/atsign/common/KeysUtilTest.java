@@ -68,7 +68,6 @@ public class KeysUtilTest {
     KeysUtil.saveKeys(testAtSign, keys);
     File expected = KeysUtil.getKeysFile(testAtSign, KeysUtil.expectedKeysFilesLocation);
     assertTrue(expected.exists());
-    System.out.println("Expected file path: " + expected.toPath().toString());
 
     // Given a correctly formatted keys file in the legacy location
     // And there is NOT a keys file in the canonical location

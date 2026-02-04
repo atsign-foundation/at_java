@@ -1,5 +1,6 @@
 package org.atsign.examples;
 
+import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 import org.atsign.client.api.AtClient;
@@ -25,28 +26,20 @@ public class SelfKeyGetExample {
     AtSign atSign = new AtSign(ATSIGN_STR);
 
     // 3. atClient factory method
-    AtClient atClient = null;
-    try {
-      atClient = AtClient.withRemoteSecondary(ROOT_URL, atSign, loadKeys(atSign), VERBOSE);
-    } catch (AtException e) {
+    try (AtClient atClient = AtClient.withRemoteSecondary(ROOT_URL, atSign, loadKeys(atSign), VERBOSE)) {
+
+      // 4. create selfkey
+      SelfKey sk = new KeyBuilders.SelfKeyBuilder(atSign).key(KEY_NAME).build();
+
+      // 5. get the key
+      String response = atClient.get(sk).get();
+      System.out.println(response);
+      _printMetadata(sk.metadata);
+
+    } catch (AtException | IOException | InterruptedException | ExecutionException e) {
       System.err.println("Failed to connect to remote server " + e);
       e.printStackTrace();
     }
-
-    // 4. create selfkey
-    SelfKey sk = new KeyBuilders.SelfKeyBuilder(atSign).key(KEY_NAME).build();
-
-    // 5. get the key
-    String response = null;
-    try {
-      response = atClient.get(sk).get();
-    } catch (InterruptedException | ExecutionException e) {
-      System.err.println("Failed to get key " + e);
-      e.printStackTrace();
-    }
-    System.out.println(response);
-    _printMetadata(sk.metadata);
-
   }
 
 

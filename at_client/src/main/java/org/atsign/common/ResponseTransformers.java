@@ -4,10 +4,12 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import lombok.extern.slf4j.Slf4j;
 import org.atsign.client.api.Secondary.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+@Slf4j
 public class ResponseTransformers {
   static final ObjectMapper mapper = new ObjectMapper();
 
@@ -39,7 +41,7 @@ public class ResponseTransformers {
         List<String> keys = mapper.readerForListOf(String.class).readValue(value.getRawDataResponse());
         return keys.stream().filter(filter).collect(Collectors.toList());
       } catch (Exception e) {
-        e.printStackTrace();
+        log.error("unexpected exception", e);
         return null;
       }
     }

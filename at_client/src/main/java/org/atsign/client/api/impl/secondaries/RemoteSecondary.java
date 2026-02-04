@@ -6,6 +6,7 @@ import static org.atsign.client.api.AtEvents.AtEventType;
 import java.io.IOException;
 import java.util.Map;
 
+import lombok.extern.slf4j.Slf4j;
 import org.atsign.client.api.AtConnectionFactory;
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.Secondary;
@@ -22,6 +23,7 @@ import org.atsign.common.exceptions.AtUnknownResponseException;
 /**
  * @see org.atsign.client.api.Secondary
  */
+@Slf4j
 public class RemoteSecondary implements Secondary {
 
   private final AtConnectionFactory connectionFactory;
@@ -173,8 +175,7 @@ public class RemoteSecondary implements Secondary {
         monitorConnection.startMonitor();
       }
     } catch (Exception e) {
-      System.err.println("SEVERE: failed to " + what + " : " + e.getMessage());
-      e.printStackTrace(System.err);
+      log.error("SEVERE: failed to {}", what, e);
     }
   }
 
@@ -189,8 +190,7 @@ public class RemoteSecondary implements Secondary {
         monitorConnection.stopMonitor();
       }
     } catch (Exception e) {
-      System.err.println("SEVERE: failed to " + what + " : " + e.getMessage());
-      e.printStackTrace(System.err);
+      log.error("SEVERE: failed to {}", what, e);
     }
   }
 }

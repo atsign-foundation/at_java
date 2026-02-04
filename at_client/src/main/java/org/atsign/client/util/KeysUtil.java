@@ -12,6 +12,7 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.TreeMap;
 
+import lombok.extern.slf4j.Slf4j;
 import org.atsign.client.api.AtKeys;
 import org.atsign.common.AtSign;
 import org.atsign.common.exceptions.AtClientConfigException;
@@ -19,6 +20,7 @@ import org.atsign.common.exceptions.AtClientConfigException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+@Slf4j
 public class KeysUtil {
 
   static private final String EMPTY_IV = Base64.getEncoder().encodeToString(new byte[16]);
@@ -64,7 +66,7 @@ public class KeysUtil {
     if (file.getParentFile() != null && !file.getParentFile().exists()) {
       Files.createDirectories(file.getParentFile().toPath());
     }
-    System.out.println("Saving keys to " + file.getAbsolutePath());
+    log.info("Saving keys to {}", file.getAbsolutePath());
 
     Files.write(file.toPath(), getAsJson(keys).getBytes(UTF_8));
   }

@@ -1,27 +1,25 @@
 package org.atsign.client.util;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.nio.charset.StandardCharsets;
 
+@Slf4j
 public class ByteUtil {
-  public static String convert(byte[] data) { // Method to convert byte[] array to string
+  public static String convert(byte[] data) {
     try {
-      String st = new String(data, StandardCharsets.UTF_8); // Trying to parse the byte[] array 'data' to string
-      return st;
-    } catch (Exception e) { // In case if an error occurs while parsing the array
-      System.out.println("Error occured while parsing the data to string ");
-      e.printStackTrace(); // Printing the stack trace if any error occurs
+      return new String(data, StandardCharsets.UTF_8);
+    } catch (Exception e) {
+      log.error("Error occurred while parsing the data to string", e);
       return null;
     }
   }
 
-  public static byte[] convert(String data) { // Method to convert String to byte[] array
+  public static byte[] convert(String data) {
     try {
-      // Gets the byte value of the string passed , iterating through character by character and stores their byte value into byte array
-      byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
-      return bytes;
+      return data.getBytes(StandardCharsets.UTF_8);
     } catch (Exception e) {
-      System.out.println("Error occured while parsing the string to byte array data");
-      e.printStackTrace();
+      log.error("Error occured while parsing the string to byte array data", e);
       return null;
     }
   }

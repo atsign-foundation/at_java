@@ -1,5 +1,6 @@
 package org.atsign.examples;
 
+import java.io.IOException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 
@@ -25,27 +26,19 @@ public class SelfKeyDeleteExample {
     AtSign atSign = new AtSign(ATSIGN_STR);
 
     // 3. atClient factory method
-    AtClient atClient = null;
-    try {
-      atClient = AtClient.withRemoteSecondary(ROOT_URL, atSign, loadKeys(atSign), VERBOSE);
-    } catch (AtException e) {
+    try (AtClient atClient = AtClient.withRemoteSecondary(ROOT_URL, atSign, loadKeys(atSign), VERBOSE)) {
+
+      // 4. create self key
+      SelfKey sk = new KeyBuilders.SelfKeyBuilder(atSign).key(KEY_NAME).build();
+
+      // 5. delete the key
+      String response = atClient.delete(sk).get();
+      System.out.println(response);
+
+    } catch (AtException | IOException | InterruptedException | ExecutionException e) {
       System.err.println("Failed to connect to remote server " + e);
       e.printStackTrace();
     }
-
-    // 4. create self key
-    SelfKey sk = new KeyBuilders.SelfKeyBuilder(atSign).key(KEY_NAME).build();
-
-    // 5. delete the key
-    String response = null;
-    try {
-      response = atClient.delete(sk).get();
-    } catch (InterruptedException | ExecutionException | CancellationException e) {
-      System.err.println("Failed to delete key " + e);
-      e.printStackTrace();
-    }
-    System.out.println(response);
-
   }
 
 }

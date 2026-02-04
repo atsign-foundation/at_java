@@ -4,9 +4,7 @@ import static java.util.Arrays.asList;
 import static org.atsign.cucumber.helpers.Helpers.assertContains;
 import static org.atsign.cucumber.helpers.Helpers.toCanonicalKey;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -15,8 +13,6 @@ import org.atsign.client.api.AtClient;
 import org.atsign.common.AtSign;
 import org.atsign.common.KeyBuilders;
 import org.atsign.common.Keys;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.cucumber.datatable.DataTable;
 import io.cucumber.datatable.DataTableFormatter;
@@ -24,8 +20,6 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Then;
 
 public class GetAtKeysSteps {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(GetAtKeysSteps.class);
 
   public static final List<String> HEADINGS = asList(
                                                      "Key",

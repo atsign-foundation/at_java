@@ -11,22 +11,21 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.ComposeContainer;
 import org.testcontainers.containers.output.OutputFrame;
 
-public class VirtualEnv {
+import lombok.extern.slf4j.Slf4j;
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(VirtualEnv.class);
+@Slf4j
+public class VirtualEnv {
 
   private static ComposeContainer CONTAINER;
 
   public static void main(String[] args) throws Exception {
     setUp();
-    LOGGER.info("sleeping for 1 hour, after which container will be torn down...");
+    log.info("sleeping for 1 hour, after which container will be torn down...");
     Thread.sleep(HOURS.toMillis(1));
-    LOGGER.info("tearing down");
+    log.info("tearing down");
     tearDown();
   }
 
@@ -58,9 +57,9 @@ public class VirtualEnv {
     };
 
     public void await(long timeout, TimeUnit unit) throws InterruptedException {
-      LOGGER.info("awaiting container log to contain {} lines that match {}...", latch.getCount(), matcher.pattern());
+      log.info("awaiting container log to contain {} lines that match {}...", latch.getCount(), matcher.pattern());
       latch.await(timeout, unit);
-      LOGGER.info("container log indicates that start up is complete");
+      log.info("container log indicates that start up is complete");
     }
 
     @Override

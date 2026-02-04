@@ -11,6 +11,7 @@ import static org.atsign.client.api.AtEvents.AtEventType.updateNotification;
 
 import java.util.HashMap;
 
+import lombok.extern.slf4j.Slf4j;
 import org.atsign.common.AtSign;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  *
  */
+@Slf4j
 public class AtMonitorConnection extends AtSecondaryConnection implements Runnable {
   private static final ObjectMapper mapper = new ObjectMapper();
 
@@ -68,7 +70,7 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
           if (!isRunning() || lastHeartbeatSentTime - lastHeartbeatAckTime >= heartbeatIntervalMillis) {
             try {
               // heartbeats have stopped being acked
-              System.err.println("Monitor heartbeats not being received");
+              log.error("Monitor heartbeats not being received");
               stopMonitor();
               long waitStartTime = System.currentTimeMillis();
               while (isRunning() && System.currentTimeMillis() - waitStartTime < 5000) {
@@ -80,12 +82,11 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
                 }
               }
               if (isRunning()) {
-                System.err.println("Monitor thread has not stopped, but going to start another one anyway");
+                log.error("Monitor thread has not stopped, but going to start another one anyway");
               }
               startMonitor();
             } catch (Exception e) {
-              System.err.println("Monitor restart failed " + e);
-              e.printStackTrace(System.err);
+              log.error("Monitor restart failed", e);
             }
           } else {
             if (System.currentTimeMillis() - lastHeartbeatSentTime > heartbeatIntervalMillis) {
@@ -121,7 +122,7 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
         try {
           connect();
         } catch (Exception e) {
-          System.err.println("startMonitor failed to connect to secondary : " + e.getMessage());
+          log.error("startMonitor failed to connect to secondary : {}", e.getMessage());
           running = false;
           return false;
         }
@@ -162,7 +163,7 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
         what = "read from connection";
         String response = parseRawResponse(socketScanner.nextLine());
         if (verbose) {
-          System.out.println("\tRCVD (MONITOR): " + response);
+          log.info("RCVD (MONITOR): {}", response);
         }
         AtEventType eventType;
         HashMap<String, Object> eventData = new HashMap<>();
@@ -227,7 +228,7 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
 
           }
         } catch (Exception e) {
-          System.err.println("" + e);
+          log.error("monitor exception : {}", e.toString());
           eventType = monitorException;
           eventData.put("key", "__monitorException__");
           eventData.put("value", response);
@@ -235,16 +236,13 @@ public class AtMonitorConnection extends AtSecondaryConnection implements Runnab
         }
         eventBus.publishEvent(eventType, eventData);
       }
-      System.err.println("Monitor ending normally - shouldBeRunning is " + isShouldBeRunning());
+      log.info("Monitor ending normally - shouldBeRunning is {}", isShouldBeRunning());
     } catch (Exception e) {
       if (!isShouldBeRunning()) {
-        System.err.println("shouldBeRunning is false, and monitor has stopped OK. Exception was : " + e.getMessage());
+        log.info("shouldBeRunning is false, and monitor has stopped OK. Exception was : {}", e.getMessage());
       } else {
-        String message = "Monitor failed to " + what + " : " + e.getMessage();
-        System.err.println(message);
-        e.printStackTrace(System.err);
-
-        System.err.println("Monitor ending. Monitor heartbeat thread should restart the monitor shortly");
+        log.error("Monitor failed to {}", what, e);
+        log.info("Monitor ending. Monitor heartbeat thread should restart the monitor shortly");
         disconnect();
       }
     } finally {

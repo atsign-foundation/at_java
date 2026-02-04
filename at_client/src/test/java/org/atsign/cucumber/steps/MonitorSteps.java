@@ -3,9 +3,7 @@ package org.atsign.cucumber.steps;
 import static org.atsign.cucumber.helpers.Helpers.assertContains;
 import static org.atsign.cucumber.helpers.Helpers.testContains;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.testcontainers.shaded.com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
@@ -16,16 +14,12 @@ import java.util.concurrent.TimeUnit;
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.AtEvents;
 import org.atsign.common.AtSign;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.cucumber.datatable.DataTable;
 import io.cucumber.datatable.DataTableFormatter;
 import io.cucumber.java.en.Then;
 
 public class MonitorSteps {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(MonitorSteps.class);
 
   private final AtClientContext context;
 

@@ -438,7 +438,6 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
   }
 
   private EnrollmentId enroll(AtSecondaryConnection connection, AtKeys keys) throws Exception {
-    System.out.println(keys.getApkamSymmetricKey());
     Map<String, Object> args = toObjectMap("appName", appName,
                                            "deviceName", deviceName,
                                            "apkamPublicKey", keys.getApkamPublicKey(),

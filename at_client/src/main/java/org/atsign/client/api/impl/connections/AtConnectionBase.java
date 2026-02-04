@@ -8,6 +8,7 @@ import java.util.Scanner;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 
+import lombok.extern.slf4j.Slf4j;
 import org.atsign.client.api.AtConnection;
 import org.atsign.client.api.AtEvents;
 import org.atsign.common.AtException;
@@ -15,6 +16,7 @@ import org.atsign.common.AtException;
 /**
  * @see org.atsign.client.api.AtConnection
  */
+@Slf4j
 public abstract class AtConnectionBase implements AtConnection {
   private final String url;
 
@@ -102,7 +104,7 @@ public abstract class AtConnectionBase implements AtConnection {
     }
     connected = false;
     try {
-      System.err.println(this.getClass().getSimpleName() + " disconnecting");
+      log.debug("disconnecting from {}:{}", host, port);
       socket.close();
       socketScanner.close();
       socketWriter.close();
@@ -118,9 +120,11 @@ public abstract class AtConnectionBase implements AtConnection {
       return;
     }
     SocketFactory sf = SSLSocketFactory.getDefault();
+    log.debug("connecting to {}:{}...", host, port);
     this.socket = sf.createSocket(host, port);
     this.socketWriter = new PrintWriter(socket.getOutputStream());
     this.socketScanner = new Scanner(socket.getInputStream());
+    log.debug("connected to {}:{}", host, port);
 
     if (authenticator != null) {
       authenticator.authenticate(this);
@@ -148,14 +152,14 @@ public abstract class AtConnectionBase implements AtConnection {
       socketWriter.flush();
 
       if (verbose) {
-        System.out.println("\tSENT: " + command.trim());
+        log.info("SENT: {}", command);
       }
 
       if (readTheResponse) {
         // Responses are always terminated by newline
         String rawResponse = socketScanner.nextLine();
         if (verbose) {
-          System.out.println("\tRCVD: " + rawResponse);
+          log.info("RCVD: {}", rawResponse);
         }
 
         return parseRawResponse(rawResponse);
@@ -166,12 +170,12 @@ public abstract class AtConnectionBase implements AtConnection {
       disconnect();
 
       if (retryOnException) {
-        System.err.println("\tCaught exception " + first + " : reconnecting");
+        log.error("Caught exception {} : reconnecting", first.toString());
         try {
           connect();
           return executeCommand(command, false, true);
         } catch (Exception second) {
-          second.printStackTrace(System.err);
+          log.error("failed on retry", second);
           throw new IOException("Failed to reconnect after original exception " + first + " : ", second);
         }
       } else {

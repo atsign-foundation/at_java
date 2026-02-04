@@ -1,5 +1,6 @@
 package org.atsign.examples;
 
+import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 import org.atsign.client.api.AtClient;
@@ -27,27 +28,20 @@ public class SelfKeyPutExample {
     AtSign atSign = new AtSign(ATSIGN_STR);
 
     // 3. atClient factory method
-    AtClient atClient = null;
-    try {
-      atClient = AtClient.withRemoteSecondary(ROOT_URL, atSign, loadKeys(atSign), VERBOSE);
-    } catch (AtException e) {
+    try (AtClient atClient = AtClient.withRemoteSecondary(ROOT_URL, atSign, loadKeys(atSign), VERBOSE)) {
+
+      // 4. create selfkey
+      SelfKey sk = new KeyBuilders.SelfKeyBuilder(atSign).key(KEY_NAME).build();
+      sk.metadata.ttl = ttl;
+
+      // 5. put the key
+      String response = atClient.put(sk, VALUE).get();
+      System.out.println(response);
+
+    } catch (AtException | IOException | InterruptedException | ExecutionException e) {
       System.err.println("Failed to connect to remote server " + e);
       e.printStackTrace();
     }
-
-    // 4. create selfkey
-    SelfKey sk = new KeyBuilders.SelfKeyBuilder(atSign).key(KEY_NAME).build();
-    sk.metadata.ttl = ttl;
-
-    // 5. put the key
-    String response = null;
-    try {
-      response = atClient.put(sk, VALUE).get();
-    } catch (InterruptedException | ExecutionException e) {
-      System.err.println("Failed to put key " + e);
-      e.printStackTrace();
-    }
-    System.out.println(response);
   }
 
 }

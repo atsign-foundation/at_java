@@ -6,9 +6,7 @@ import static org.atsign.client.util.Preconditions.checkNotNull;
 import static org.atsign.cucumber.helpers.Helpers.isHostPortReachable;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.typeCompatibleWith;
+import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
@@ -31,17 +29,15 @@ import org.atsign.cucumber.helpers.AtDemoData;
 import org.atsign.virtualenv.VirtualEnv;
 import org.junit.jupiter.api.function.Executable;
 import org.opentest4j.TestAbortedException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.cucumber.java.After;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class AtClientContext {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(AtClientContext.class);
 
   private static final Set<AtEvents.AtEventType> ALL_EVENT_TYPES = Collections.unmodifiableSet(
                                                                                                new HashSet<>(Arrays
@@ -275,7 +271,7 @@ public class AtClientContext {
 
   @And("pause for {long} {timeunit}")
   public void pause(long duration, TimeUnit unit) throws Exception {
-    LOGGER.info("sleeping for {} {}", duration, unit);
+    log.debug("sleeping for {} {}", duration, unit);
     Thread.sleep(unit.toMillis(duration));
   }
 
@@ -382,14 +378,14 @@ public class AtClientContext {
 
     @Override
     public void handleEvent(AtEvents.AtEventType eventType, Map<String, Object> eventData) {
-      LOGGER.info("{} received {} : {}", atSign, eventType, eventData);
+      log.debug("{} received {} : {}", atSign, eventType, eventData);
       events.add(new AtClientEvent(eventType, eventData));
     }
 
     private int clear() {
       int count = events.size();
       events.clear();
-      LOGGER.info("{} cleared {} events", atSign, count);
+      log.debug("{} cleared {} events", atSign, count);
       return count;
     }
   }
@@ -442,11 +438,11 @@ public class AtClientContext {
         .filter(this::requiresTeardown)
         .collect(Collectors.toList());
     keys.forEach(k -> deleteKeyNoThrow(client, k));
-    LOGGER.info("teardown for {} deleted {}", lookupQualifiedAtSign(client), keys);
+    log.debug("teardown for {} deleted {}", lookupQualifiedAtSign(client), keys);
     try {
       client.close();
     } catch (IOException e) {
-      LOGGER.info("teardown close for {} threw exception : {}", lookupQualifiedAtSign(client), e.getMessage());
+      log.debug("teardown close for {} threw exception : {}", lookupQualifiedAtSign(client), e.getMessage());
     }
   }
 
@@ -470,7 +466,7 @@ public class AtClientContext {
     try {
       client.executeCommand("delete:" + key, true);
     } catch (Exception e) {
-      LOGGER.error("attempt to delete {} failed : {}", key, e.getMessage());
+      log.error("attempt to delete {} failed : {}", key, e.getMessage());
     }
   }
 
@@ -479,7 +475,7 @@ public class AtClientContext {
       String json = client.getSecondary().executeCommand("scan:showHidden:true .*", true).getRawDataResponse();
       return decodeJsonListOfStrings(json);
     } catch (Exception e) {
-      LOGGER.error("failed to scan : {}", e.getMessage());
+      log.error("failed to scan : {}", e.getMessage());
       return Collections.emptyList();
     }
   }

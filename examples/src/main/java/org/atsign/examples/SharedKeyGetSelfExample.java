@@ -1,5 +1,6 @@
 package org.atsign.examples;
 
+import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 import org.atsign.client.api.AtClient;
@@ -25,26 +26,19 @@ public class SharedKeyGetSelfExample {
     AtSign sharedWith = new AtSign(ATSIGN_STR_SHARED_WITH);
 
     // 3. atClient factory method
-    AtClient atClient = null;
-    try {
-      atClient = AtClient.withRemoteSecondary(ROOT_URL, sharedBy, loadKeys(sharedBy), VERBOSE);
-    } catch (AtException e) {
+    try (AtClient atClient = AtClient.withRemoteSecondary(ROOT_URL, sharedBy, loadKeys(sharedBy), VERBOSE)) {
+
+      // 4. create SharedKey instance
+      SharedKey sk = new KeyBuilders.SharedKeyBuilder(sharedBy, sharedWith).key(KEY_NAME).build();
+
+      // 5. get the key
+      String response = atClient.get(sk).get();
+      System.out.println(response);
+
+    } catch (AtException | IOException | InterruptedException | ExecutionException e) {
       System.err.println("Failed to create AtClient instance " + e);
       e.printStackTrace();
     }
-
-    // 4. create SharedKey instance
-    SharedKey sk = new KeyBuilders.SharedKeyBuilder(sharedBy, sharedWith).key(KEY_NAME).build();
-
-    // 5. get the key
-    String response = null;
-    try {
-      response = atClient.get(sk).get();
-    } catch (InterruptedException | ExecutionException e) {
-      System.err.println("Failed to get key " + e);
-      e.printStackTrace();
-    }
-    System.out.println(response);
   }
 
 }
