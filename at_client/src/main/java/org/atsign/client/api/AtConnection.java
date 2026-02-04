@@ -1,38 +1,40 @@
 package org.atsign.client.api;
 
-import org.atsign.common.AtException;
-
 import java.io.IOException;
 import java.net.Socket;
 
+import org.atsign.common.AtException;
+
 /**
- * A simple abstraction around connections to @ platform services - e.g. the root server and secondary servers
+ * A simple abstraction around connections to @ platform services - e.g. the root server and
+ * secondary servers
  */
 @SuppressWarnings("unused")
 public interface AtConnection {
-    String getUrl();
+  String getUrl();
 
-    String getHost();
+  String getHost();
 
-    int getPort();
+  int getPort();
 
-    Socket getSocket();
+  Socket getSocket();
 
-    boolean isConnected();
+  boolean isConnected();
 
-    boolean isAutoReconnect();
+  boolean isAutoReconnect();
 
-    boolean isVerbose();
+  boolean isVerbose();
 
-    void setVerbose(boolean verbose);
+  void setVerbose(boolean verbose);
 
-    void connect() throws IOException, AtException;
-    void disconnect();
+  void connect() throws IOException, AtException;
 
-    String executeCommand(String command) throws IOException;
+  void disconnect();
 
-    interface Authenticator {
-        void authenticate(AtConnection connection) throws AtException, IOException;
-    }
+  String executeCommand(String command) throws IOException;
+
+  interface Authenticator {
+    void authenticate(AtConnection connection) throws AtException, IOException;
+  }
 
 }

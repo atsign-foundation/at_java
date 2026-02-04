@@ -6,7 +6,7 @@ import org.atsign.common.AtException;
  *
  */
 public class AtBlockedConnectionException extends AtException {
-    public AtBlockedConnectionException(String message) {
-        super(message);
-    }
+  public AtBlockedConnectionException(String message) {
+    super(message);
+  }
 }

@@ -6,7 +6,7 @@ import org.atsign.common.AtException;
  *
  */
 public class MalformedKeyException extends AtException {
-    public MalformedKeyException(String message) {
-        super(message);
-    }
+  public MalformedKeyException(String message) {
+    super(message);
+  }
 }

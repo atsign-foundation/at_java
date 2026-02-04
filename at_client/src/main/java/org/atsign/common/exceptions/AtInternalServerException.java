@@ -6,7 +6,7 @@ import org.atsign.common.AtException;
  *
  */
 public class AtInternalServerException extends AtException {
-    public AtInternalServerException(String message) {
-        super(message);
-    }
+  public AtInternalServerException(String message) {
+    super(message);
+  }
 }
