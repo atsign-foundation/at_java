@@ -1,8 +1,0 @@
-plugins:
-  md013:
-    line_length: 120
-    code_block_line_length: 120
-  md041:
-    enabled: false
-  md033:
-    allowed_elements: img,a

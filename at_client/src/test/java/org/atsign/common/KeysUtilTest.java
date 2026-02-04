@@ -81,7 +81,9 @@ public class KeysUtilTest {
 
     // So, in order to set up the "Given" pre-conditions above, we'll need to
     // 1) move the generated file to the legacy location
-    Files.createDirectories(new File(KeysUtil.legacyKeysFilesLocation).toPath());
+    File file = new File(KeysUtil.legacyKeysFilesLocation);
+    file.deleteOnExit();
+    Files.createDirectories(file.toPath());
     Files.move(expected.toPath(), KeysUtil.getKeysFile(testAtSign, KeysUtil.legacyKeysFilesLocation).toPath());
 
     // 2) delete the file we just generated in the expected location
