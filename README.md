@@ -1,11 +1,8 @@
-<a href="https://atsign.com#gh-light-mode-only">
-<img width=250px
-   src="https://atsign.com/wp-content/uploads/2022/05/atsign-logo-horizontal-color2022.svg#gh-light-mode-only"
-   alt="The Atsign Foundation"></a><a href="https://atsign.com#gh-dark-mode-only">
-<img width=250px
-   src="https://atsign.com/wp-content/uploads/2023/08/atsign-logo-horizontal-reverse2022-Color.svg#gh-dark-mode-only"
-   alt="The Atsign Foundation">
-</a>
+<!-- pyml disable-num-lines 4 md013,md033-->
+<h1><a href="https://atsign.com#gh-light-mode-only">
+   <img width=250px src="https://atsign.com/wp-content/uploads/2022/05/atsign-logo-horizontal-color2022.svg#gh-light-mode-only" alt="The Atsign Foundation"></a>
+<a href="https://atsign.com#gh-dark-mode-only">
+   <img width=250px src="https://atsign.com/wp-content/uploads/2023/08/atsign-logo-horizontal-reverse2022-Color.svg#gh-dark-mode-only" alt="The Atsign Foundation"></a></h1>
 
 [![gitHub license](https://img.shields.io/badge/license-BSD3-blue.svg)](./LICENSE)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/atsign-foundation/at_java/badge)](https://securityscorecards.dev/viewer/?uri=github.com/atsign-foundation/at_java&sort_by=check-score&sort_direction=desc)
@@ -74,7 +71,8 @@ mvn install
 Now that the programs have been compiled, execute the following command to use at_java
 
 ```shell
-java -cp "target/at_client-1.0-SNAPSHOT.jar:target/lib/*" org.atsign.client.cli.<class> [required arguments]
+java -cp "target/at_client-1.0-SNAPSHOT.jar:target/lib/*" \
+org.atsign.client.cli.<class> [required arguments]
 ```
 
 ## Main Classes
@@ -86,85 +84,102 @@ java -cp "target/at_client-1.0-SNAPSHOT.jar:target/lib/*" org.atsign.client.cli.
 5) Register
 6) Activate
 
-**Note:** Each of these classes requires a different set of arguments, make sure to read the help text and provide
-necessary arguments.
+**Note:** Each of these classes requires a different set of arguments, make
+sure to read the help text and provide necessary arguments.
 
 ### Register
 
-A class that accepts command line arguments which are used to fetch a free atsign and register it to the email provided.
-Further, this atsign can be activated using a verification code sent to the registered email.
-To run use the following command
+A class that accepts command line arguments which are used to fetch a free
+atsign and register it to the email provided. Further, this atsign can be
+activated using a verification code sent to the registered email.
+
+To run use the following command:
 
 ```shell
-java -cp "target/at_client-1.0-SNAPSHOT.jar:target/lib/*" org.atsign.client.cli.Register -e email@email.com
+java -cp "target/at_client-1.0-SNAPSHOT.jar:target/lib/*" \
+org.atsign.client.cli.Register -e email@example.com
 ```
 
 ### Register with SUPER_API Key
 
-Register can also be used with a SUPER_API Key that has privileges to preset and atsign with an activation code.
+Register can also be used with a SUPER_API Key that has privileges to preset
+and atsign with an activation code.
 
-To run use the following command
+To run use the following command:
 
 ```shell
-java -cp "target/at_client-1.0-SNAPSHOT.jar:target/lib/*" org.atsign.client.cli.Register -k <SUPER_API Key>
+java -cp "target/at_client-1.0-SNAPSHOT.jar:target/lib/*" \
+org.atsign.client.cli.Register -k <SUPER_API Key>
 ```
 
-When using the SUPER_API Key to register an atsign, the following sequence of calls take place:
+When using the SUPER_API Key to register an atsign, the following sequence of
+calls take place:
 1) User provides at_java/Register with the SUPER_API Key passed as an argument
-2) at_java calls the AtSign Registrar API* Endpoint(get-atsign) with the SUPER_API Key provided
+2) at_java calls the AtSign Registrar API* Endpoint(get-atsign) with the
+SUPER_API Key provided
 3) The AtSign registrar API responds with an AtSign-ActivationKey pair
-4) at_java now call the AtSign Registrar API* Endpoint(activate-atsign) with the AtSign-ActivationKey pair
-5) The API responds with a json containing the CRAM_KEY* for the concerned atsign
+4) at_java now call the AtSign Registrar API* Endpoint(activate-atsign) with
+the AtSign-ActivationKey pair
+5) The API responds with a json containing the CRAM_KEY* for the concerned
+atsign
 6) This CRAM_KEY* can be used to activate the atsign further making it usable
-7) at_java does the activation automatically for you and stores your atKeys* file at path '~/.atsign/keys'
-8) Now the atsign is activated and the atKeys file can be used to authenticate and perform protected operation with/on
-the atSign.
+7) at_java does the activation automatically for you and stores your atKeys*
+file at path '~/.atsign/keys'
+8) Now the atsign is activated and the atKeys file can be used to
+authenticate and perform protected operation with/on the atSign.
 
 ### Things to know about at_platform
 
-1) Register: This is a class in at_java that has the functionality to call the necessary API, handle responses in order
-to fetch and register atsigns
-2) AtSign Registrar API: An AtSign service that is responsible for handling atsign's server creation, registration,
-authentication, reset and deletion
+1) Register: This is a class in at_java that has the functionality to call
+the necessary API, handle responses in order to fetch and register atsigns.
+2) AtSign Registrar API: An AtSign service that is responsible for handling
+atsign's server creation, registration, authentication, reset and deletion.
 3) SUPER_API Key
-   * All calls to the AtSign Registrar API require an API_KEY. But the SUPER_API Key has some additional privileges.
-   * SUPER_API Keys have the privilege to preset an AtSign with an activation key so that this AtSign can be activated
-   without manually entering a verification code that is sent to the registered email
-   * All SUPER_API Keys have a name containing two elements [say pre and post], all the atsigns generated using this
-   API_Key will be of the following format: (pre)atsign(post). Now the atsign will be @preatsignpost.
-   This is done to separate atsigns generated using SUPER_API Keys to the atsigns that are generated through other
-   methods.
-4) CRAM_KEY: This is an authentication key that will be used for a one-time authentication to activate an atsign which
-allows for assigning random, secure non-symmetric keypairs which will be further stored in the users atKeys file.
-   * Note: CRAM_KEY will be deleted from the atsign server after an atKeys file has been generated, so only you have the
-   keys to authenticate into your atsign
-5) atKeys file: This will be a file generated during activation of an atsign that stores all the keys necessary for
-authenticating into atSign
+   * All calls to the AtSign Registrar API require an API_KEY. But the
+   SUPER_API Key has some additional privileges.
+   * SUPER_API Keys have the privilege to preset an AtSign with an activation
+   key so that this AtSign can be activated without manually entering a
+   verification code that is sent to the registered email.
+   * All SUPER_API Keys have a name containing two elements [say pre and
+   post], all the atsigns generated using this API_Key will be of the
+   following format: (pre)atsign(post). Now the atsign will be @preatsignpost.
+   This is done to separate atsigns generated using SUPER_API Keys to the
+   atsigns that are generated through other methods.
+4) CRAM_KEY: This is an authentication key that will be used for a one-time
+authentication to activate an atsign which allows for assigning random,
+secure non-symmetric keypairs which will be further stored in the users
+atKeys file.
+   * Note: CRAM_KEY will be deleted from the atsign server after an atKeys
+   file has been generated, so only you have the keys to authenticate into
+   your atsign.
+5) atKeys file: This will be a file generated during activation of an atsign
+that stores all the keys necessary for authenticating into atSign
    * That would mean users have to keep this file in a secured location
-   * Users should keep this file safe, as there's only one copy of this file and losing it would mean the user would be
-   unable to log in to the atsign
-   * If lost, users can reset the atsign and get a new atKeys file. This would result in loss of all data stored in the
-   atsign's server
+   * Users should keep this file safe, as there's only one copy of this file
+   and losing it would mean the user would be unable to log in to the atsign.
+   * If lost, users can reset the atsign and get a new atKeys file. This
+   would result in loss of all data stored in the atsign's server.
 
 ### Code Style And Formatting
 
-The maven pom contains the following plugins to enforce a consistent coding style and format
+The maven pom contains the following plugins to enforce a consistent coding
+style and format.
 
-* checkstyle [https://checkstyle.org](https://checkstyle.org)
-* spotless [https://github.com/diffplug/spotless](https://github.com/diffplug/spotless)
+* [checkstyle](https://checkstyle.org)
+* [spotless](https://github.com/diffplug/spotless)
 
 The rules which configure the respective plugins are here
 
 * [config/checkstyle.xml](config/checkstyle.xml)
 * [config/java-format.xml](config/java-format.xml)
 
-Run the following maven command run the checks
+Run the following maven command run the checks:
 
 ```shell
 mvn validate
 ```
 
-Run the following maven command to fix the spotless violations
+Run the following maven command to fix the spotless violations:
 
 ```shell
 mvn spotless:apply
@@ -174,11 +189,14 @@ mvn spotless:apply
 
 To configure Intellij to use the same settings
 1. Add the **Adaptor for Eclopse Code Formatter** plugin and configure in
-**Settings -> Adaptor for Eclipse Code Formatter** by setting **Eclipse workspace/project folder or config file** as
+**Settings -> Adaptor for Eclipse Code Formatter** by setting
+**Eclipse workspace/project folder or config file** as
 config/java-format.xml
-2. Add **CheckStyle-IDEA** plugin and configure in **Settings -> Tools -> Checkstyle** by adding config/checkstyle.xml
+2. Add **CheckStyle-IDEA** plugin and configure in
+**Settings -> Tools -> Checkstyle** by adding config/checkstyle.xml
 
 ### Contributions welcome
 
-All of our software is open with intent. We welcome contributions - we want pull requests, and we want
-to hear about issues. See also [CONTRIBUTING.md](CONTRIBUTING.md)
+All of our software is open with intent. We welcome contributions - we want
+pull requests, and we want to hear about issues. See also
+[CONTRIBUTING.md](CONTRIBUTING.md)
