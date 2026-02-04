@@ -1,9 +1,10 @@
 package org.atsign.common;
 
-import org.apache.commons.lang3.StringUtils;
 import org.atsign.common.Keys.AtKey;
 import org.atsign.common.Keys.PublicKey;
 import org.atsign.common.Keys.SharedKey;
+
+import static org.atsign.client.util.StringUtil.isBlank;
 
 /**
  *
@@ -575,11 +576,11 @@ public class VerbBuilders {
         command += ":showHidden:true";
       }
 
-      if (fromAtSign != null && !StringUtils.isBlank(fromAtSign)) {
+      if (fromAtSign != null && !isBlank(fromAtSign)) {
         command += ":" + fromAtSign;
       }
 
-      if (regex != null && !StringUtils.isBlank(regex)) {
+      if (regex != null && !isBlank(regex)) {
         command += " " + regex;
       }
 
@@ -674,7 +675,7 @@ public class VerbBuilders {
     //notify:((?<operation>update|delete):)?(messageType:(?<messageType>key|text):)?(priority:(?<priority>low|medium|high):)?(strategy:(?<strategy>all|latest):)?(latestN:(?<latestN>\d+):)?(notifier:(?<notifier>[^\s:]+):)?(ttln:(?<ttln>\d+):)?(ttl:(?<ttl>\d+):)?(ttb:(?<ttb>\d+):)?(ttr:(?<ttr>(-)?\d+):)?(ccd:(?<ccd>true|false):)?(@(?<forAtSign>[^@:\s]*)):(?<atKey>[^:@]((?!:{2})[^@])+)(@(?<atSign>[^@:\s]+))?(:(?<value>.+))?$
     public String build() {
 
-      if (key == null || StringUtils.isBlank(key)) {
+      if (key == null || isBlank(key)) {
         throw new IllegalArgumentException("key cannot be null or empty");
       }
 
@@ -687,7 +688,7 @@ public class VerbBuilders {
         throw new IllegalArgumentException("Invalid value for ttr. Only -1 and positive numbers are allowed");
       }
 
-      if (ttr != defaultTTRValue && (value == null || StringUtils.isBlank(value))) {
+      if (ttr != defaultTTRValue && (value == null || isBlank(value))) {
         throw new IllegalArgumentException("When the ttr is specified value cannot be null or empty");
       }
 
@@ -699,7 +700,7 @@ public class VerbBuilders {
       }
 
       // append recipients @sign if it is not part of the key already
-      if (recipientAtSign != null && !StringUtils.isBlank(recipientAtSign)) {
+      if (recipientAtSign != null && !isBlank(recipientAtSign)) {
 
         if (!recipientAtSign.startsWith("@")) {
           recipientAtSign = "@" + recipientAtSign;
@@ -711,7 +712,7 @@ public class VerbBuilders {
       // append the key
       command += key;
 
-      if (senderAtSign != null && !StringUtils.isBlank(senderAtSign)) {
+      if (senderAtSign != null && !isBlank(senderAtSign)) {
 
         if (!senderAtSign.startsWith("@")) {
           senderAtSign = "@" + senderAtSign;
@@ -720,7 +721,7 @@ public class VerbBuilders {
         command += senderAtSign;
       }
 
-      if (value != null && !StringUtils.isBlank(value)) {
+      if (value != null && !isBlank(value)) {
         command += ":" + value;
       }
 
@@ -739,12 +740,11 @@ public class VerbBuilders {
     //notify:status:(?<notificationId>\S+)$';
     public String build() {
 
-      if (notificationId == null || StringUtils.isBlank(notificationId)) {
+      if (notificationId == null || isBlank(notificationId)) {
         throw new IllegalArgumentException("notificationId cannot be null or empty");
       }
 
       return "notify:status:" + notificationId;
     }
   }
-
 }

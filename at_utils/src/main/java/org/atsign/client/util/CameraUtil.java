@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
 import org.atsign.common.AtException;
 import org.atsign.common.exceptions.AtClientConfigException;
 
@@ -39,7 +38,7 @@ public class CameraUtil {
    * captures a single image from default camera
    */
   public static BufferedImage getSingleImage() {
-    webcam = getWebcam(StringUtils.EMPTY);
+    webcam = Webcam.getDefault();
     if (!webcam.isOpen()) {
       webcam.open();
     }
@@ -50,7 +49,7 @@ public class CameraUtil {
    * captures a single image from default camera
    */
   public static BufferedImage getSingleImage(String cameraName) {
-    webcam = getWebcam(cameraName);
+    webcam = Webcam.getWebcamByName(cameraName);
     if (!webcam.isOpen()) {
       webcam.open();
     }
@@ -79,7 +78,7 @@ public class CameraUtil {
    * return the camera stream as list of byte[] from a specific camera
    */
   public static List<byte[]> getCameraStream(String cameraName) throws AtException, IOException {
-    webcam = getWebcam(cameraName);
+    webcam = Webcam.getWebcamByName(cameraName);
     validateCamera(webcam);
     webcam.open();
     List<byte[]> stream = captureStream(webcam);
@@ -105,7 +104,7 @@ public class CameraUtil {
    * return the camera stream into list of byte[] from a default camera
    */
   public static List<byte[]> getCameraStream() throws AtException, IOException {
-    webcam = getWebcam(StringUtils.EMPTY);
+    webcam = Webcam.getDefault();
     validateCamera(webcam);
     webcam.open();
     List<byte[]> stream = captureStream(webcam);
@@ -119,13 +118,4 @@ public class CameraUtil {
     }
   }
 
-  private static Webcam getWebcam(String name) {
-    Webcam webcam;
-    if (StringUtils.isEmpty(name)) {
-      webcam = Webcam.getDefault();
-    } else {
-      webcam = Webcam.getWebcamByName(name);
-    }
-    return webcam;
-  }
 }

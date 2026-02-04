@@ -29,8 +29,8 @@ import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
 import org.atsign.cucumber.helpers.AtDemoData;
 import org.atsign.virtualenv.VirtualEnv;
-import org.junit.AssumptionViolatedException;
 import org.junit.jupiter.api.function.Executable;
+import org.opentest4j.TestAbortedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -413,12 +413,12 @@ public class AtClientContext {
     }
   }
 
-  private static AssumptionViolatedException createRootServerNotReachableAssumptionFailure(String rootHostAndPort) {
+  private static TestAbortedException createRootServerNotReachableAssumptionFailure(String rootHostAndPort) {
     String message = String.format("%s not reachable", rootHostAndPort);
     if (rootHostAndPort.contains("vip.ve")) {
       message = message + String.format(" (are you running the virtualenv? see test class %s)", VirtualEnv.class);
     }
-    return new AssumptionViolatedException(message);
+    return new TestAbortedException(message);
   }
 
   private void checkKeysPathExists(File path) {
@@ -433,7 +433,7 @@ public class AtClientContext {
       message = message + " (have you run mvn test-compile? this should download at_demo_data";
     }
     if (message != null) {
-      throw new AssumptionViolatedException(message);
+      throw new TestAbortedException(message);
     }
   }
 

@@ -2,22 +2,17 @@ package org.atsign.common;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.atsign.common.Keys.PublicKey;
 import org.atsign.common.Keys.SelfKey;
 import org.atsign.common.Keys.SharedKey;
 import org.atsign.common.VerbBuilders.PlookupVerbBuilder.Type;
 import org.atsign.common.VerbBuilders.*;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class VerbBuildersTest {
-
-  @Before
-  public void setUp() {}
 
   @Test
   public void fromVerbBuilderTest() {
@@ -625,46 +620,46 @@ public class VerbBuildersTest {
     // Test not setting any parameters
     ScanVerbBuilder scanVerbBuilder = new ScanVerbBuilder();
     String command = scanVerbBuilder.build();
-    assertEquals("Just scan test", "scan", command);
+    assertEquals("scan", command);
 
     // Test setting just regex
     scanVerbBuilder = new ScanVerbBuilder();
     scanVerbBuilder.setRegex("*.public");
     command = scanVerbBuilder.build();
-    assertEquals("Scan with regex", "scan *.public", command);
+    assertEquals("scan *.public", command);
 
     // Test setting just fromAtSign
     scanVerbBuilder = new ScanVerbBuilder();
     scanVerbBuilder.setFromAtSign("@other");
     command = scanVerbBuilder.build();
-    assertEquals("Scan from another @sign", "scan:@other", command);
+    assertEquals("scan:@other", command);
 
     // Test seting just showHidden
     scanVerbBuilder = new ScanVerbBuilder();
     scanVerbBuilder.setShowHidden(true);
     command = scanVerbBuilder.build();
-    assertEquals("Scan with showHidden", "scan:showHidden:true", command);
+    assertEquals("scan:showHidden:true", command);
 
     // Test setting regex & fromAtSign
     scanVerbBuilder = new ScanVerbBuilder();
     scanVerbBuilder.setRegex("*.public");
     scanVerbBuilder.setFromAtSign("@other");
     command = scanVerbBuilder.build();
-    assertEquals("Scan with regex from another @sign", "scan:@other *.public", command);
+    assertEquals("scan:@other *.public", command);
 
     // Test setting regex & showHidden
     scanVerbBuilder = new ScanVerbBuilder();
     scanVerbBuilder.setRegex("*.public");
     scanVerbBuilder.setShowHidden(true);
     command = scanVerbBuilder.build();
-    assertEquals("Scan with regex & showHidden", "scan:showHidden:true *.public", command);
+    assertEquals("scan:showHidden:true *.public", command);
 
     // Test setting fromAtSign & showHidden
     scanVerbBuilder = new ScanVerbBuilder();
     scanVerbBuilder.setFromAtSign("@other");
     scanVerbBuilder.setShowHidden(true);
     command = scanVerbBuilder.build();
-    assertEquals("Scan with fromAtSign & showHidden", "scan:showHidden:true:@other", command);
+    assertEquals("scan:showHidden:true:@other", command);
 
     // Test setting regex & fromAtSign & showHidden
     scanVerbBuilder = new ScanVerbBuilder();
@@ -672,33 +667,27 @@ public class VerbBuildersTest {
     scanVerbBuilder.setFromAtSign("@other");
     scanVerbBuilder.setShowHidden(true);
     command = scanVerbBuilder.build();
-    assertEquals("Scan with regex, fromAtSign & showHidden", "scan:showHidden:true:@other *.public", command);
+    assertEquals("scan:showHidden:true:@other *.public", command);
   }
 
   @Test
   public void notifyTextBuilderTest() {
     // Test not setting any parameters
-    assertThrows("Recipient @sign and text are mandatory. Expecting a IllegalArgumentException being thrown.",
-                 IllegalArgumentException.class, () -> {
-                   final NotifyTextVerbBuilder notifyTextBuilder = new NotifyTextVerbBuilder();
-                   // Expect build to throw Illegal argument exception for not setting the text
-                   notifyTextBuilder.build();
-                 });
+    final NotifyTextVerbBuilder builderWithNoFieldsSet = new NotifyTextVerbBuilder();
+    assertThrows(IllegalArgumentException.class, builderWithNoFieldsSet::build,
+                 "Recipient @sign and text are mandatory. Expecting a IllegalArgumentException being thrown.");
 
     // Test not setting the text
-    assertThrows("Text is mandatory. Expecting a IllegalArgumentException being thrown.",
-                 IllegalArgumentException.class, () -> {
-                   final NotifyTextVerbBuilder notifyTextBuilder = new NotifyTextVerbBuilder();
-                   notifyTextBuilder.setRecipientAtSign("@test");
-                   // Expect build to throw Illegal argument exception for not setting the text
-                   notifyTextBuilder.build();
-                 });
+    final NotifyTextVerbBuilder builderWithTextFieldUnset = new NotifyTextVerbBuilder();
+    builderWithTextFieldUnset.setRecipientAtSign("@test");
+    assertThrows(IllegalArgumentException.class, builderWithTextFieldUnset::build,
+                 "Text is mandatory. Expecting a IllegalArgumentException being thrown.");
 
     NotifyTextVerbBuilder notifyTextBuilder = new NotifyTextVerbBuilder();
     notifyTextBuilder.setText("Hi");
     notifyTextBuilder.setRecipientAtSign("@test");
     String expectedResult = "notify:messageType:text:@test:Hi";
-    assertEquals("Notify text to an @sign", expectedResult, notifyTextBuilder.build());
+    assertEquals(expectedResult, notifyTextBuilder.build());
 
     // test not setting an '@' sign to the recipients at sign and expect it to be
     // appended properly
@@ -706,68 +695,44 @@ public class VerbBuildersTest {
     notifyTextBuilder.setText("Hello");
     notifyTextBuilder.setRecipientAtSign("test");
     expectedResult = "notify:messageType:text:@test:Hello";
-    assertEquals("Notify text to an @sign", expectedResult, notifyTextBuilder.build());
+    assertEquals(expectedResult, notifyTextBuilder.build());
 
   }
 
   @Test
   public void notifyKeyChangeBuilderTest() {
     // Test not setting any parameters
-    assertThrows("Mandatory fields are not set. Expecting a IllegalArgumentException being thrown.",
-                 IllegalArgumentException.class, () -> {
-                   final NotifyKeyChangeBuilder notifyKeyChangeBuilder = new NotifyKeyChangeBuilder();
-                   // Expect build to throw Illegal argument exception for not setting key and
-                   // other mandatory parameters
-                   notifyKeyChangeBuilder.build();
-                 });
+    final NotifyKeyChangeBuilder builderWithNoArgsSet = new NotifyKeyChangeBuilder();
+    assertThrows(IllegalArgumentException.class, builderWithNoArgsSet::build,
+                 "Mandatory fields are not set. Expecting a IllegalArgumentException being thrown.");
 
     // Test not setting the key
-    assertThrows("Key is mandatory. Expecting a IllegalArgumentException being thrown.",
-                 IllegalArgumentException.class, () -> {
-                   final NotifyKeyChangeBuilder notifyKeyChangeBuilder = new NotifyKeyChangeBuilder();
-                   notifyKeyChangeBuilder.setOperation("update");
-                   notifyKeyChangeBuilder.setSenderAtSign("@sender");
-                   notifyKeyChangeBuilder.setRecipientAtSign("@recipient");
-                   // Expect build to throw Illegal argument exception for not setting the text
-                   notifyKeyChangeBuilder.build();
-                 });
-
-    // Test not setting the key
-    assertThrows("Key is mandatory. Expecting a IllegalArgumentException being thrown.",
-                 IllegalArgumentException.class, () -> {
-                   final NotifyKeyChangeBuilder notifyKeyChangeBuilder = new NotifyKeyChangeBuilder();
-                   notifyKeyChangeBuilder.setOperation("update");
-                   notifyKeyChangeBuilder.setSenderAtSign("@sender");
-                   notifyKeyChangeBuilder.setRecipientAtSign("@recipient");
-                   // Expect build to throw Illegal argument exception for not setting the text
-                   notifyKeyChangeBuilder.build();
-                 });
+    final NotifyKeyChangeBuilder builderWithNoKeySet = new NotifyKeyChangeBuilder();
+    builderWithNoKeySet.setOperation("update");
+    builderWithNoKeySet.setSenderAtSign("@sender");
+    builderWithNoKeySet.setRecipientAtSign("@recipient");
+    assertThrows(IllegalArgumentException.class, builderWithNoKeySet::build,
+                 "Key is mandatory. Expecting a IllegalArgumentException being thrown.");
 
     // Test setting the value when ttr has been set
-    assertThrows("Value is mandatory if ttr has been set. Expecting a IllegalArgumentException being thrown.",
-                 IllegalArgumentException.class, () -> {
-                   final NotifyKeyChangeBuilder notifyKeyChangeBuilder = new NotifyKeyChangeBuilder();
-                   notifyKeyChangeBuilder.setOperation("update");
-                   notifyKeyChangeBuilder.setSenderAtSign("@sender");
-                   notifyKeyChangeBuilder.setRecipientAtSign("@recipient");
-                   notifyKeyChangeBuilder.setKey("phone");
-                   notifyKeyChangeBuilder.setTtr(10000);
-                   // Expect build to throw Illegal argument exception for not setting the text
-                   notifyKeyChangeBuilder.build();
-                 });
+    final NotifyKeyChangeBuilder builderWithTrrSetButNoValue = new NotifyKeyChangeBuilder();
+    builderWithTrrSetButNoValue.setOperation("update");
+    builderWithTrrSetButNoValue.setSenderAtSign("@sender");
+    builderWithTrrSetButNoValue.setRecipientAtSign("@recipient");
+    builderWithTrrSetButNoValue.setKey("phone");
+    builderWithTrrSetButNoValue.setTtr(10000);
+    assertThrows(IllegalArgumentException.class, builderWithTrrSetButNoValue::build,
+                 "Value is mandatory if ttr has been set. Expecting a IllegalArgumentException being thrown.");
 
     // Test setting invalid ttr
-    assertThrows("Value is mandatory if ttr has been set. Expecting a IllegalArgumentException being thrown.",
-                 IllegalArgumentException.class, () -> {
-                   final NotifyKeyChangeBuilder notifyKeyChangeBuilder = new NotifyKeyChangeBuilder();
-                   notifyKeyChangeBuilder.setOperation("update");
-                   notifyKeyChangeBuilder.setSenderAtSign("@sender");
-                   notifyKeyChangeBuilder.setRecipientAtSign("@recipient");
-                   notifyKeyChangeBuilder.setKey("phone");
-                   notifyKeyChangeBuilder.setTtr(-100);
-                   // Expect build to throw Illegal argument exception for not setting the text
-                   notifyKeyChangeBuilder.build();
-                 });
+    final NotifyKeyChangeBuilder builderWithNegativeTrrSetButNoValue = new NotifyKeyChangeBuilder();
+    builderWithNegativeTrrSetButNoValue.setOperation("update");
+    builderWithNegativeTrrSetButNoValue.setSenderAtSign("@sender");
+    builderWithNegativeTrrSetButNoValue.setRecipientAtSign("@recipient");
+    builderWithNegativeTrrSetButNoValue.setKey("phone");
+    builderWithNegativeTrrSetButNoValue.setTtr(-100);
+    assertThrows(IllegalArgumentException.class, builderWithNegativeTrrSetButNoValue::build,
+                 "Value is mandatory if ttr has been set. Expecting a IllegalArgumentException being thrown.");
 
     // test command
     NotifyKeyChangeBuilder notifyKeyChangeBuilder = new NotifyKeyChangeBuilder();
@@ -806,14 +771,9 @@ public class VerbBuildersTest {
   public void notificationStatusVerbBuilderTest() {
 
     // Test not setting any parameters
-    assertThrows("Mandatory fields are not set. Expecting a IllegalArgumentException being thrown.",
-                 IllegalArgumentException.class, () -> {
-                   final NotificationStatusVerbBuilder notificationStatusVerbBuilder =
-                       new NotificationStatusVerbBuilder();
-                   // Expect build to throw Illegal argument exception for not setting mandatory
-                   // parameters
-                   notificationStatusVerbBuilder.build();
-                 });
+    final NotificationStatusVerbBuilder builderWithNoFieldsSet = new NotificationStatusVerbBuilder();
+    assertThrows(IllegalArgumentException.class, builderWithNoFieldsSet::build,
+                 "Mandatory fields are not set. Expecting a IllegalArgumentException being thrown.");
 
     final NotificationStatusVerbBuilder notificationStatusVerbBuilder = new NotificationStatusVerbBuilder();
     notificationStatusVerbBuilder.setNotificationId("n1234");
@@ -822,6 +782,4 @@ public class VerbBuildersTest {
 
   }
 
-  @After
-  public void tearDown() {}
 }

@@ -5,11 +5,11 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 
-import org.apache.commons.lang3.StringUtils;
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.Secondary;
 import org.atsign.client.util.ArgsUtil;
 import org.atsign.client.util.KeysUtil;
+import org.atsign.client.util.StringUtil;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
 import org.atsign.common.Keys.AtKey;
@@ -81,7 +81,7 @@ public class Scan {
       // _printAtKeys(atKeys);
       System.out.println("Enter index you want to llookup (l to list, q to quit):");
       input = scanner.nextLine();
-      if (StringUtils.isNumeric(input)) {
+      if (StringUtil.isNumeric(input)) {
         int index = Integer.parseInt(input);
         if (index < atKeys.size()) {
           AtKey atKey = atKeys.get(index);
