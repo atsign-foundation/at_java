@@ -2,9 +2,7 @@ package org.atsign.common;
 
 import static org.atsign.client.util.EncryptionUtil.generateAESKeyBase64;
 import static org.atsign.client.util.EncryptionUtil.generateRSAKeyPair;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,18 +11,14 @@ import java.nio.file.Path;
 
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.util.KeysUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 public class KeysUtilTest {
 
   AtSign testAtSign = new AtSign("@testSaveKeysFile");
 
-  @Before
-  public void setUp() {}
-
-  @After
+  @AfterEach
   public void tearDown() throws IOException {
     Files.deleteIfExists(KeysUtil.getKeysFile(testAtSign, KeysUtil.expectedKeysFilesLocation).toPath());
     Files.deleteIfExists(KeysUtil.getKeysFile(testAtSign, KeysUtil.legacyKeysFilesLocation).toPath());

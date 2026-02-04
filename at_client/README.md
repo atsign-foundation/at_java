@@ -33,7 +33,6 @@ The library currently depends on the following
 
 * Bouncycastle
 * Jackson
-* Apache Commons (will be removed)
 * Pico CLI
 
 ## Developer Instructions

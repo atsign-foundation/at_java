@@ -15,6 +15,8 @@
   <properties>
     <config.spotless>../config/java-format.xml</config.spotless>
     <config.checkstyle>../config/checkstyle.xml</config.checkstyle>
+
+    <version.webcam-capture>0.3.12</version.webcam-capture>
   </properties>
 
   <dependencies>
@@ -28,13 +30,7 @@
     <dependency>
       <groupId>com.github.sarxos</groupId>
       <artifactId>webcam-capture</artifactId>
-      <version>0.3.12</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <version>3.18.0</version>
+      <version>${version.webcam-capture}</version>
     </dependency>
 
   </dependencies>

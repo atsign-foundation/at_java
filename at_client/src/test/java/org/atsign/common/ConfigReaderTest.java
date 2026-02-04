@@ -1,11 +1,11 @@
 package org.atsign.common;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 
 import org.atsign.config.ConfigReader;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ConfigReaderTest {
 

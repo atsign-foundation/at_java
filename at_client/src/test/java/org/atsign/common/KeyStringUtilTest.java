@@ -2,11 +2,11 @@ package org.atsign.common;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.atsign.client.util.KeyStringUtil;
 import org.atsign.client.util.KeyStringUtil.KeyType;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class KeyStringUtilTest {
   // https://docs.google.com/spreadsheets/d/1EOcF_vznBoKWXxRT8dbeG47RP7wnF30ubwXghganTlk/edit#gid=0
@@ -18,12 +18,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("public:phone@bob", keyStringUtil.getFullKeyName());
     assertEquals("phone", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(null, keyStringUtil.getNamespace());
     assertEquals(KeyType.PUBLIC_KEY, keyStringUtil.getKeyType());
     assertEquals("@bob", keyStringUtil.getSharedBy());
-    assertEquals(null, keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(false, keyStringUtil.isHidden());
+    assertNull(keyStringUtil.getSharedWith());
+    assertFalse(keyStringUtil.isCached());
+    assertFalse(keyStringUtil.isHidden());
   }
 
   // Row 5 Public Hidden key
@@ -33,12 +33,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("public:_phone@bob", keyStringUtil.getFullKeyName());
     assertEquals("_phone", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.PUBLIC_KEY, keyStringUtil.getKeyType());
     assertEquals("@bob", keyStringUtil.getSharedBy());
-    assertEquals(null, keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(true, keyStringUtil.isHidden());
+    assertNull(keyStringUtil.getSharedWith());
+    assertFalse(keyStringUtil.isCached());
+    assertTrue(keyStringUtil.isHidden());
   }
 
   // Row 6 Public Hidden key
@@ -48,12 +48,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("public:__phone@bob", keyStringUtil.getFullKeyName());
     assertEquals("__phone", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.PUBLIC_KEY, keyStringUtil.getKeyType());
     assertEquals("@bob", keyStringUtil.getSharedBy());
-    assertEquals(null, keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(true, keyStringUtil.isHidden());
+    assertNull(keyStringUtil.getSharedWith());
+    assertFalse(keyStringUtil.isCached());
+    assertTrue(keyStringUtil.isHidden());
   }
 
   // Row 7A Public key and SharedWith populated
@@ -62,12 +62,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("public:@bob:phone@bob", keyStringUtil.getFullKeyName());
     assertEquals("phone", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.PUBLIC_KEY, keyStringUtil.getKeyType());
     assertEquals("@bob", keyStringUtil.getSharedBy());
     assertEquals("@bob", keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(false, keyStringUtil.isHidden());
+    assertFalse(keyStringUtil.isCached());
+    assertFalse(keyStringUtil.isHidden());
   }
 
   // Row 7B Public key and SharedWith populated
@@ -77,11 +77,11 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("public:@alice:phone@bob", keyStringUtil.getFullKeyName());
     assertEquals("phone", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.PUBLIC_KEY, keyStringUtil.getKeyType());
     assertEquals("@bob", keyStringUtil.getSharedBy());
     assertEquals("@alice", keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
+    assertFalse(keyStringUtil.isCached());
   }
 
   // Row 8 self key (sharedWith not populated)
@@ -91,12 +91,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("phone@bob", keyStringUtil.getFullKeyName());
     assertEquals("phone", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.SELF_KEY, keyStringUtil.getKeyType());
     assertEquals("@bob", keyStringUtil.getSharedBy());
-    assertEquals(null, keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(false, keyStringUtil.isHidden());
+    assertNull(keyStringUtil.getSharedWith());
+    assertFalse(keyStringUtil.isCached());
+    assertFalse(keyStringUtil.isHidden());
   }
 
   // Row 9 Self key (sharedWith populated)
@@ -106,12 +106,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("@bob:phone@bob", keyStringUtil.getFullKeyName());
     assertEquals("phone", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.SELF_KEY, keyStringUtil.getKeyType());
     assertEquals("@bob", keyStringUtil.getSharedBy());
     assertEquals("@bob", keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(false, keyStringUtil.isHidden());
+    assertFalse(keyStringUtil.isCached());
+    assertFalse(keyStringUtil.isHidden());
   }
 
   // Row 10 Self hidden key (sharedWith populated)
@@ -121,12 +121,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("@bob:_phone@bob", keyStringUtil.getFullKeyName());
     assertEquals("_phone", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.SELF_KEY, keyStringUtil.getKeyType());
     assertEquals("@bob", keyStringUtil.getSharedBy());
     assertEquals("@bob", keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(true, keyStringUtil.isHidden());
+    assertFalse(keyStringUtil.isCached());
+    assertTrue(keyStringUtil.isHidden());
   }
 
   // row 11 Self Hidden Key without sharedWith
@@ -136,12 +136,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("_phone@bob", keyStringUtil.getFullKeyName());
     assertEquals("_phone", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.PRIVATE_HIDDEN_KEY, keyStringUtil.getKeyType());
     assertEquals("@bob", keyStringUtil.getSharedBy());
-    assertEquals(null, keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(true, keyStringUtil.isHidden());
+    assertNull(keyStringUtil.getSharedWith());
+    assertFalse(keyStringUtil.isCached());
+    assertTrue(keyStringUtil.isHidden());
   }
 
   // Row 12 SharedKey
@@ -151,12 +151,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("@bob:phone@alice", keyStringUtil.getFullKeyName());
     assertEquals("phone", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.SHARED_KEY, keyStringUtil.getKeyType());
     assertEquals("@bob", keyStringUtil.getSharedWith());
     assertEquals("@alice", keyStringUtil.getSharedBy());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(false, keyStringUtil.isHidden());
+    assertFalse(keyStringUtil.isCached());
+    assertFalse(keyStringUtil.isHidden());
   }
 
   // Row 13 Shared and hidden
@@ -166,12 +166,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("@alice:_phone@bob", keyStringUtil.getFullKeyName());
     assertEquals("_phone", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.SHARED_KEY, keyStringUtil.getKeyType());
     assertEquals("@bob", keyStringUtil.getSharedBy());
     assertEquals("@alice", keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(true, keyStringUtil.isHidden());
+    assertFalse(keyStringUtil.isCached());
+    assertTrue(keyStringUtil.isHidden());
   }
 
   // Row 14A Private keys
@@ -181,12 +181,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("private:phone@bob", keyStringUtil.getFullKeyName());
     assertEquals("phone", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.PRIVATE_HIDDEN_KEY, keyStringUtil.getKeyType());
     assertEquals("@bob", keyStringUtil.getSharedBy());
-    assertEquals(null, keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(true, keyStringUtil.isHidden());
+    assertNull(keyStringUtil.getSharedWith());
+    assertFalse(keyStringUtil.isCached());
+    assertTrue(keyStringUtil.isHidden());
   }
 
   // Row 14B Private keys
@@ -196,12 +196,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("privatekey:phone@bob", keyStringUtil.getFullKeyName());
     assertEquals("phone", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.PRIVATE_HIDDEN_KEY, keyStringUtil.getKeyType());
     assertEquals("@bob", keyStringUtil.getSharedBy());
-    assertEquals(null, keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(true, keyStringUtil.isHidden());
+    assertNull(keyStringUtil.getSharedWith());
+    assertFalse(keyStringUtil.isCached());
+    assertTrue(keyStringUtil.isHidden());
   }
 
   /**
@@ -222,12 +222,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("@farinataanxious:lemon@sportsunconscious", keyStringUtil.getFullKeyName());
     assertEquals("lemon", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.SHARED_KEY, keyStringUtil.getKeyType());
     assertEquals("@sportsunconscious", keyStringUtil.getSharedBy());
     assertEquals("@farinataanxious", keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(false, keyStringUtil.isHidden());
+    assertFalse(keyStringUtil.isCached());
+    assertFalse(keyStringUtil.isHidden());
   }
 
   @Test
@@ -235,13 +235,13 @@ public class KeyStringUtilTest {
     String KEY_NAME = "@farinataanxious:shared_key@sportsunconscious";
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("@farinataanxious:shared_key@sportsunconscious", keyStringUtil.getFullKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals("shared_key", keyStringUtil.getKeyName());
     assertEquals(KeyType.SHARED_KEY, keyStringUtil.getKeyType());
     assertEquals("@sportsunconscious", keyStringUtil.getSharedBy());
     assertEquals("@farinataanxious", keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(false, keyStringUtil.isHidden());
+    assertFalse(keyStringUtil.isCached());
+    assertFalse(keyStringUtil.isHidden());
   }
 
   @Test
@@ -250,12 +250,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("@farinataanxious:test@sportsunconscious", keyStringUtil.getFullKeyName());
     assertEquals("test", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.SHARED_KEY, keyStringUtil.getKeyType());
     assertEquals("@sportsunconscious", keyStringUtil.getSharedBy());
     assertEquals("@farinataanxious", keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(false, keyStringUtil.isHidden());
+    assertFalse(keyStringUtil.isCached());
+    assertFalse(keyStringUtil.isHidden());
   }
 
   @Test
@@ -264,12 +264,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("@sportsunconscious:shared_key@sportsunconscious", keyStringUtil.getFullKeyName());
     assertEquals("shared_key", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.SELF_KEY, keyStringUtil.getKeyType());
     assertEquals("@sportsunconscious", keyStringUtil.getSharedBy());
     assertEquals("@sportsunconscious", keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(false, keyStringUtil.isHidden());
+    assertFalse(keyStringUtil.isCached());
+    assertFalse(keyStringUtil.isHidden());
   }
 
   @Test
@@ -278,12 +278,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("@sportsunconscious:signing_privatekey@sportsunconscious", keyStringUtil.getFullKeyName());
     assertEquals("signing_privatekey", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.SELF_KEY, keyStringUtil.getKeyType());
     assertEquals("@sportsunconscious", keyStringUtil.getSharedBy());
     assertEquals("@sportsunconscious", keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(false, keyStringUtil.isHidden());
+    assertFalse(keyStringUtil.isCached());
+    assertFalse(keyStringUtil.isHidden());
   }
 
   @Test
@@ -292,12 +292,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("public:publickey@farinataanxious", keyStringUtil.getFullKeyName());
     assertEquals("publickey", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.PUBLIC_KEY, keyStringUtil.getKeyType());
     assertEquals("@farinataanxious", keyStringUtil.getSharedBy());
-    assertEquals(null, keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(false, keyStringUtil.isHidden());
+    assertNull(keyStringUtil.getSharedWith());
+    assertFalse(keyStringUtil.isCached());
+    assertFalse(keyStringUtil.isHidden());
   }
 
   @Test
@@ -306,12 +306,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("public:publickey@sportsunconscious", keyStringUtil.getFullKeyName());
     assertEquals("publickey", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.PUBLIC_KEY, keyStringUtil.getKeyType());
     assertEquals("@sportsunconscious", keyStringUtil.getSharedBy());
-    assertEquals(null, keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(false, keyStringUtil.isHidden());
+    assertNull(keyStringUtil.getSharedWith());
+    assertFalse(keyStringUtil.isCached());
+    assertFalse(keyStringUtil.isHidden());
   }
 
   @Test
@@ -320,12 +320,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("shared_key.farinataanxious@sportsunconscious", keyStringUtil.getFullKeyName());
     assertEquals("shared_key.farinataanxious", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.SELF_KEY, keyStringUtil.getKeyType());
     assertEquals("@sportsunconscious", keyStringUtil.getSharedBy());
-    assertEquals(null, keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(false, keyStringUtil.isHidden());
+    assertNull(keyStringUtil.getSharedWith());
+    assertFalse(keyStringUtil.isCached());
+    assertFalse(keyStringUtil.isHidden());
   }
 
   @Test
@@ -400,8 +400,8 @@ public class KeyStringUtilTest {
     assertEquals(KeyType.SHARED_KEY, keyStringUtil.getKeyType());
     assertEquals("@smoothalligator", keyStringUtil.getSharedBy());
     assertEquals("@abbcservicesinc", keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(false, keyStringUtil.isHidden());
+    assertFalse(keyStringUtil.isCached());
+    assertFalse(keyStringUtil.isHidden());
   }
 
   @Test
@@ -413,8 +413,8 @@ public class KeyStringUtilTest {
     assertEquals(KeyType.SHARED_KEY, keyStringUtil.getKeyType());
     assertEquals("@smoothalligator", keyStringUtil.getSharedBy());
     assertEquals("@denise", keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(false, keyStringUtil.isHidden());
+    assertFalse(keyStringUtil.isCached());
+    assertFalse(keyStringUtil.isHidden());
   }
 
   @Test
@@ -423,13 +423,13 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("@er_nobile_14:shared_key@smoothalligator", keyStringUtil.getFullKeyName());
     assertEquals("shared_key", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.SHARED_KEY, keyStringUtil.getKeyType());
     assertEquals("@smoothalligator", keyStringUtil.getSharedBy());
     assertEquals("@er_nobile_14", keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(false, keyStringUtil.isHidden());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertFalse(keyStringUtil.isCached());
+    assertFalse(keyStringUtil.isHidden());
+    assertNull(keyStringUtil.getNamespace());
   }
 
   @Test
@@ -438,12 +438,12 @@ public class KeyStringUtilTest {
     KeyStringUtil keyStringUtil = new KeyStringUtil(KEY_NAME);
     assertEquals("@fascinatingsnow:shared_key@smoothalligator", keyStringUtil.getFullKeyName());
     assertEquals("shared_key", keyStringUtil.getKeyName());
-    assertEquals(null, keyStringUtil.getNamespace());
+    assertNull(keyStringUtil.getNamespace());
     assertEquals(KeyType.SHARED_KEY, keyStringUtil.getKeyType());
     assertEquals("@smoothalligator", keyStringUtil.getSharedBy());
     assertEquals("@fascinatingsnow", keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(false, keyStringUtil.isHidden());
+    assertFalse(keyStringUtil.isCached());
+    assertFalse(keyStringUtil.isHidden());
   }
 
   @Test
@@ -457,9 +457,9 @@ public class KeyStringUtilTest {
     assertEquals("abbcservicesinc", keyStringUtil.getNamespace());
     assertEquals(KeyType.SELF_KEY, keyStringUtil.getKeyType());
     assertEquals("@smoothalligator", keyStringUtil.getSharedBy());
-    assertEquals(null, keyStringUtil.getSharedWith());
-    assertEquals(false, keyStringUtil.isCached());
-    assertEquals(false, keyStringUtil.isHidden());
+    assertNull(keyStringUtil.getSharedWith());
+    assertFalse(keyStringUtil.isCached());
+    assertFalse(keyStringUtil.isHidden());
   }
 
   @Test

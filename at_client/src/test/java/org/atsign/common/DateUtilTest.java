@@ -1,13 +1,13 @@
 package org.atsign.common;
 
-import static org.junit.Assert.assertEquals;
-
 import java.text.ParseException;
 import java.time.Month;
 import java.time.OffsetDateTime;
 
 import org.atsign.client.util.DateUtil;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DateUtilTest {
 

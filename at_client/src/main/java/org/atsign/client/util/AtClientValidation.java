@@ -57,7 +57,7 @@ public class AtClientValidation {
 
     // validate ttr
     if (metadata.ttr == null || metadata.ttr < -1) {
-      throw new AtInvalidAtKeyException("ttb cannot be null and cannot be < -1");
+      throw new AtInvalidAtKeyException("ttr cannot be null and cannot be < -1");
     }
 
   }

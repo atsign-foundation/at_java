@@ -1,15 +1,12 @@
 package org.atsign.common;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import org.atsign.client.api.Secondary;
 import org.atsign.common.Keys.AtKey;
-import org.junit.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class FromStringTest {
 

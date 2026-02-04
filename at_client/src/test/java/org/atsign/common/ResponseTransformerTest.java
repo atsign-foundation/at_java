@@ -1,27 +1,19 @@
 package org.atsign.common;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-
 import java.time.format.DateTimeFormatter;
 
 import org.atsign.client.api.Secondary;
 import org.atsign.common.response_models.LookupResponse;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ResponseTransformerTest {
   final ObjectMapper mapper = new ObjectMapper();
   final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS'Z'");
-
-
-  @Before
-  public void setUp() {}
 
   @Test
   public void scanResponseTransformerTest() {
@@ -88,8 +80,4 @@ public class ResponseTransformerTest {
     assertNull(model.metaData.pubKeyCS);
     assertNull(model.metaData.encoding);
   }
-
-  @After
-  public void tearDown() {}
-
 }

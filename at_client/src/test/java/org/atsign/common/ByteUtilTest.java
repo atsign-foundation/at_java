@@ -1,11 +1,11 @@
 package org.atsign.common;
 
 
-import static org.junit.Assert.assertEquals;
-
 import org.atsign.client.util.ByteUtil;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ByteUtilTest {
 
@@ -22,7 +22,7 @@ public class ByteUtilTest {
   public void testByteUtil1() {
     String s = "ABC";
     byte[] bytes = {65, 66, 67};
-    Assert.assertArrayEquals(bytes, ByteUtil.convert(s));
+    assertArrayEquals(bytes, ByteUtil.convert(s));
   }
 
   @Test
@@ -35,7 +35,7 @@ public class ByteUtilTest {
   public void testByteUtil3() {
     String s = "@>KU`-";
     byte[] bytes = {64, 62, 75, 85, 96, 45};
-    Assert.assertArrayEquals(bytes, ByteUtil.convert(s));
+    assertArrayEquals(bytes, ByteUtil.convert(s));
   }
 
   @Test
@@ -48,7 +48,7 @@ public class ByteUtilTest {
   public void testByteUtil5() {
     String s = "TECHNOLOGY";
     byte[] bytes = {84, 69, 67, 72, 78, 79, 76, 79, 71, 89};
-    Assert.assertArrayEquals(bytes, ByteUtil.convert(s));
+    assertArrayEquals(bytes, ByteUtil.convert(s));
   }
 
   @Test
@@ -61,7 +61,7 @@ public class ByteUtilTest {
   public void testByteUtil7() {
     String s = "+ada#4C0)";
     byte[] bytes = {43, 97, 100, 97, 35, 52, 67, 48, 41};
-    Assert.assertArrayEquals(bytes, ByteUtil.convert(s));
+    assertArrayEquals(bytes, ByteUtil.convert(s));
   }
 
   @Test
@@ -74,7 +74,7 @@ public class ByteUtilTest {
   public void testByteUtil9() {
     String s = "at_sign";
     byte[] bytes = {97, 116, 95, 115, 105, 103, 110};
-    Assert.assertArrayEquals(bytes, ByteUtil.convert(s));
+    assertArrayEquals(bytes, ByteUtil.convert(s));
   }
 
   @Test
