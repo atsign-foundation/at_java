@@ -1,9 +1,7 @@
 package org.atsign.cucumber.helpers;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -17,12 +15,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Assertions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Helpers {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(Helpers.class);
 
   public static boolean testContains(List<Map<String, String>> actualMaps,
                                      List<Map<String, String>> expectedMaps,

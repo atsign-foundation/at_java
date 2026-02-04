@@ -8,7 +8,6 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -18,6 +17,7 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
+import lombok.extern.slf4j.Slf4j;
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.AtEvents.AtEventBus;
 import org.atsign.client.api.AtEvents.AtEventListener;
@@ -42,6 +42,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @see org.atsign.client.api.AtClient
  */
 @SuppressWarnings({"RedundantThrows", "unused"})
+@Slf4j
 public class AtClientImpl implements AtClient {
   static final ObjectMapper json = new ObjectMapper();
 
@@ -125,8 +126,7 @@ public class AtClientImpl implements AtClient {
                 EncryptionUtil.rsaDecryptFromBase64(sharedSharedKeyEncryptedValue, keys.getEncryptPrivateKey());
             keys.put(sharedSharedKeyName, sharedKeyDecryptedValue);
           } catch (Exception e) {
-            System.err.println(OffsetDateTime.now() + ": caught exception " + e
-                + " while decrypting received shared key " + sharedSharedKeyName);
+            log.error("caught exception {} while decrypting received shared key {}", e, sharedSharedKeyName);
           }
         }
         break;
@@ -149,8 +149,7 @@ public class AtClientImpl implements AtClient {
             newEventData.put("decryptedValue", decryptedValue);
             eventBus.publishEvent(decryptedUpdateNotification, newEventData);
           } catch (Exception e) {
-            System.err.println(OffsetDateTime.now() + ": caught exception " + e
-                + " while decrypting received data with key name [" + key + "]");
+            log.error("caught exception {} while decrypting received data with key name [{}]", e, key);
           }
         }
         break;

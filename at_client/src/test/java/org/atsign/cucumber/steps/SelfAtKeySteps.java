@@ -11,15 +11,11 @@ import org.atsign.client.util.KeyStringUtil;
 import org.atsign.common.AtSign;
 import org.atsign.common.KeyBuilders;
 import org.atsign.common.Keys;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 public class SelfAtKeySteps {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(SelfAtKeySteps.class);
 
   private final AtClientContext context;
 

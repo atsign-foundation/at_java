@@ -1,5 +1,7 @@
 package org.atsign.client.api.impl.events;
 
+import lombok.extern.slf4j.Slf4j;
+
 import static org.atsign.client.api.AtEvents.AtEventBus;
 import static org.atsign.client.api.AtEvents.AtEventListener;
 import static org.atsign.client.api.AtEvents.AtEventType;
@@ -14,6 +16,7 @@ import java.util.concurrent.Executors;
 /**
  *
  */
+@Slf4j
 public class SimpleAtEventBus implements AtEventBus {
   private final ExecutorService executor = Executors.newCachedThreadPool();
 
@@ -37,10 +40,7 @@ public class SimpleAtEventBus implements AtEventBus {
           executor.submit(() -> listener.handleEvent(eventType, eventData));
         }
       } catch (Exception e) {
-        System.err.println(
-                           this.getClass().getSimpleName() + " caught exception from one of its event listeners : "
-                               + e.getMessage());
-        e.printStackTrace(System.err);
+        log.error("caught exception from one of its event listeners", e);
       }
     }
     return listenerCount;

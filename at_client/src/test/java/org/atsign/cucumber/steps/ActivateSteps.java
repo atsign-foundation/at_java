@@ -19,18 +19,16 @@ import org.atsign.common.AtSign;
 import org.atsign.common.exceptions.AtClientConfigException;
 import org.atsign.cucumber.helpers.AtDemoData;
 import org.opentest4j.TestAbortedException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class ActivateSteps {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(ActivateSteps.class);
 
   private final AtClientContext context;
 
@@ -208,9 +206,9 @@ public class ActivateSteps {
     @Override
     public void run() {
       if (!f.delete()) {
-        LOGGER.warn("failed to delete {}", f);
+        log.warn("failed to delete {}", f);
       } else {
-        LOGGER.info("deleted {}", f);
+        log.debug("deleted {}", f);
       }
     }
   }
@@ -246,7 +244,7 @@ public class ActivateSteps {
             .forEach(id -> revokeDeleteNoThrow(connection, id));
         revokeDeleteNoThrow(connection, onboardEnrollmentId);
       } catch (Exception e) {
-        LOGGER.error("teardown for {} failed : {}", atSign, e.getMessage());
+        log.error("teardown for {} failed : {}", atSign, e.getMessage());
       }
     }
 
@@ -259,45 +257,45 @@ public class ActivateSteps {
 
     protected void deleteKeyNoThrow(AtSecondaryConnection connection, String key) {
       try {
-        LOGGER.info("teardown for {} deleting key {}", connection.getAtSign(), key);
+        log.debug("teardown for {} deleting key {}", connection.getAtSign(), key);
         deleteKey(connection, key);
       } catch (Exception e) {
-        LOGGER.error("teardown for {} failed to delete key {} in onboarded server : {}",
-                     connection.getAtSign(), key, e.getMessage());
+        log.error("teardown for {} failed to delete key {} in onboarded server : {}",
+                  connection.getAtSign(), key, e.getMessage());
       }
     }
 
     private void deleteNoThrow(AtSecondaryConnection connection, EnrollmentId id) {
       try {
-        LOGGER.info("teardown for {} deleting enroll request {}", id);
+        log.debug("teardown for {} deleting enroll request {}", id);
         delete(connection, id);
       } catch (Exception e) {
-        LOGGER.error("teardown for {} failed to enroll delete {} in onboarded server : {}",
-                     connection.getAtSign(), id, e.getMessage());
+        log.error("teardown for {} failed to enroll delete {} in onboarded server : {}",
+                  connection.getAtSign(), id, e.getMessage());
       }
     }
 
     private void denyDeleteNoThrow(AtSecondaryConnection connection, EnrollmentId id) {
       try {
-        LOGGER.info("teardown for {} denying enroll request {}", connection.getAtSign(), id);
+        log.debug("teardown for {} denying enroll request {}", connection.getAtSign(), id);
         deny(connection, id);
-        LOGGER.info("teardown for {} deleting enroll request {}", connection.getAtSign(), id);
+        log.debug("teardown for {} deleting enroll request {}", connection.getAtSign(), id);
         delete(connection, id);
       } catch (Exception e) {
-        LOGGER.error("teardown for {} failed to enroll deny and delete {} in onboarded server : {}",
-                     connection.getAtSign(), id, e.getMessage());
+        log.error("teardown for {} failed to enroll deny and delete {} in onboarded server : {}",
+                  connection.getAtSign(), id, e.getMessage());
       }
     }
 
     private void revokeDeleteNoThrow(AtSecondaryConnection connection, EnrollmentId id) {
       try {
-        LOGGER.info("teardown for {} revoking enroll request {}", connection.getAtSign(), id);
+        log.debug("teardown for {} revoking enroll request {}", connection.getAtSign(), id);
         revoke(connection, id);
-        LOGGER.info("teardown for {} deleting enroll request {}", connection.getAtSign(), id);
+        log.debug("teardown for {} deleting enroll request {}", connection.getAtSign(), id);
         delete(connection, id);
       } catch (Exception e) {
-        LOGGER.error("teardown for {} failed to enroll revoke and delete {} in onboarded server : {}",
-                     connection.getAtSign(), id, e.getMessage());
+        log.error("teardown for {} failed to enroll revoke and delete {} in onboarded server : {}",
+                  connection.getAtSign(), id, e.getMessage());
       }
     }
   }
