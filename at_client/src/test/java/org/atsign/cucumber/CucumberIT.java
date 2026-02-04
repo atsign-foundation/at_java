@@ -16,8 +16,8 @@ import io.cucumber.plugin.event.TestRunStarted;
 @CucumberOptions(
     features = "src/test/resources/features",
     glue = {"org.atsign.cucumber.steps"},
-    plugin = {"pretty", "org.atsign.cucumber.CucumberTests"})
-public class CucumberTests implements EventListener {
+    plugin = {"pretty", "org.atsign.cucumber.CucumberIT"})
+public class CucumberIT implements EventListener {
 
   @Override
   public void setEventPublisher(EventPublisher publisher) {

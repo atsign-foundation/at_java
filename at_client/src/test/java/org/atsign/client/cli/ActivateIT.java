@@ -31,9 +31,9 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class ActivateTest {
+class ActivateIT {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ActivateTest.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ActivateIT.class);
 
   private final ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
   private final ByteArrayOutputStream errBuffer = new ByteArrayOutputStream();

@@ -1,4 +1,4 @@
-name: Java at_client CI
+name: Build and Run Integrations Tests
 
 on:
   push:
@@ -13,9 +13,6 @@ permissions:  # added using https://github.com/step-security/secure-workflows
 
 jobs:
   test-and-build:
-    defaults:
-      run:
-        working-directory: at_client
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -25,12 +22,7 @@ jobs:
           java-version: '8'
           distribution: 'adopt'
           cache: maven
-          server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
-      - name: add entry to hosts file
+      - name: Add virtual env entry to hosts file
         run: echo "127.0.0.1    vip.ve.atsign.zone" | sudo tee -a /etc/hosts
-      - name: Build clean and run unit tests
-        run: mvn --batch-mode clean test -DskipIntegrationTests=true -Dgpg.skip=true
-      - name: Run integration tests
-        run: mvn --batch-mode verify -DskipUnitTests=true -Dgpg.skip=true
-      - name: Generate build outputs
-        run: mvn --batch-mode install -DskipTests=true --update-snapshots --no-transfer-progress -Dgpg.skip=true
+      - name: Build and run all tests
+        run: mvn --batch-mode clean install
