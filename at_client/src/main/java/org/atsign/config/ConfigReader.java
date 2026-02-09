@@ -37,7 +37,7 @@ public class ConfigReader {
    * key-value pairs in the config map
    */
   public static void loadConfig() throws IOException {
-    InputStream inputStream = ClassLoader.getSystemResourceAsStream("config.yaml");
+    InputStream inputStream = ConfigReader.class.getClassLoader().getResourceAsStream("config.yaml");
     // noinspection unchecked
     config = mapper.readValue(inputStream, HashMap.class);
   }

@@ -1,24 +1,20 @@
 package org.atsign.client.cli;
 
-import java.util.concurrent.ExecutionException;
-
+import lombok.extern.slf4j.Slf4j;
 import org.atsign.client.api.AtClient;
-import org.atsign.client.util.ArgsUtil;
+import org.atsign.client.api.AtKeys;
 import org.atsign.client.util.KeysUtil;
-import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
 import org.atsign.common.KeyBuilders;
+import org.atsign.common.Keys;
 
 /**
  * A command-line interface half-example half-utility to delete something that was previously shared
  */
+@Slf4j
 public class Delete {
-  @SuppressWarnings("DuplicatedCode")
-  public static void main(String[] args) {
-    String rootUrl; // e.g. "root.atsign.org:64";
-    AtSign atSign; // e.g. "@alice";
-    AtSign otherAtSign; // e.g. "@bob";
-    String keyName;
+
+  public static void main(String[] args) throws Exception {
 
     if (args.length != 4) {
       System.err
@@ -26,28 +22,23 @@ public class Delete {
       System.exit(1);
     }
 
-    rootUrl = args[0];
-    atSign = new AtSign(args[1]);
-    otherAtSign = new AtSign(args[2]);
-    keyName = args[3];
+    String rootUrl = args[0];
+    AtSign atSign = new AtSign(args[1]);
+    AtSign otherAtSign = new AtSign(args[2]);
+    String keyName = args[3];
 
-    AtClient atClient = null;
-    try {
-      atClient = AtClient.withRemoteSecondary(atSign, KeysUtil.loadKeys(atSign), ArgsUtil.createAddressFinder(rootUrl));
-    } catch (AtException e) {
-      System.err.println("Failed to create AtClientImpl : " + e.getMessage());
-      e.printStackTrace(System.err);
-      System.exit(1);
-    }
+    // all AtClients require AtKeys, this loads them based on the AtSign from the default location
+    AtKeys keys = KeysUtil.loadKeys(atSign);
 
-    try {
-      String deleteResponse =
-          atClient.delete(new KeyBuilders.SharedKeyBuilder(atSign, otherAtSign).key(keyName).build()).get();
-      System.out.println("delete response : " + deleteResponse);
-    } catch (InterruptedException | ExecutionException e) {
-      System.err.println("Failed to get : " + e.getMessage());
-      e.printStackTrace(System.err);
-      System.exit(1);
+    try (AtClient atClient = AtClient.withRemoteSecondary(rootUrl, atSign, keys, true)) {
+
+      Keys.SharedKey key = new KeyBuilders.SharedKeyBuilder(atSign, otherAtSign)
+          .key(keyName)
+          .build();
+
+      String response = atClient.delete(key).get();
+
+      log.info("delete response : {}", response);
     }
   }
 }

@@ -1,75 +1,47 @@
 package org.atsign.client.cli;
 
-import static org.atsign.common.KeyBuilders.SharedKeyBuilder;
-
-import java.time.OffsetDateTime;
-import java.util.concurrent.ExecutionException;
-
 import org.atsign.client.api.AtClient;
-import org.atsign.client.api.Secondary;
-import org.atsign.client.util.ArgsUtil;
+import org.atsign.client.api.AtKeys;
 import org.atsign.client.util.KeysUtil;
-import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
+import org.atsign.common.KeyBuilders;
 import org.atsign.common.Keys;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * A command-line interface half-example half-utility to share something with another atSign
  */
+@Slf4j
 public class Share {
-  public static void main(String[] args) {
-    String rootUrl; // e.g. "root.atsign.org:64";
-    AtSign atSign; // e.g. "@alice";
-    AtSign otherAtSign; // e.g. "@bob";
-    String keyName;
-    String toShare;
-    int ttr;
+  public static void main(String[] args) throws Exception {
 
-    if (args.length != 6) {
-      System.err
-          .println("Usage: Share <rootUrl> <your AtSign> <other AtSign> <keyName to share, including namespace> <keyValue to share, a string> <ttr>");
+    if (args.length < 5) {
+      System.err.println("Usage: Share <rootUrl> <your AtSign> <other AtSign> <keyName to share, including namespace> "
+          + "<keyValue to share, a string> <ttr>");
       System.exit(1);
     }
 
-    rootUrl = args[0];
-    atSign = new AtSign(args[1]);
-    otherAtSign = new AtSign(args[2]);
-    keyName = args[3];
-    toShare = args[4];
-    ttr = Integer.parseInt(args[5]);
+    String rootUrl = args[0];
+    AtSign atSign = new AtSign(args[1]);
+    AtSign otherAtSign = new AtSign(args[2]);
+    String keyName = args[3];
+    String toShare = args[4];
+    int ttr = args.length == 6 ? Integer.parseInt(args[5]) : 0;
 
-    Secondary.AddressFinder addressFinder = ArgsUtil.createAddressFinder(rootUrl);
-    // Let's also look up the other one before we do anything, just in case
-    try {
-      addressFinder.findSecondary(otherAtSign);
-    } catch (Exception e) {
-      System.err.println("Failed to look up remote secondary for " + otherAtSign + " : " + e.getMessage());
-      e.printStackTrace(System.err);
-      System.exit(1);
-    }
+    // all AtClients require AtKeys, this loads them based on the AtSign from the default location
+    AtKeys keys = KeysUtil.loadKeys(atSign);
 
-    AtClient atClient = null;
-    try {
-      atClient = AtClient.withRemoteSecondary(atSign, KeysUtil.loadKeys(atSign), addressFinder);
-    } catch (AtException e) {
-      System.err.println("Failed to create AtClientImpl : " + e.getMessage());
-      e.printStackTrace(System.err);
-      System.exit(1);
-    }
+    try (AtClient atClient = AtClient.withRemoteSecondary(rootUrl, atSign, keys, true)) {
 
-    try {
-      SharedKeyBuilder sharedKeyBuilder = new SharedKeyBuilder(atSign, otherAtSign)
+      Keys.SharedKey key = new KeyBuilders.SharedKeyBuilder(atSign, otherAtSign)
+          .key(keyName)
           .cache(ttr, true)
-          .key(keyName);
-      Keys.SharedKey sharedKey = sharedKeyBuilder.build();
+          .build();
 
-      System.out.println(OffsetDateTime.now() + " | calling atClient.put()");
-      String putResponse = atClient.put(sharedKey, toShare).get();
-      System.out.println(OffsetDateTime.now() + " | put response : " + putResponse);
-    } catch (InterruptedException | ExecutionException e) {
-      System.err.println("Failed to share : " + e.getMessage());
-      e.printStackTrace(System.err);
-      System.exit(1);
+      String response = atClient.put(key, toShare).get();
+
+      log.info("put response : {}", response);
     }
   }
 

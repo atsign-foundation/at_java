@@ -35,22 +35,16 @@ public class REPL {
   public static void main(String[] args) {
     AnsiConsole.systemInstall();
 
-    String rootUrl; // e.g. "root.atsign.org:64";
-    AtSign atSign; // e.g. "@alice";
-    boolean verbose = false;
-
-    if (args.length < 3) {
+    if (args.length != 2 && args.length != 4) {
       System.err
-          .println("Usage: REPL <rootUrl> <atSign> <seeEncryptedNotifications == 'true|false'> [<verbose == 'true|false'>]");
+          .println("Usage: REPL <rootUrl> <atSign> [seeEncryptedNotifications == 'true|false'] [<verbose == 'true|false'>]");
       System.exit(1);
     }
 
-    rootUrl = args[0];
-    atSign = new AtSign(args[1]);
-    boolean seeEncryptedNotifications = Boolean.parseBoolean(args[2]);
-    if (args.length >= 4) {
-      verbose = Boolean.parseBoolean(args[3]);
-    }
+    String rootUrl = args[0];
+    AtSign atSign = new AtSign(args[1]);
+    boolean seeEncryptedNotifications = args.length > 2 ? Boolean.parseBoolean(args[2]) : false;
+    boolean verbose = args.length > 3 ? Boolean.parseBoolean(args[3]) : false;
 
     AtClient atClient;
     try {
