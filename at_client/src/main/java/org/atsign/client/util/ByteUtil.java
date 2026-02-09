@@ -4,6 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Utility class with "no throw" methods for converting between byte arrays and Strings
+ */
 @Slf4j
 public class ByteUtil {
   public static String convert(byte[] data) {
@@ -19,7 +22,7 @@ public class ByteUtil {
     try {
       return data.getBytes(StandardCharsets.UTF_8);
     } catch (Exception e) {
-      log.error("Error occured while parsing the string to byte array data", e);
+      log.error("Error occurred while parsing the string to byte array data", e);
       return null;
     }
   }

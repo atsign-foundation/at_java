@@ -11,6 +11,9 @@ import org.atsign.common.exceptions.AtIllegalArgumentException;
 import org.atsign.common.exceptions.AtInvalidAtKeyException;
 import org.atsign.common.exceptions.AtSecondaryConnectException;
 
+/**
+ * Utility class with key string validation methods
+ */
 public class AtClientValidation {
   // TODO Lots of atServer-address-finding going on here. Need a caching finder.
   // TODO Change all of these static methods.

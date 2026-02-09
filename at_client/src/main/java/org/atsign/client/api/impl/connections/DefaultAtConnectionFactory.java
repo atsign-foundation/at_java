@@ -7,7 +7,8 @@ import org.atsign.client.api.Secondary;
 import org.atsign.common.AtSign;
 
 /**
- * @see org.atsign.client.api.AtConnectionFactory
+ * Standard implementation of {@link AtConnectionFactory} for creating {@link AtSecondaryConnection}
+ * and {@link AtRootConnection} instances.
  */
 public class DefaultAtConnectionFactory implements AtConnectionFactory {
   @Override

@@ -8,6 +8,9 @@ import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.TimeZone;
 
+/**
+ * Utility class
+ */
 public class DateUtil {
 
   public static OffsetDateTime parse(String rawDateStr) throws ParseException {

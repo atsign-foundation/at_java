@@ -22,6 +22,9 @@ import org.atsign.common.exceptions.AtRegistrarException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * Utility class for obtaining a new {@link AtSign}
+ */
 public class RegisterUtil {
   ObjectMapper objectMapper = new ObjectMapper();
 
@@ -263,14 +266,6 @@ public class RegisterUtil {
 
   }
 
-  /**
-   * @deprecated method remains for backwards compatibility. will be removed in future minor updates
-   *             <p>
-   *             <p>
-   *             This method just calls
-   *             {@link #validateOtp(String, AtSign, String, String, String, Boolean) the new
-   *             validateOtp} with confirmation set to true
-   */
   @Deprecated
   public String validateOtp(String email, AtSign atsign, String otp, String registrarUrl, String apiKey)
       throws IOException, AtException {

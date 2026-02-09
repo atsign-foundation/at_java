@@ -33,6 +33,10 @@ public interface AtConnection {
 
   String executeCommand(String command) throws IOException;
 
+  /**
+   * Represents something which can implement atprotocol authentication workflow
+   * by executing commands with a {@link AtConnection}
+   */
   interface Authenticator {
     void authenticate(AtConnection connection) throws AtException, IOException;
   }

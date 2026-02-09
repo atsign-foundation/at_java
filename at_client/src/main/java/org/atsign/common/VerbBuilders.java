@@ -8,16 +8,23 @@ import static org.atsign.client.util.StringUtil.isBlank;
 
 /**
  *
- * Contains builders that build commands that are accepted by a secondary server
+ * Parent class for builders that build commands that are accepted by a secondary server
  *
  */
 public class VerbBuilders {
 
+  /**
+   * Base command interface
+   */
   public interface VerbBuilder {
     /// Build the command to be sent to remote secondary for execution.
     String build();
   }
 
+  /**
+   * Atsign Platform <b>from</b> command builder.
+   * This initiates authentication
+   */
   public static class FromVerbBuilder implements VerbBuilder {
     // the atSign that we are authenticating with (e.g. atSignStr.equals("@alice") <=> true) [required]
     private String atSignStr;
@@ -36,6 +43,9 @@ public class VerbBuilders {
     }
   }
 
+  /**
+   * Atsign Platform <b>cram</b> (Challenge Response Authentication Management) command builder
+   */
   public static class CRAMVerbBuilder implements VerbBuilder {
 
     // chlallenge response authentication method
@@ -53,9 +63,10 @@ public class VerbBuilders {
     }
   }
 
+  /**
+   * Atsign Platform <b>pol</b> (Proof of Life) command builder
+   */
   public static class POLVerbBuilder implements VerbBuilder {
-
-    // proof of life
 
     @Override
     public String build() {
@@ -63,6 +74,9 @@ public class VerbBuilders {
     }
   }
 
+  /**
+   * Atsign Platform <b>pkam</b> (Public Key Authentication Management) command builder
+   */
   public static class PKAMVerbBuilder implements VerbBuilder {
 
     // public key authentication method
@@ -81,6 +95,9 @@ public class VerbBuilders {
 
   }
 
+  /**
+   * Atsign Platform <b>update</b> command builder
+   */
   public static class UpdateVerbBuilder implements VerbBuilder {
 
     /// Update the value (and metadata optionally) of a key.
@@ -255,8 +272,16 @@ public class VerbBuilders {
 
   }
 
+  /**
+   * Atsign Platform <b>llookup</b> (Local lookup) command builder.
+   * Used when key is "owned" by the {@link AtSign} sending the command
+   */
+
   public static class LlookupVerbBuilder implements VerbBuilder {
 
+    /**
+     * Builder argument which controls the scope of the lookup command
+     */
     public enum Type {
       NONE, // llookup:<fullKeyName>
       METADATA, // llookup:meta:<fullKeyName>
@@ -348,12 +373,15 @@ public class VerbBuilders {
 
   }
 
+  /**
+   * Atsign Platform <b>lookup</b> command builder.
+   * Used when key shared with the {@link AtSign} sending the command.
+   */
   public static class LookupVerbBuilder implements VerbBuilder {
 
-    // look up a key shared with you in another atSign's secondary
-    // the sender atSign (other person) is the sharedBy atSign, while you are the sharedWith atSign.
-
-    // Type of Lookup
+    /**
+     * Builder argument which controls the scope of the lookup command
+     */
     public enum Type {
       NONE, // lookup:<fullKeyName>
       METADATA, // lookup:meta:<fullKeyName>
@@ -405,12 +433,15 @@ public class VerbBuilders {
     }
   }
 
+  /**
+   * Atsign Platform <b>plookup</b> (public lookup) command builder.
+   * Used when key is a public key owned by an {@link AtSign} other than the one sending the command.
+   */
   public static class PlookupVerbBuilder implements VerbBuilder {
 
-    // look up a public key in another atSign's secondary
-    // e.g. "plookup:publickey@bob" will return the data of the key "public:publickey@bob" in @bob's secondary server (you are @alice, @bob is not you)
-
-    // Type of plookup
+    /**
+     * Builder argument which controls the scope of the lookup command
+     */
     public enum Type {
       NONE, // just get the data
       METADATA, // get the metadata but no data (plookup:meta:)
@@ -474,6 +505,10 @@ public class VerbBuilders {
 
   }
 
+  /**
+   * Atsign Platform <b>delete</b> command builder.
+   * Used to delete a key owned by the {@link AtSign} sending the command.
+   */
   public static class DeleteVerbBuilder implements VerbBuilder {
 
     private String key; // e.g. "test", "location", "email" [required]
@@ -544,6 +579,10 @@ public class VerbBuilders {
 
   }
 
+  /**
+   * Atsign Platform <b>scan</b> command builder.
+   * Used to list all the keys visible to the {@link AtSign} sending the command.
+   */
   public static class ScanVerbBuilder implements VerbBuilder {
 
     // Regex to filter the keys
@@ -588,7 +627,10 @@ public class VerbBuilders {
     }
   }
 
-  public static class NotifyTextVerbBuilder implements VerbBuilder {
+  /**
+   * Atsign Platform <b>notify</b> command builder.
+   */
+  public static class NotifyTextVerbBuilder implements VerbBuilders.VerbBuilder {
     //notify:((?<operation>update|delete):)?(messageType:(?<messageType>key|text):)?(priority:(?<priority>low|medium|high):)?(strategy:(?<strategy>all|latest):)?(latestN:(?<latestN>\d+):)?(notifier:(?<notifier>[^\s:]+):)?(ttln:(?<ttln>\d+):)?(ttl:(?<ttl>\d+):)?(ttb:(?<ttb>\d+):)?(ttr:(?<ttr>(-)?\d+):)?(ccd:(?<ccd>true|false):)?(@(?<forAtSign>[^@:\s]*)):(?<atKey>[^:@]((?!:{2})[^@])+)(@(?<atSign>[^@:\s]+))?(:(?<value>.+))?$
 
     private String recipientAtSign;
@@ -623,7 +665,10 @@ public class VerbBuilders {
     }
   }
 
-  public static class NotifyKeyChangeBuilder implements VerbBuilder {
+  /**
+   * Atsign Platform <b>notify</b> command builder.
+   */
+  public static class NotifyKeyChangeBuilder implements VerbBuilders.VerbBuilder {
 
     // Only allowed values are "update" or "delete"
     private String operation = "update";
@@ -729,7 +774,10 @@ public class VerbBuilders {
     }
   }
 
-  public static class NotificationStatusVerbBuilder implements VerbBuilder {
+  /**
+   * Atsign Platform <b>notify</b> command builder.
+   */
+  public static class NotificationStatusVerbBuilder implements VerbBuilders.VerbBuilder {
 
     private String notificationId;
 
@@ -747,4 +795,5 @@ public class VerbBuilders {
       return "notify:status:" + notificationId;
     }
   }
+
 }

@@ -1,7 +1,6 @@
 package org.atsign.examples;
 
 import java.io.IOException;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 
 import org.atsign.client.api.AtClient;

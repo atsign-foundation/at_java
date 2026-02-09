@@ -1,5 +1,8 @@
 package org.atsign.client.util;
 
+/**
+ * Utility class with static methods for common String operations
+ */
 public class StringUtil {
 
   public static boolean isBlank(String s) {

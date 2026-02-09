@@ -16,9 +16,19 @@ import org.atsign.common.exceptions.AtEncryptionException;
 import org.atsign.common.exceptions.AtUnauthenticatedException;
 
 /**
- *
+ * Encapsulates Atsign Platform authentication command response workflows.
  */
 public class AuthUtil {
+
+  /**
+   * Sends a from command followed by cram command.
+   *
+   * @param connection connection to an AtServer
+   * @param atSign the AtSign to authenticate
+   * @param cramSecret the secret with which to respond to the authentication challenge
+   * @throws AtException If the authentication fails
+   * @throws IOException Delegated from AtServer
+   */
   public void authenticateWithCram(AtSecondaryConnection connection, AtSign atSign, String cramSecret)
       throws AtException, IOException {
     String fromResponse = connection.executeCommand("from:" + atSign);
@@ -40,6 +50,15 @@ public class AuthUtil {
     }
   }
 
+  /**
+   * Sends a from command followed by a pkam command.
+   *
+   * @param connection connection to an AtServer
+   * @param atSign the AtSign to authenticate
+   * @param keys AtKeys which contains the PKAM private key and associated {@link EnrollmentId}
+   * @throws AtException If the authentication fails
+   * @throws IOException Delegated from AtServer
+   */
   public void authenticateWithPkam(AtConnection connection, AtSign atSign, AtKeys keys)
       throws AtException, IOException {
     if (!keys.hasPkamKeys()) {

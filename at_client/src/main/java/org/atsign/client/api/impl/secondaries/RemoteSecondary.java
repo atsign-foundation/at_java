@@ -21,7 +21,8 @@ import org.atsign.common.exceptions.AtInvalidSyntaxException;
 import org.atsign.common.exceptions.AtUnknownResponseException;
 
 /**
- * @see org.atsign.client.api.Secondary
+ * Implementation of {@link Secondary} wraps an {@link AtSecondaryConnection} and
+ * an {@link AtMonitorConnection}.
  */
 @Slf4j
 public class RemoteSecondary implements Secondary {

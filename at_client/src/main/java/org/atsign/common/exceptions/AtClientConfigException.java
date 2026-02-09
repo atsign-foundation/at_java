@@ -3,7 +3,8 @@ package org.atsign.common.exceptions;
 import org.atsign.common.AtException;
 
 /**
- *
+ * Occurs when configuration required to create an {@link org.atsign.client.api.AtClient} is
+ * incorrect or missing
  */
 public class AtClientConfigException extends AtException {
   public AtClientConfigException(String message) {

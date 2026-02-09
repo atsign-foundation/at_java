@@ -9,8 +9,15 @@ import static org.atsign.common.Keys.defaultAtSign;
 
 import org.atsign.common.exceptions.AtInvalidAtKeyException;
 
+/**
+ * Parent class for key builders
+ */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public class KeyBuilders {
+
+  /**
+   * Base interface for builders
+   */
   public interface KeyBuilder {
     KeyBuilder timeToLive(int ttl);
 
@@ -22,6 +29,10 @@ public class KeyBuilders {
 
     KeyBuilder namespace(String namespace);
   }
+
+  /**
+   * Base key builder
+   */
   public static abstract class BaseKeyBuilder {
     AtKey _atKey;
 
@@ -101,7 +112,9 @@ public class KeyBuilders {
     }
   }
 
-  /// Builder to build the public keys
+  /**
+   * Builder for "public keys" in the AtSign Platform
+   */
   public static class PublicKeyBuilder extends CachedKeyBuilder implements KeyBuilder {
     public PublicKeyBuilder() {
       this(defaultAtSign);
@@ -149,7 +162,9 @@ public class KeyBuilders {
     }
   }
 
-  /// Builder to build the shared keys
+  /**
+   * Builder for "shared keys" in the AtSign Platform
+   */
   public static class SharedKeyBuilder extends CachedKeyBuilder implements KeyBuilder {
     public SharedKeyBuilder(AtSign sharedWith) {
       this(defaultAtSign, sharedWith);
@@ -211,7 +226,9 @@ public class KeyBuilders {
     }
   }
 
-  /// Builder to build the Self keys
+  /**
+   * Builder for "self keys" in the AtSign Platform
+   */
   public static class SelfKeyBuilder extends BaseKeyBuilder implements KeyBuilder {
     public SelfKeyBuilder() {
       this(defaultAtSign);
@@ -257,7 +274,9 @@ public class KeyBuilders {
     }
   }
 
-  /// Builder to build the hidden keys
+  /**
+   * Builder for "private hidden keys" in the AtSign Platform
+   */
   public static class PrivateHiddenKeyBuilder extends BaseKeyBuilder {
     public PrivateHiddenKeyBuilder() {
       this(defaultAtSign);

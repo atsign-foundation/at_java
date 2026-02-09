@@ -39,7 +39,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * @see org.atsign.client.api.AtClient
+ * Implementation of an {@link AtClient} which wraps a {@link Secondary}
+ * in order to implement the "map like" features of the {@link AtClient} interface
  */
 @SuppressWarnings({"RedundantThrows", "unused"})
 @Slf4j
@@ -637,7 +638,7 @@ public class AtClientImpl implements AtClient {
     }
     ResponseTransformers.ScanResponseTransformer scanResponseTransformer =
         new ResponseTransformers.ScanResponseTransformer(AtClientImpl::isNotManagementKey);
-    List<String> rawArray = scanResponseTransformer.transform(scanRawResponse);
+    List<String> rawArray = scanResponseTransformer.apply(scanRawResponse);
 
     List<AtKey> atKeys = new ArrayList<>();
     for (String atKeyRaw : rawArray) { // eg atKeyRaw == @bob:phone@alice
