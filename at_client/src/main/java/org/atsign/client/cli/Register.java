@@ -53,6 +53,7 @@ public class Register implements Callable<String> {
     }
 
     String[] onboardArgs = new String[] {
+        "onboard",
         "-r", params.get("rootDomain") + ":" + params.get("rootPort"),
         "-a", params.get("atSign"),
         "-c", params.get("cram")};
