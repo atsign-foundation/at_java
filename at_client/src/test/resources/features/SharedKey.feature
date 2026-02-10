@@ -52,3 +52,9 @@ Feature: AtClient API test for SharedKeys
       And @colin AtClient.put for SharedKey message.ns shared with @gary and value "hi gary it's colin"
       Then @colin AtClient.get for SharedKey message.ns shared by @gary returns value that matches "hi colin it's gary"
       And @gary AtClient.get for SharedKey message.ns shared by @colin returns value that matches "hi gary it's colin"
+
+  Scenario: SharedKey get returns expected value for "Shared With" atsign after change
+    When AtClient.put for SharedKey test shared with @colin and value "hello world"
+    And @colin AtClient.get for SharedKey test shared by @gary returns value that matches "hello world"
+    And AtClient.put for SharedKey test shared with @colin and value "goodbye cruel world"
+    Then @colin AtClient.get for SharedKey test shared by @gary returns value that matches "goodbye cruel world"

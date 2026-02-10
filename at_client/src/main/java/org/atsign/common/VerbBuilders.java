@@ -1,799 +1,722 @@
 package org.atsign.common;
 
-import org.atsign.common.Keys.AtKey;
-import org.atsign.common.Keys.PublicKey;
-import org.atsign.common.Keys.SharedKey;
-
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+import static org.atsign.client.util.Preconditions.*;
 import static org.atsign.client.util.StringUtil.isBlank;
+import static org.atsign.common.Metadata.*;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import org.atsign.client.util.EnrollmentId;
+import org.atsign.client.util.TypedString;
+import org.atsign.common.Keys.AtKey;
+import org.atsign.common.Metadata.MetadataBuilder;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+
+import lombok.Builder;
 
 /**
  *
- * Parent class for builders that build commands that are accepted by a secondary server
+ * Contains builders for composing Atsign protocol command strings
  *
  */
 public class VerbBuilders {
 
+  private static final Metadata EMPTY_METADATA = Metadata.builder().build();
+
   /**
-   * Base command interface
+   * A builder to compose an Atsign protocol command with the <b>from</b> verb. The <b>from</b> verb
+   * is used to tell the Atsign server whom you claim to be and initiates the authentication workflow.
+   *
+   * @param atSign The {@link AtSign} you claim to be
+   * @return A correctly formed <b>from</b> verb command
+   * @throws IllegalArgumentException If mandatory fields are not set or if field values conflict.
    */
-  public interface VerbBuilder {
-    /// Build the command to be sent to remote secondary for execution.
-    String build();
+  @Builder(builderMethodName = "fromCommandBuilder", builderClassName = "FromCommandBuilder")
+  public static String from(AtSign atSign) {
+    checkNotNull(atSign, "atSign not set");
+    return "from:" + atSign;
   }
 
   /**
-   * Atsign Platform <b>from</b> command builder.
-   * This initiates authentication
+   * A builder to compose an Atsign protocol command with the <b>cram</b> verb. The <b>cram</b> verb
+   * is used to boostrap authenticate one's own self as an owner of the Atsign server. It is intended
+   * to be used once until a set of PKAM keys are cut on the owner's mobile device and from then on we
+   * use the pkam verb.
+   *
+   * @param digest the challenge sent as a result of the from verb encrypted with the CRAM key/secret
+   * @return A correctly formed <b>cram</b> verb command.
+   * @throws IllegalArgumentException If mandatory fields are not set.
    */
-  public static class FromVerbBuilder implements VerbBuilder {
-    // the atSign that we are authenticating with (e.g. atSignStr.equals("@alice") <=> true) [required]
-    private String atSignStr;
-
-    public void setAtSign(String atSignStr) {
-      this.atSignStr = atSignStr;
-    }
-
-    @Override
-    public String build() {
-      atSignStr = AtSign.formatAtSign(atSignStr);
-      if (atSignStr == null || atSignStr.isEmpty()) {
-        throw new IllegalArgumentException("atSignStr cannot be null or empty");
-      }
-      return "from:" + atSignStr;
-    }
+  @Builder(builderMethodName = "cramCommandBuilder", builderClassName = "CramCommandBuilder")
+  public static String cram(String digest) {
+    checkNotNull(digest, "digest not set");
+    return "cram:" + digest;
   }
 
   /**
-   * Atsign Platform <b>cram</b> (Challenge Response Authentication Management) command builder
+   * A builder to compose an Atsign protocol command with the <b>pol</b> verb. The <b>pol</b> verb
+   * is part of the pkam process to authenticate oneself while connecting to someone else's atServer.
+   * The term 'pol' means 'proof of life' as it provides a near realtime assurance that the requestor
+   * is who it claims to be.
+   *
+   * @return A correctly formed <b>pol</b> verb command.
    */
-  public static class CRAMVerbBuilder implements VerbBuilder {
-
-    // chlallenge response authentication method
-
-    private String digest; // the digest to use for authentication, encrypt the challenge (given by the from verb) to get the digest [required]
-
-    public void setDigest(String digest) {
-      this.digest = digest;
-    }
-
-    @Override
-    public String build() {
-      String s = "cram:" + digest;
-      return s;
-    }
+  @Builder(builderMethodName = "polCommandBuilder", builderClassName = "PolCommandBuilder")
+  public static String pol() {
+    return "pol";
   }
 
   /**
-   * Atsign Platform <b>pol</b> (Proof of Life) command builder
+   * A builder to compose an Atsign protocol command with the <b>pkam</b> verb. The <b>pkam</b> verb
+   * follows the <b>from</b> verb. As an owner of the atServer, you should be able to take the
+   * challenge thrown by the <b>from</b> verb and encrypt using the private key of the RSA key pair
+   * with what the server has been bound with. Upon receiving the cram verb along with the digest, the
+   * server decrypts the digest using the public key and matches it with the challenge. If they are
+   * the same then the atServer lets you connect to the atServer and changes the prompt to your
+   * {@link AtSign}.
+   *
+   * @param digest The challenge sent as a result of the from verb signed with the {@link AtSign}'s
+   *        private authentication key.
+   * @param signingAlgo The signing algorithm used.
+   * @param hashingAlgo The hashing algorithm used.
+   * @param enrollmentId The specific enrollment id for the {@link AtSign} that matches a specific
+   *        authentication key pair.
+   * @return A correctly formed <b>pkam</b> verb command.
+   * @throws IllegalArgumentException If mandatory fields are not set or if field values conflict.
    */
-  public static class POLVerbBuilder implements VerbBuilder {
-
-    @Override
-    public String build() {
-      return "pol";
+  @Builder(builderMethodName = "pkamCommandBuilder", builderClassName = "PkamCommandBuilder")
+  public static String pkam(String digest, String signingAlgo, String hashingAlgo, EnrollmentId enrollmentId) {
+    checkNotNull(digest, "digest not set");
+    if (enrollmentId != null) {
+      checkNotBlank(signingAlgo, "signingAlgo not set");
+      checkNotBlank(hashingAlgo, "hashingAlgo not set");
     }
+
+    return new StringBuilder("pkam")
+        .append(signingAlgo != null ? ":signingAlgo:" + signingAlgo : "")
+        .append(hashingAlgo != null ? ":hashingAlgo:" + hashingAlgo : "")
+        .append(enrollmentId != null ? ":enrollmentId:" + enrollmentId : "")
+        .append(':').append(digest)
+        .toString();
   }
 
   /**
-   * Atsign Platform <b>pkam</b> (Public Key Authentication Management) command builder
+   * A builder to compose an Atsign protocol command with the <b>update</b> verb. The <b>update</b>
+   * is used to insert key/value pairs into a Key Store. An update command can only be sent by the
+   * {@link AtSign} that "owns" the key value and can only be sent to their own Atsign server.
+   *
+   * @param keyName The namespace qualified key name (without the sharedBy or sharedWith or public,
+   *        hidden or cache qualifiers).
+   * @param sharedBy The {@link AtSign} which is owns / is sharing this key value (this will qualify
+   *        the keyName is the built command).
+   * @param sharedWith The {@link AtSign} which is receiving this key value (this will qualify the
+   *        keyName is the built command).
+   * @param isHidden Denotes whether the key value is hidden (this will qualify the keyName in the
+   *        built command and set the metadata).
+   * @param isPublic Denotes whether the key value is public (this will qualify the keyName in the
+   *        built command and set the metadata).
+   * @param isCached Denotes whether the key value is cached (this will qualify the keyName in the
+   *        built command and set the metadata).
+   * @param ttl Sets the time to live in the metadata (milliseconds). This overrides the metadata
+   *        param if this is also set.
+   * @param ttb Sets the time to birth in the metadata (milliseconds). This overrides the metadata
+   *        param if this is also set.
+   * @param ttr Sets the time to refresh (for a cached key) in the metadata (milliseconds). The value
+   *        -1 denotes "cached forever". This overrides the metadata param if this is also set.
+   * @param ccd Indicates if a cached key needs to be deleted when the atSign user who has originally
+   *        shared it deletes it. This overrides the metadata param if this is also set.
+   * @param isBinary Sets metadata field which indicates a binary value. This overrides the metadata
+   *        param if this is also set.
+   * @param isEncrypted Sets metadata field which indicates that value is encrypted. This overrides
+   *        the metadata param if this is also set.
+   * @param dataSignature sets metadata field that holds signature of the value. This overrides the
+   *        metadata param if this is also set.
+   * @param sharedKeyEnc Sets metadata field. This overrides the metadata param if this is also set.
+   * @param pubKeyCS sets metadata field. This overrides the metadata param if this is also set.
+   * @param encoding sets metadata field. This overrides the metadata param if this is also set.
+   * @param ivNonce sets metadata field used to hold the encryption initialization vector when value
+   *        is encrypted. This overrides the metadata param if this is also set.
+   * @param value the value of the key / value. This overrides the metadata param if this is also set.
+   * @param key a {@link AtKey} instance from which keyName, sharedBy, sharedWith and metadata will be
+   *        taken from.
+   * @param rawKey the Atsign protocol key with cached and public qualifications
+   * @return A correctly formed <b>update</b> verb command.
+   * @throws IllegalArgumentException If mandatory fields are not set or if field values conflict.
    */
-  public static class PKAMVerbBuilder implements VerbBuilder {
+  @Builder(builderMethodName = "updateCommandBuilder", builderClassName = "UpdateCommandBuilder")
+  public static String update(String keyName, AtSign sharedBy, AtSign sharedWith, Boolean isHidden, Boolean isPublic,
+                              Boolean isCached, Long ttl, Long ttb, Long ttr, Boolean ccd, Boolean isBinary,
+                              Boolean isEncrypted, String dataSignature, String sharedKeyEnc, String pubKeyCS,
+                              String encoding, String ivNonce, Object value, AtKey key, String rawKey) {
 
-    // public key authentication method
+    String metadataString;
+    String keyString;
 
-    private String digest; // digest the challenge string given by the from verb [required]
+    if (key != null) {
+      checkAllNull("both key and key fields set", keyName, sharedBy, sharedWith, isHidden, isPublic, isCached, ttl, ttb,
+                   ttr, ccd, isBinary, isEncrypted, dataSignature, sharedKeyEnc, pubKeyCS, encoding, ivNonce);
+      metadataString = key.metadata().toString();
+      keyString = key.toString();
+    } else {
+      MetadataBuilder metadataBuilder = createBlankMetadataBuilder();
+      if (rawKey == null) {
+        setIsHiddenIfNotNull(metadataBuilder, isHidden);
+        setIsPublicIfNotNull(metadataBuilder, isPublic);
+        setIsCachedIfNotNull(metadataBuilder, isCached);
+      } else {
+        checkAllNull("both rawKeys and isHidden, isPublic isCached set", isHidden, isPublic, isCached);
+        checkAllNull("both rawKeys and key fields set", keyName, sharedBy, sharedWith);
+      }
+      setTtlIfNotNull(metadataBuilder, ttl);
+      setTtrIfNotNull(metadataBuilder, ttr);
+      setTtbIfNotNull(metadataBuilder, ttb);
+      setCcdIfNotNull(metadataBuilder, ccd);
+      setIsBinaryIfNotNull(metadataBuilder, isBinary);
+      setIsEncryptedIfNotNull(metadataBuilder, isEncrypted);
+      setDataSignatureIfNotNull(metadataBuilder, dataSignature);
+      setSharedKeyEncIfNotNull(metadataBuilder, sharedKeyEnc);
+      setPubKeyCSIfNotNull(metadataBuilder, pubKeyCS);
+      setEncodingIfNotNull(metadataBuilder, encoding);
+      setIvNonceIfNotNull(metadataBuilder, ivNonce);
 
-    public void setDigest(String digest) {
-      this.digest = digest;
+      checkNotBlank(keyName, "keyName not set");
+      checkNotNull(sharedBy, "sharedBy not set");
+      checkNotNull(value, "value not set");
+
+      Metadata metadata = metadataBuilder.build();
+      metadataString = metadata.toString();
+      keyString = rawKey != null ? rawKey : toRawKey(keyName, sharedBy, sharedWith, metadata);
     }
 
-    @Override
-    public String build() {
-      String s = "pkam:" + digest;
-      return s;
-    }
-
+    return String.format("update%s:%s %s", metadataString, keyString, value);
   }
 
   /**
-   * Atsign Platform <b>update</b> command builder
+   * Controls whether lookups return just the value, just the metadata or the value and metadata
    */
-  public static class UpdateVerbBuilder implements VerbBuilder {
+  public enum LookupOperation {
+    none, meta, all
+  };
 
-    /// Update the value (and metadata optionally) of a key.
+  /**
+   * A builder to compose an Atsign protocol command with the <b>llookup</b> verb. The <b>llookup</b>
+   * verb is used to look up key values "owned" / shared by the {@link AtSign} that is sending the
+   * command.
+   *
+   * @param keyName The namespace qualified key name (without the sharedBy or sharedWith or public,
+   *        hidden or cache qualifiers).
+   * @param sharedBy The {@link AtSign} which is owns / is sharing this key value (this will qualify
+   *        the keyName is the built command).
+   * @param sharedWith The {@link AtSign} which is receiving this key value (this will qualify the
+   *        keyName is the built command).
+   * @param isHidden Denotes whether the key value is hidden (this will qualify the keyName in the
+   *        built command and set the metadata).
+   * @param isPublic Denotes whether the key value is public (this will qualify the keyName in the
+   *        built command and set the metadata).
+   * @param isCached Denotes whether the key value is cached (this will qualify the keyName in the
+   *        built command and set the metadata).
+   * @param operation Controls whether lookups return just the value, just the metadata or the value
+   *        and metadata.
+   * @param key a {@link AtKey} instance from which keyName, sharedBy, sharedWith and
+   *        public/hidden/cached qualifiers will be taken from.
+   * @param rawKey The "raw" protocol key string for the key. i.e. includes keyName, sharedBy,
+   *        sharedWith and public/hidden/cached qualifiers (this will override those fields).
+   * @return A correctly formed <b>llookup</b> verb command.
+   * @throws IllegalArgumentException If mandatory fields are not set or if field values conflict.
+   */
+  @Builder(builderMethodName = "llookupCommandBuilder", builderClassName = "LlookupCommandBuilder")
+  public static String llookup(String keyName, AtSign sharedBy, AtSign sharedWith, Boolean isHidden, Boolean isPublic,
+                               Boolean isCached, LookupOperation operation, AtKey key, String rawKey) {
 
-    // =======================================
-    // AtKey name details
-    // =======================================
-    private String key; // e.g. "test", "location", "email" [required]
-    private String sharedBy; // e.g. "@alice" [required]
-    private String sharedWith = null; // e.g. "@bob"
-    private Boolean isHidden = null; // if true, adds _ at the beginning of the fullKeyName
-    private Boolean isPublic = null; //   /// if [isPublic] is true, then [atKey] is accessible by all atSigns, if [isPublic] is false, then [atKey] is accessible either by [sharedWith] or [sharedBy]
-    private Boolean isCached = false; // if true, will add "cached:" to the fullKeyName
-    private Integer ttl = null; // time to live in milliseconds (how long AtKey will exist) (0 by default)
-    private Integer ttb = null; // time to birth in milliseconds (how long it will take for AtKey to exist) (0 by default)
-    private Integer ttr = null; // time to refresh in milliseconds (how long it will take for AtKey to refresh)
-    private Boolean ccd = null; // if true, cached keys will be deleted if the original key is deleted
-    private Boolean isBinary = null; // if true, the value contains binary data
-    private Boolean isEncrypted = null; // if true, the value is encrypted with some encryption key
-    private String dataSignature = null; // usually public data is signed with the private key to prove that the data is authentic
-    private String sharedKeyEnc = null; // will be set only when [sharedWith] is set. Will be encrypted using the public key of [sharedWith] atsign
-    private String pubKeyCS = null; // checksum of the public of of [sharedWith] atSign. Will be set only when [sharedWith] is set.
-    private String encoding = null; // indicates if public data is encoded. If the public data contains a new line character, the data will be encoded and the encoding will be set to given type of encoding
-    private String ivNonce = null;
-
-    private Object value; // the value to set [required]
-
-    public void setKeyName(String keyName) {
-      this.key = keyName;
+    String operationString = toOperationString(operation);
+    String keyString;
+    if (rawKey != null) {
+      checkAllNull("both rawKey and key fields are set", keyName, sharedBy, sharedWith, key);
+      keyString = rawKey;
+    } else if (key != null) {
+      checkAllNull("both key and key fields are set", keyName, sharedBy, sharedWith, isHidden, isPublic, isCached);
+      keyString = key.toString();
+    } else {
+      checkNotBlank(keyName, "keyName not set");
+      checkNotNull(sharedBy, "sharedBy not set");
+      MetadataBuilder metadataBuilder = createBlankMetadataBuilder();
+      setIsHiddenIfNotNull(metadataBuilder, isHidden);
+      setIsPublicIfNotNull(metadataBuilder, isPublic);
+      setIsCachedIfNotNull(metadataBuilder, isCached);
+      keyString = toRawKey(keyName, sharedBy, sharedWith, metadataBuilder.build());
     }
-
-    public void setSharedBy(String sharedBy) {
-      this.sharedBy = sharedBy;
-    }
-
-    public void setSharedWith(String sharedWith) {
-      this.sharedWith = sharedWith;
-    }
-
-    public void setIsHidden(Boolean isHidden) {
-      this.isHidden = isHidden;
-    }
-
-    public void setIsPublic(Boolean isPublic) {
-      this.isPublic = isPublic;
-    }
-
-    public void setIsCached(Boolean isCached) {
-      this.isCached = isCached;
-    }
-
-    public void setTtl(Integer ttl) {
-      this.ttl = ttl;
-    }
-
-    public void setTtb(Integer ttb) {
-      this.ttb = ttb;
-    }
-
-    public void setTtr(Integer ttr) {
-      this.ttr = ttr;
-    }
-
-    public void setCcd(Boolean ccd) {
-      this.ccd = ccd;
-    }
-
-    public void setIsBinary(boolean isBinary) {
-      this.isBinary = isBinary;
-    }
-
-    public void setIsEncrypted(boolean isEncrypted) {
-      this.isEncrypted = isEncrypted;
-    }
-
-    public void setDataSignature(String dataSignature) {
-      this.dataSignature = dataSignature;
-    }
-
-    public void setSharedKeyEnc(String sharedKeyEnc) {
-      this.sharedKeyEnc = sharedKeyEnc;
-    }
-
-    public void setPubKeyCS(String pubKeyCS) {
-      this.pubKeyCS = pubKeyCS;
-    }
-
-    public void setEncoding(String encoding) {
-      this.encoding = encoding;
-    }
-
-    public void setValue(Object value) {
-      this.value = value;
-    }
-
-    public void setMetadata(Metadata metadata) {
-      this.isHidden = metadata.isHidden;
-      this.isPublic = metadata.isPublic;
-      this.isCached = metadata.isCached;
-      this.ttl = metadata.ttl;
-      this.ttb = metadata.ttb;
-      this.ttr = metadata.ttr;
-      this.ccd = metadata.ccd;
-      this.isBinary = metadata.isBinary;
-      this.isEncrypted = metadata.isEncrypted;
-      this.dataSignature = metadata.dataSignature;
-      this.sharedKeyEnc = metadata.sharedKeyEnc;
-      this.pubKeyCS = metadata.pubKeyCS;
-      this.encoding = metadata.encoding;
-      this.ivNonce = metadata.ivNonce;
-    }
-
-    public void with(AtKey atKey, Object value) {
-      setKeyName(atKey.getFullyQualifiedKeyName());
-      setSharedBy(atKey.sharedBy.toString());
-      if (atKey.sharedWith != null && !atKey.sharedWith.toString().isEmpty()) {
-        setSharedWith(atKey.sharedWith.toString());
-      }
-      setIsCached(atKey.metadata.isCached);
-      setIsHidden(atKey.metadata.isHidden);
-      setIsPublic(atKey.metadata.isPublic);
-      setMetadata(atKey.metadata);
-      setValue(value);
-    }
-
-    @Override
-    public String build() {
-      if (key == null || key.isEmpty() || sharedBy == null || sharedBy.isEmpty() || value == null
-          || value.toString().isEmpty()) {
-        throw new IllegalArgumentException("keyName, sharedBy, and value cannot be null or empty");
-      }
-      String fullKeyName = buildAtKeyStr();
-      String metadata = buildMetadataStr();
-      String s = "update" + metadata + ":" + fullKeyName + " " + value.toString();
-      return s;
-    }
-
-    private String buildAtKeyStr() {
-      String s = "";
-      if (isHidden != null && isHidden) {
-        s += "_";
-      }
-      if (isCached != null && isCached) {
-        s += "cached:";
-      }
-      if (isPublic != null && isPublic) {
-        s += "public:";
-      }
-      if (sharedWith != null && !sharedWith.isEmpty()) {
-        s += AtSign.formatAtSign(sharedWith) + ":";
-      }
-      s += key;
-      s += AtSign.formatAtSign(sharedBy);
-      return s;
-    }
-
-    private String buildMetadataStr() {
-      Metadata metadata = new Metadata();
-      metadata.ttl = ttl;
-      metadata.ttb = ttb;
-      metadata.ttr = ttr;
-      metadata.ccd = ccd;
-      metadata.isBinary = isBinary;
-      metadata.isEncrypted = isEncrypted;
-      metadata.dataSignature = dataSignature;
-      metadata.sharedKeyEnc = sharedKeyEnc;
-      metadata.pubKeyCS = pubKeyCS;
-      metadata.encoding = encoding;
-      metadata.ivNonce = ivNonce;
-      return metadata.toString();
-    }
-
+    return String.format("llookup:%s%s", operationString, keyString);
   }
 
   /**
-   * Atsign Platform <b>llookup</b> (Local lookup) command builder.
-   * Used when key is "owned" by the {@link AtSign} sending the command
+   * A builder to compose an Atsign protocol command with the <b>lookup</b> verb. The <b>lookup</b>
+   * verb is used to look up key values shared by other {@link AtSign}s with the {@link AtSign} that
+   * is sending the command.
+   *
+   * @param keyName The namespace qualified key name (without the sharedBy or sharedWith or public,
+   *        hidden or cache qualifiers).
+   * @param sharedBy The {@link AtSign} which is owns / is sharing this key value (this will qualify
+   *        the keyName is the built command).
+   * @param operation Controls whether lookups return just the value, just the metadata or the value
+   *        and metadata.
+   * @param key a {@link AtKey} instance from which keyName, sharedBy, sharedWith and
+   *        public/hidden/cached qualifiers will be taken from.
+   * @param rawKey The "raw" protocol key string for the key. i.e. includes keyName, sharedBy,
+   *        sharedWith and public/hidden/cached qualifiers (this will override those fields).
+   * @return A correctly formed <b>lookup</b> verb command.
+   * @throws IllegalArgumentException If mandatory fields are not set or if field values conflict.
    */
-
-  public static class LlookupVerbBuilder implements VerbBuilder {
-
-    /**
-     * Builder argument which controls the scope of the lookup command
-     */
-    public enum Type {
-      NONE, // llookup:<fullKeyName>
-      METADATA, // llookup:meta:<fullKeyName>
-      ALL, // llookup:all:<fullKeyName>
+  @Builder(builderMethodName = "lookupCommandBuilder", builderClassName = "LookupCommandBuilder")
+  public static String lookup(String keyName, AtSign sharedBy, LookupOperation operation, Keys.SharedKey key,
+                              String rawKey) {
+    String operationString = toOperationString(operation);
+    String keyString;
+    if (rawKey != null) {
+      checkAllNull("both rawKey and key fields are set", keyName, sharedBy, key);
+      keyString = rawKey;
+    } else if (key != null) {
+      checkAllNull("both key and key fields are set", keyName, sharedBy);
+      keyString = toRawKey(key.name(), key.sharedBy());
+    } else {
+      checkNotBlank(keyName, "keyName not set");
+      checkNotNull(sharedBy, "sharedBy not set");
+      keyString = toRawKey(keyName, sharedBy);
     }
-
-    private String key; // e.g. "test", "location", "email" [required]
-    private String sharedBy; // e.g. sharedBy atSign "@alice" [required]
-    private String sharedWith = null; // e.g. sharedWith atSign "@bob"
-    private Boolean isHidden = null; // if true, adds _ at the beginning of the fullKeyName
-    private Boolean isPublic = null; // if [isPublic] is true, then [atKey] is accessible by all atSigns and "public:" will be added to the fullKeyName, if [isPublic] is false, then [atKey] is accessible either by [sharedWith] or [sharedBy]
-    private Boolean isCached = null; // if true, will add "cached:" to the fullKeyName
-
-    private Type type = Type.NONE;
-
-    public void setKeyName(String key) {
-      this.key = key;
-    }
-
-    public void setSharedBy(String sharedBy) {
-      this.sharedBy = sharedBy;
-    }
-
-    public void setSharedWith(String sharedWith) {
-      this.sharedWith = sharedWith;
-    }
-
-    public void setIsHidden(Boolean isHidden) {
-      this.isHidden = isHidden;
-    }
-
-    public void setIsPublic(Boolean isPublic) {
-      this.isPublic = isPublic;
-    }
-
-    public void setIsCached(Boolean isCached) {
-      this.isCached = isCached;
-    }
-
-    public void setType(Type type) {
-      this.type = type;
-    }
-
-    public void with(AtKey atKey, LlookupVerbBuilder.Type type) {
-      setKeyName(atKey.getFullyQualifiedKeyName());
-      setSharedBy(atKey.sharedBy.toString());
-      if (atKey.sharedWith != null && !atKey.sharedWith.toString().isEmpty()) {
-        setSharedWith(atKey.sharedWith.toString());
-      }
-      setIsHidden(atKey.metadata.isHidden);
-      setIsPublic(atKey.metadata.isPublic);
-      setIsCached(atKey.metadata.isCached);
-      setType(type);
-    }
-
-    @Override
-    public String build() {
-      if (key == null || key.isEmpty() || sharedBy == null || sharedBy.isEmpty()) {
-        throw new IllegalArgumentException("keyName and sharedBy cannot be null or empty");
-      }
-      String s = "llookup:";
-      switch (type) {
-        case METADATA:
-          s += "meta:";
-          break;
-        case ALL:
-          s += "all:";
-          break;
-        default:
-          break;
-      }
-      if (isHidden != null && isHidden) {
-        s += "_";
-      }
-      if (isCached != null && isCached) {
-        s += "cached:";
-      }
-      if (isPublic != null && isPublic) {
-        s += "public:";
-      }
-      if (sharedWith != null && !sharedWith.isEmpty()) {
-        s += AtSign.formatAtSign(sharedWith) + ":";
-      }
-      s += key;
-      s += AtSign.formatAtSign(sharedBy);
-      return s; // eg: "llookup:meta:cached:public:test@bob"
-
-    }
-
+    return String.format("lookup:%s%s", operationString, keyString);
   }
 
   /**
-   * Atsign Platform <b>lookup</b> command builder.
-   * Used when key shared with the {@link AtSign} sending the command.
+   * A builder to compose an Atsign protocol command with the <b>plookup</b> verb. The <b>plookup</b>
+   * verb is used to look up a public key value shared by an {@link AtSign} other than the one that
+   * is sending the command.
+   *
+   * @param keyName The namespace qualified key name (without the sharedBy or sharedWith or public,
+   *        hidden or cache qualifiers).
+   * @param sharedBy The {@link AtSign} which is owns / is sharing this key value (this will qualify
+   *        the keyName is the built command).
+   * @param bypassCache If true this forces the value to be fetch from the Atsign server that has
+   *        shared the key value.
+   * @param operation Controls whether lookups return just the value, just the metadata or the value
+   *        and metadata.
+   * @param key a {@link AtKey} instance from which keyName, sharedBy, sharedWith and
+   *        public/hidden/cached qualifiers will be taken from.
+   * @param rawKey The "raw" protocol key string for the key. i.e. includes keyName, sharedBy,
+   *        sharedWith and public/hidden/cached qualifiers (this will override those fields).
+   * @return A correctly formed <b>plookup</b> verb command.
+   * @throws IllegalArgumentException If mandatory fields are not set or if field values conflict.
    */
-  public static class LookupVerbBuilder implements VerbBuilder {
+  @Builder(builderMethodName = "plookupCommandBuilder", builderClassName = "PlookupCommandBuilder")
+  public static String plookup(String keyName, AtSign sharedBy, Boolean bypassCache, LookupOperation operation,
+                               AtKey key, String rawKey) {
 
-    /**
-     * Builder argument which controls the scope of the lookup command
-     */
-    public enum Type {
-      NONE, // lookup:<fullKeyName>
-      METADATA, // lookup:meta:<fullKeyName>
-      ALL, // lookup:all:<fullKeyName>
+    String bypassCacheString = toBypassCacheString(bypassCache);
+    String operationString = toOperationString(operation);
+    String keyString;
+    if (rawKey != null) {
+      checkAllNull("both rawKey and key fields are set", keyName, sharedBy, key);
+      keyString = rawKey;
+    } else if (key != null) {
+      checkAllNull("both key and key fields are set", keyName, sharedBy);
+      keyString = toRawKey(key.name(), key.sharedBy());
+    } else {
+      checkNotBlank(keyName, "keyName not set");
+      checkNotNull(sharedBy, "sharedBy not set");
+      keyString = toRawKey(keyName, sharedBy);
     }
 
-    private String key; // key name e.g. "test", "location", "email" [required]
-    private String sharedBy; // sharedBy atSign e.g. "@alice" [required] (not your atSign, the atSign of another secondary, get)
-
-    private Type type = Type.NONE;
-
-    public void setKeyName(String key) {
-      this.key = key;
-    }
-
-    public void setSharedBy(String sharedBy) {
-      this.sharedBy = sharedBy;
-    }
-
-    public void setType(Type type) {
-      this.type = type;
-    }
-
-    public void with(SharedKey sharedKey, LookupVerbBuilder.Type type) {
-      setKeyName(sharedKey.getFullyQualifiedKeyName());
-      setSharedBy(sharedKey.sharedBy.toString());
-      setType(type);
-    }
-
-    @Override
-    public String build() {
-      if (key == null || key.isEmpty() || sharedBy == null || sharedBy.isEmpty()) {
-        throw new IllegalArgumentException("keyName and sharedBy cannot be null or empty");
-      }
-      String s = "lookup:";
-      switch (type) {
-        case METADATA:
-          s += "meta:";
-          break;
-        case ALL:
-          s += "all:";
-          break;
-        default:
-          break;
-      }
-      s += this.key;
-      s += AtSign.formatAtSign(this.sharedBy);
-      return s; // eg: "lookup:meta:test@bob"
-    }
+    return String.format("plookup:%s%s%s", bypassCacheString, operationString, keyString);
   }
 
   /**
-   * Atsign Platform <b>plookup</b> (public lookup) command builder.
-   * Used when key is a public key owned by an {@link AtSign} other than the one sending the command.
+   * A builder to compose an Atsign protocol command with the <b>delete</b> verb. The <b>delete</b>
+   * verb is used to remove key/value pairs into a Key Store. An <b>delete</b> command can only be
+   * sent by the {@link AtSign} that "owns" the key value and can only be sent to their own Atsign
+   * server.
+   *
+   * @param keyName The namespace qualified key name (without the sharedBy or sharedWith or public,
+   *        hidden or cache qualifiers).
+   * @param sharedBy The {@link AtSign} which is owns / is sharing this key value (this will qualify
+   *        the keyName is the built command).
+   * @param sharedWith The {@link AtSign} which is receiving this key value (this will qualify the
+   *        keyName is the built command).
+   * @param isHidden Denotes whether the key value is hidden (this will qualify the keyName in the
+   *        built command and set the metadata).
+   * @param isPublic Denotes whether the key value is public (this will qualify the keyName in the
+   *        built command and set the metadata).
+   * @param isCached Denotes whether the key value is cached (this will qualify the keyName in the
+   *        built command and set the metadata).
+   * @param key a {@link AtKey} instance from which keyName, sharedBy, sharedWith and metadata will be
+   *        taken from.
+   * @return A correctly formed <b>delete</b> verb command.
+   * @throws IllegalArgumentException If mandatory fields are not set or if field values conflict.
    */
-  public static class PlookupVerbBuilder implements VerbBuilder {
+  @Builder(builderMethodName = "deleteCommandBuilder", builderClassName = "DeleteCommandBuilder")
+  public static String delete(String keyName, AtSign sharedBy, AtSign sharedWith, Boolean isHidden, Boolean isPublic,
+                              Boolean isCached, AtKey key, String rawKey) {
 
-    /**
-     * Builder argument which controls the scope of the lookup command
-     */
-    public enum Type {
-      NONE, // just get the data
-      METADATA, // get the metadata but no data (plookup:meta:)
-      ALL, // get the data and metadata (plookup:all:)
+    String keyString;
+    if (rawKey != null) {
+      checkAllNull("both rawKey and key fields are set", keyName, sharedBy, sharedWith, key);
+      keyString = rawKey;
+    } else if (key != null) {
+      checkAllNull("both key and isHidden, isPublic, isCached are set",
+                   keyName, sharedBy, sharedWith, isHidden, isPublic, isCached);
+      keyString = key.toString();
+    } else {
+      MetadataBuilder metadataBuilder = createBlankMetadataBuilder();
+      setIsHiddenIfNotNull(metadataBuilder, isHidden);
+      setIsPublicIfNotNull(metadataBuilder, isPublic);
+      setIsCachedIfNotNull(metadataBuilder, isCached);
+      checkNotBlank(keyName, "keyName not set");
+      checkNotNull(sharedBy, "sharedBy not set");
+      keyString = toRawKey(keyName, sharedBy, sharedWith, metadataBuilder.build());
     }
 
-    // AtKey details
-    private String key; // key name (e.g. location, test) [required]
-    private String sharedBy; // sharedBy atSign ("@bob") [required]
-
-    private Boolean bypassCache = false; // bypass cache (plookup:bypassCache:[true/false]) [optional]
-
-    private Type type = Type.NONE;
-
-    public void setKeyName(String key) {
-      this.key = key;
-    }
-
-    public void setSharedBy(String sharedBy) {
-      this.sharedBy = sharedBy;
-    }
-
-    public void setType(Type type) {
-      this.type = type;
-    }
-
-    public void setBypassCache(Boolean bypassCache) {
-      this.bypassCache = bypassCache;
-    }
-
-    public void with(PublicKey atKey, PlookupVerbBuilder.Type type) {
-      setKeyName(atKey.getFullyQualifiedKeyName());
-      setSharedBy(atKey.sharedBy.toString());
-      setType(type);
-    }
-
-    @Override
-    public String build() {
-      if (this.key == null || this.key.isEmpty() || this.sharedBy == null || this.sharedBy.isEmpty()) {
-        throw new IllegalArgumentException("key or sharedBy is null or empty");
-      }
-      String s = "plookup:";
-      if (this.bypassCache != null && this.bypassCache) {
-        s += "bypassCache:true:";
-      }
-      switch (type) {
-        case METADATA:
-          s += "meta:";
-          break;
-        case ALL:
-          s += "all:";
-          break;
-        default:
-          break;
-      }
-      s += this.key;
-      s += AtSign.formatAtSign(this.sharedBy);
-
-      return s; // e.g: "plookup:meta:@alice:test@bob"
-    }
-
+    return String.format("delete:%s", keyString);
   }
 
   /**
-   * Atsign Platform <b>delete</b> command builder.
-   * Used to delete a key owned by the {@link AtSign} sending the command.
+   * A builder to compose an Atsign protocol command with the <b>scan</b> verb. The <b>scan</b> verb
+   * is used to list the keys in an {@link AtSign}'s Atsign server.
+   *
+   * @param regex If set only show keys that match this regular expression pattern.
+   * @param fromAtSign If set only show keys that are created by the {@link AtSign}.
+   * @param showHidden If true, will show hidden internal keys.
+   * @return A correctly formed <b>scan</b> verb command.
    */
-  public static class DeleteVerbBuilder implements VerbBuilder {
+  @Builder(builderMethodName = "scanCommandBuilder", builderClassName = "ScanCommandBuilder")
+  public static String scan(String regex, AtSign fromAtSign, Boolean showHidden) {
 
-    private String key; // e.g. "test", "location", "email" [required]
-    private String sharedBy; // e.g. sharedBy atSign "@alice" [required]
-    private String sharedWith = ""; // e.g. sharedWith atSign "@bob"
-    private Boolean isHidden = false;
-    private Boolean isPublic = false; // if [isPublic] is true, then [atKey] is accessible by all atSigns and "public:" will be added to the fullKeyName, if [isPublic] is false, then [atKey] is accessible either by [sharedWith] or [sharedBy]
-    private Boolean isCached = false; // if true, will add "cached:" to the fullKeyName
-
-    public void setKeyName(String keyName) {
-      this.key = keyName;
+    StringBuilder builder = new StringBuilder("scan");
+    if (isTrue(showHidden)) {
+      builder.append(":showHidden:true");
     }
-
-    public void setSharedBy(String sharedBy) {
-      this.sharedBy = sharedBy;
+    if (fromAtSign != null) {
+      builder.append(':').append(fromAtSign);
     }
-
-    public void setSharedWith(String sharedWith) {
-      this.sharedWith = sharedWith;
+    if (!isBlank(regex)) {
+      builder.append(' ').append(regex);
     }
-
-    public void setIsHidden(Boolean isHidden) {
-      this.isHidden = isHidden;
-    }
-
-    public void setIsPublic(Boolean isPublic) {
-      this.isPublic = isPublic;
-    }
-
-    public void setIsCached(Boolean isCached) {
-      this.isCached = isCached;
-    }
-
-    public void with(AtKey atKey) {
-      setKeyName(atKey.getFullyQualifiedKeyName());
-      setSharedBy(atKey.sharedBy.toString());
-      if (atKey.sharedWith != null && !atKey.sharedWith.toString().isEmpty()) {
-        setSharedWith(atKey.sharedWith.toString());
-      }
-      setIsHidden(atKey.metadata.isHidden);
-      setIsPublic(atKey.metadata.isPublic);
-      setIsCached(atKey.metadata.isCached);
-    }
-
-    @Override
-    public String build() {
-      if (key == null || sharedBy == null) {
-        throw new IllegalArgumentException("key or sharedBy is null. These are required fields");
-      }
-
-      String s = "delete:";
-      if (isHidden) {
-        s += "_";
-      }
-      if (isCached) {
-        s += "cached:";
-      }
-      if (isPublic) {
-        s += "public:";
-      }
-      if (sharedWith != null && !sharedWith.isEmpty()) {
-        s += AtSign.formatAtSign(sharedWith) + ":";
-      }
-      s += key;
-      s += AtSign.formatAtSign(sharedBy);
-      return s; // eg: "delete:cached:public:test@bob"
-    }
-
+    return builder.toString();
   }
 
   /**
-   * Atsign Platform <b>scan</b> command builder.
-   * Used to list all the keys visible to the {@link AtSign} sending the command.
+   * A builder to compose an Atsign protocol command with the <b>notify:messageType:text</b> verb.
+   * The <b>notify:messageType:text</b> verb is used to send an arbitrary message to another
+   * {@link AtSign}.
+   *
+   * @param recipient The {@link AtSign} you wish to send the message to.
+   * @param text The message.
+   * @return A correctly formed <b>notify:messageType:text</b> verb command.
+   * @throws IllegalArgumentException If mandatory fields are not set or if field values conflict.
    */
-  public static class ScanVerbBuilder implements VerbBuilder {
-
-    // Regex to filter the keys
-    private String regex;
-
-    // Scans the keys shared by forAtSign
-    private String fromAtSign;
-
-    // Scans for hidden keys (showHidden:true)
-    private boolean showHidden = false;
-
-    public void setRegex(String regex) {
-      this.regex = regex;
-    }
-
-    public void setFromAtSign(String fromAtSign) {
-      this.fromAtSign = fromAtSign;
-    }
-
-    public void setShowHidden(boolean showHidden) {
-      this.showHidden = showHidden;
-    }
-
-    // r'^scan$|scan(:(?<forAtSign>@[^:@\s]+))?(:page:(?<page>\d+))?( (?<regex>\S+))?$';
-    public String build() {
-
-      String command = "scan";
-
-      if (showHidden) {
-        command += ":showHidden:true";
-      }
-
-      if (fromAtSign != null && !isBlank(fromAtSign)) {
-        command += ":" + fromAtSign;
-      }
-
-      if (regex != null && !isBlank(regex)) {
-        command += " " + regex;
-      }
-
-      return command;
-    }
+  @Builder(builderMethodName = "notifyTextCommandBuilder", builderClassName = "NotifyTextCommandBuilder")
+  public static String notifyText(AtSign recipient, String text) {
+    checkNotNull(recipient, "recipient not set");
+    checkNotBlank(text, "text not set");
+    return String.format("notify:messageType:text:%s:%s", recipient, text);
   }
 
   /**
-   * Atsign Platform <b>notify</b> command builder.
+   * The type of key change operation
    */
-  public static class NotifyTextVerbBuilder implements VerbBuilders.VerbBuilder {
-    //notify:((?<operation>update|delete):)?(messageType:(?<messageType>key|text):)?(priority:(?<priority>low|medium|high):)?(strategy:(?<strategy>all|latest):)?(latestN:(?<latestN>\d+):)?(notifier:(?<notifier>[^\s:]+):)?(ttln:(?<ttln>\d+):)?(ttl:(?<ttl>\d+):)?(ttb:(?<ttb>\d+):)?(ttr:(?<ttr>(-)?\d+):)?(ccd:(?<ccd>true|false):)?(@(?<forAtSign>[^@:\s]*)):(?<atKey>[^:@]((?!:{2})[^@])+)(@(?<atSign>[^@:\s]+))?(:(?<value>.+))?$
-
-    private String recipientAtSign;
-    private String text;
-
-
-    public void setRecipientAtSign(String recipientAtSign) {
-      this.recipientAtSign = recipientAtSign;
-    }
-
-
-    public void setText(String text) {
-      this.text = text;
-    }
-
-
-    public String build() {
-
-      if (recipientAtSign == null || recipientAtSign.isEmpty()) {
-        throw new IllegalArgumentException("recipientAtSign cannot be null or empty");
-      }
-
-      if (text == null || text.isEmpty()) {
-        throw new IllegalArgumentException("text cannot be null or empty");
-      }
-
-      if (!recipientAtSign.startsWith("@")) {
-        recipientAtSign = "@" + recipientAtSign;
-      }
-
-      return "notify:messageType:text:" + recipientAtSign + ":" + text;
-    }
+  public enum NotifyOperation {
+    update, delete
   }
 
   /**
-   * Atsign Platform <b>notify</b> command builder.
+   * A builder to compose an Atsign protocol command with the
+   * <b>notify:(update|delete):messageType:key</b> verb.
+   * The <b>notify:(update|delete):messageType:key</b> verb is used to send key change notifications
+   * to other
+   * {@link AtSign}s.
+   *
+   * @param operation Update or Delete.
+   * @param recipient The {@link AtSign} to send the notification to.
+   * @param sender The {@link AtSign} that is sending the notification.
+   * @param key The namespace qualified key name.
+   * @param value The updated value for the key.
+   * @param ttr Sets the time to refresh (milliseconds).
+   * @return A correctly formed <b>notify:messageType:key</b> verb command.
+   * @throws IllegalArgumentException If mandatory fields are not set or if field values conflict.
    */
-  public static class NotifyKeyChangeBuilder implements VerbBuilders.VerbBuilder {
+  @Builder(builderMethodName = "notifyKeyChangeCommandBuilder", builderClassName = "NotifyKeyChangeCommandBuilder")
+  public static String notifyKeyChange(NotifyOperation operation, AtSign recipient, AtSign sender, String key,
+                                       String value,
+                                       Long ttr) {
 
-    // Only allowed values are "update" or "delete"
-    private String operation = "update";
-    // Optional if key contains the recipient
-    private String recipientAtSign;
-    private String key;
-    // Optional if key contains the owner
-    private String senderAtSign;
-    // Value to be notified when the change needs to be cached.
-    private String value;
+    checkNotBlank(key, "key not set");
+    checkNotNull(operation, "operation not set");
 
-    // If the key has to be cached by the other @sign
-    // ttr of -1 indicated cache forever without a need to refresh the value again.
-    // Any other positive value indicates time after which the value needs to be refreshed
-    private final int defaultTTRValue = -2;
-    private long ttr = defaultTTRValue;
-
-
-    public void setOperation(String operation) {
-      this.operation = operation;
+    if (ttr != null) {
+      checkTrue(ttr >= -1, "ttr < -1");
+      checkNotBlank(value, "value not set (mandatory when ttr is set)");
     }
 
-    // This is optional if the key is fully formed. i.e. key in the format @recipientAtSign:phone@senderAtSign
-    public void setRecipientAtSign(String recipientAtSign) {
-      this.recipientAtSign = recipientAtSign;
-    }
+    return new StringBuilder("notify:")
+        .append(operation)
+        .append(":messageType:key:")
+        .append(ttr != null ? "ttr:" + ttr + ":" : "")
+        .append(recipient != null ? recipient + ":" : "")
+        .append(key)
+        .append(sender != null ? sender : "")
+        .append(!isBlank(value) ? ":" + value : "")
+        .toString();
+  }
 
+  /**
+   * A builder to compose an Atsign protocol command with the <b>notify:status</b> verb.
+   * The <b>notify:status</b> verb is query the status of a previously sent notification.
+   *
+   * @param notificationId The unique id of a notification. This will have been the response for to a
+   *        previously sent notify:(update:delete) command.
+   * @return A correctly formed <b>notify:status</b> verb command.
+   * @throws IllegalArgumentException If mandatory fields are not set or if field values conflict.
+   */
+  @Builder(builderMethodName = "notifyStatusCommandBuilder", builderClassName = "NotifyStatusCommandBuilder")
+  public static String notifyStatus(String notificationId) {
 
-    public void setKey(String key) {
-      this.key = key;
-    }
+    checkNotBlank(notificationId, "notificationId not set");
 
-    // This is optional if the key is fully formed. i.e. key in the format @recipientAtSign:phone@senderAtSign
-    public void setSenderAtSign(String senderAtSign) {
-      this.senderAtSign = senderAtSign;
-    }
+    return "notify:status:" + notificationId;
+  }
 
+  /**
+   * Types of enroll operations
+   */
+  public enum EnrollOperation {
+    request, approve, deny, revoke, list, fetch, unrevoke, delete
+  }
 
-    public void setValue(String value) {
-      this.value = value;
-    }
+  /**
+   * JSON member names used in enroll parameters
+   */
+  public static class EnrollParameters {
+    public static final String ENROLLMENT_ID = "enrollmentId";
+    public static final String ENCRYPTED_PRIVATE_KEY = "encryptedDefaultEncryptionPrivateKey";
+    public static final String PRIVATE_KEY_IV = "encPrivateKeyIV";
+    public static final String ENCRYPTED_SELF_ENCRYPTION_KEY = "encryptedDefaultSelfEncryptionKey";
+    public static final String SELF_ENCRYPTION_KEY_IV = "selfEncKeyIV";
+    public static final String ENROLLMENT_STATUS_FILTER = "enrollmentStatusFilter";
+    public static final String APP_NAME = "appName";
+    public static final String DEVICE_NAME = "deviceName";
+    public static final String APKAM_PUBLIC_KEY = "apkamPublicKey";
+    public static final String ENCRYPTED_APKAM_SYMMETRIC_KEY = "encryptedAPKAMSymmetricKey";
+    public static final String OTP = "otp";
+    public static final String NAMESPACES = "namespaces";
+    public static final String APKAM_KEYS_EXPIRY_IN_MILLIS = "apkamKeysExpiryInMillis";
+  }
 
+  /**
+   * A builder to compose an Atsign protocol command with the <b>enroll</b> verb.
+   * The <b>enroll</b> verb is used to submit an APKAM enrollment.
+   *
+   * @param operation The specific enroll operation to perform see {@link EnrollOperation}.
+   * @param status Filters {@link EnrollOperation#list} operations.
+   * @param enrollmentId The unique enrollment id to refer to in fetch, approve,deny,delete,revoke or
+   *        unrevoke.
+   * @param encryptPrivateKey The private encryption key which all enrollments share for an
+   *        {@link AtSign}. This is mandatory for an approve and the value should be encrypted with
+   *        the APKAM symmetric key that was provided by the {@link EnrollOperation#request}.
+   * @param encryptPrivateKeyIv The initialization vector used for the private key encryption.
+   * @param selfEncryptKey The self encryption key which all enrollments share for an
+   *        {@link AtSign}. This is mandatory for an approve and the value should be encrypted with
+   *        the APKAM symmetric key that was provided by the {@link EnrollOperation#request}.
+   * @param selfEncryptKeyIv The initialization vector used for the self key encryption.
+   * @param appName The application name qualifier for the appName deviceName combination we are
+   *        enrolling.
+   * @param deviceName The device name qualifier for the appName deviceName combination we are
+   *        enrolling.
+   * @param apkamPublicKey The public authentication key for the appName and device we are enrolling.
+   * @param otp The one time password for {@link EnrollOperation#request}.
+   * @param namespaces A map of namespace access control associations. e.g. ns1 {@code -->} rw, ns2
+   *        {@code -->} r (r = read only, rw = read write).
+   * @param apkamSymmetricKey A one-time symmetric key used for the duration of the enrollment
+   *        workflow. This should be encrypted with the public encryption key of the {@link AtSign}.
+   * @param ttl The time to live for the enrollment request.
+   * @return A correctly formed <b>enroll</b> verb command.
+   * @throws IllegalArgumentException If mandatory fields are not set or if field values conflict.
+   */
+  @Builder(builderMethodName = "enrollCommandBuilder", builderClassName = "EnrollCommandBuilder")
+  public static String enroll(EnrollOperation operation, String status, EnrollmentId enrollmentId,
+                              String encryptPrivateKey, String encryptPrivateKeyIv, String selfEncryptKey,
+                              String selfEncryptKeyIv, String appName, String deviceName, String apkamPublicKey,
+                              String otp, Map<String, String> namespaces, String apkamSymmetricKey,
+                              long ttl) {
 
-    public void setTtr(long ttr) {
-      this.ttr = ttr;
-    }
+    checkNotNull(operation, "operation not set");
 
+    Object params = null;
 
-    //notify:((?<operation>update|delete):)?(messageType:(?<messageType>key|text):)?(priority:(?<priority>low|medium|high):)?(strategy:(?<strategy>all|latest):)?(latestN:(?<latestN>\d+):)?(notifier:(?<notifier>[^\s:]+):)?(ttln:(?<ttln>\d+):)?(ttl:(?<ttl>\d+):)?(ttb:(?<ttb>\d+):)?(ttr:(?<ttr>(-)?\d+):)?(ccd:(?<ccd>true|false):)?(@(?<forAtSign>[^@:\s]*)):(?<atKey>[^:@]((?!:{2})[^@])+)(@(?<atSign>[^@:\s]+))?(:(?<value>.+))?$
-    public String build() {
-
-      if (key == null || isBlank(key)) {
-        throw new IllegalArgumentException("key cannot be null or empty");
-      }
-
-
-      if (!"update".equals(operation) && !"delete".equals(operation)) {
-        throw new IllegalArgumentException("Only 'update' and 'delete' are allowed for operation");
-      }
-
-      if (ttr < -1 && ttr != defaultTTRValue) {
-        throw new IllegalArgumentException("Invalid value for ttr. Only -1 and positive numbers are allowed");
-      }
-
-      if (ttr != defaultTTRValue && (value == null || isBlank(value))) {
-        throw new IllegalArgumentException("When the ttr is specified value cannot be null or empty");
-      }
-
-      String command = "notify:" + operation + ":messageType:key:";
-
-      // append ttr
-      if (ttr != defaultTTRValue) {
-        command += "ttr:" + ttr + ":";
-      }
-
-      // append recipients @sign if it is not part of the key already
-      if (recipientAtSign != null && !isBlank(recipientAtSign)) {
-
-        if (!recipientAtSign.startsWith("@")) {
-          recipientAtSign = "@" + recipientAtSign;
+    switch (operation) {
+      case list:
+        if (!isBlank(status)) {
+          params = singletonMap(EnrollParameters.ENROLLMENT_STATUS_FILTER, singletonList(status));
         }
-
-        command += recipientAtSign + ":";
-      }
-
-      // append the key
-      command += key;
-
-      if (senderAtSign != null && !isBlank(senderAtSign)) {
-
-        if (!senderAtSign.startsWith("@")) {
-          senderAtSign = "@" + senderAtSign;
+        break;
+      case approve:
+        checkNotNull(enrollmentId, "enrollmentId not set");
+        checkNotNull(encryptPrivateKey, "encryptPrivateKey not set");
+        checkNotNull(encryptPrivateKeyIv, "encryptPrivateKeyIv not set");
+        checkNotNull(selfEncryptKey, "selfEncryptKey not set");
+        checkNotNull(selfEncryptKeyIv, "selfEncryptKeyIv not set");
+        params = toObjectMap(EnrollParameters.ENROLLMENT_ID, enrollmentId,
+                             EnrollParameters.ENCRYPTED_PRIVATE_KEY, encryptPrivateKey,
+                             EnrollParameters.PRIVATE_KEY_IV, encryptPrivateKeyIv,
+                             EnrollParameters.ENCRYPTED_SELF_ENCRYPTION_KEY, selfEncryptKey,
+                             EnrollParameters.SELF_ENCRYPTION_KEY_IV, selfEncryptKeyIv);
+        break;
+      case fetch:
+      case deny:
+      case revoke:
+      case unrevoke:
+      case delete:
+        checkNotNull(enrollmentId, "enrollmentId not set");
+        params = toObjectMap(EnrollParameters.ENROLLMENT_ID, enrollmentId);
+        break;
+      case request:
+        checkNotBlank(appName, "appName not set");
+        checkNotBlank(deviceName, "deviceName not set");
+        checkNotBlank(apkamPublicKey, "apkamPublicKey not set");
+        if (otp == null) {
+          params = toObjectMap(EnrollParameters.APP_NAME, appName,
+                               EnrollParameters.DEVICE_NAME, deviceName,
+                               EnrollParameters.APKAM_PUBLIC_KEY, apkamPublicKey);
+        } else {
+          checkNotBlank(otp, "otp not set");
+          checkNotNull(namespaces, "namespaces not set");
+          params = toObjectMap(EnrollParameters.APP_NAME, appName,
+                               EnrollParameters.DEVICE_NAME, deviceName,
+                               EnrollParameters.APKAM_PUBLIC_KEY, apkamPublicKey,
+                               EnrollParameters.ENCRYPTED_APKAM_SYMMETRIC_KEY, apkamSymmetricKey,
+                               EnrollParameters.OTP, otp,
+                               EnrollParameters.NAMESPACES, namespaces,
+                               EnrollParameters.APKAM_KEYS_EXPIRY_IN_MILLIS, ttl);
         }
+        break;
+      default:
+        throw new IllegalArgumentException("unsupported operation");
+    }
 
-        command += senderAtSign;
-      }
+    return new StringBuilder("enroll:")
+        .append(operation)
+        .append(params != null ? encodeAsJson(params) : "")
+        .toString();
+  }
 
-      if (value != null && !isBlank(value)) {
-        command += ":" + value;
-      }
+  /**
+   * Types of operation for keys verb
+   */
+  public enum KeysOperation {
+    put, get, delete
+  };
 
-      return command;
+  /**
+   * A builder to compose an Atsign protocol command with the <b>keys</b> verb.
+   * The <b>keys</b> verb is specifically used to update security keys in the Atsign server.
+   *
+   * @param operation put, get or delete.
+   * @param keyName The full qualified key name which includes sharedBy, sharedWith, namespace and
+   *        visibility qualifiers.
+   * @return A correctly formed <b>keys</b> verb command.
+   * @throws IllegalArgumentException If mandatory fields are not set or if field values conflict.
+   */
+  @Builder(builderMethodName = "keysCommandBuilder", builderClassName = "KeysCommandBuilder")
+  public static String keys(KeysOperation operation, String keyName) {
+    checkNotNull(operation, "operation not set");
+    if (operation == KeysOperation.get) {
+      checkNotBlank(keyName, "keyName not set");
+      return String.format("keys:get:keyName:%s", keyName);
+    } else {
+      throw new IllegalArgumentException(operation + " not supported");
     }
   }
 
   /**
-   * Atsign Platform <b>notify</b> command builder.
+   * A builder to compose an Atsign protocol command with the <b>otp</b> verb.
+   * The <b>otp</b> verb is used to request a one time password for the enrollment workflow.
+   *
+   * @return A correctly formed <b>otp</b> verb command.
    */
-  public static class NotificationStatusVerbBuilder implements VerbBuilders.VerbBuilder {
+  @Builder(builderMethodName = "otpCommandBuilder", builderClassName = "OtpCommandBuilder")
+  public static String otp() {
+    return "otp:get";
+  }
 
-    private String notificationId;
-
-    public void setNotificationId(String notificationId) {
-      this.notificationId = notificationId;
+  protected static Map<String, Object> toObjectMap(Object... nameValuePairs) {
+    if ((nameValuePairs.length % 2) != 0) {
+      throw new IllegalArgumentException("odd number of parameters");
     }
-
-    //notify:status:(?<notificationId>\S+)$';
-    public String build() {
-
-      if (notificationId == null || isBlank(notificationId)) {
-        throw new IllegalArgumentException("notificationId cannot be null or empty");
+    Map<String, Object> map = new LinkedHashMap<>();
+    for (int i = 0; i < nameValuePairs.length; i++) {
+      String key = nameValuePairs[i].toString();
+      Object value = nameValuePairs[++i];
+      if (value instanceof TypedString) {
+        map.put(key, value.toString());
+      } else {
+        map.put(key, value);
       }
+    }
+    return map;
+  }
 
-      return "notify:status:" + notificationId;
+  protected static String encodeAsJson(Object o) {
+    try {
+      return Json.MAPPER.writeValueAsString(o);
+    } catch (JsonProcessingException e) {
+      throw new IllegalArgumentException("json encoding exception", e);
     }
   }
 
+  private static boolean isTrue(Boolean bool) {
+    return bool != null && bool;
+  }
+
+  private static String toRawKey(String keyName, AtSign sharedBy) {
+    return toRawKey(keyName, sharedBy, null, EMPTY_METADATA);
+  }
+
+  private static String toRawKey(String keyName, AtSign sharedBy, AtSign sharedWith, Metadata metadata) {
+    StringBuilder builder = new StringBuilder();
+    if (isTrue(metadata.isHidden())) {
+      builder.append("_");
+    }
+    if (isTrue(metadata.isCached())) {
+      builder.append("cached:");
+    }
+    if (isTrue(metadata.isPublic())) {
+      builder.append("public:");
+    }
+    if (sharedWith != null) {
+      builder.append(sharedWith).append(':');
+    }
+    builder.append(keyName);
+    builder.append(sharedBy);
+    return builder.toString();
+  }
+
+  private static String toOperationString(LookupOperation operation) {
+    if (operation == null || operation == LookupOperation.none) {
+      return "";
+    }
+    return operation + ":";
+  }
+
+  private static String toBypassCacheString(Boolean bypassCache) {
+    return isTrue(bypassCache) ? "bypassCache:true:" : "";
+  }
+
+  private static MetadataBuilder createBlankMetadataBuilder() {
+    return Metadata.builder()
+        .isPublic(null)
+        .isEncrypted(null)
+        .isHidden(null)
+        .namespaceAware(null)
+        .isBinary(null)
+        .isCached(null);
+  }
 }

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ResponseTransformerTest {
-  final ObjectMapper mapper = new ObjectMapper();
+  final ObjectMapper mapper = Json.MAPPER;
   final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS'Z'");
 
   @Test
@@ -59,25 +59,25 @@ public class ResponseTransformerTest {
     assertEquals(
                  "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCz9nTBDDLxLgSxYu4+mDF3anWuTlKysXBBLsp3glrBP9xEXDx4muOHuHZIzuNvFlsjcCDF/mLSAJcvbxUoTsOQp+QD5XMhlNS9TWGsmNks7KHylNEhcqo2Va7RZxNS6MZBRacl+OusnebVKdOXDnbuevoED5fSklOz7mvdm9Mb2wIDAQAB",
                  model.data);
-    assertNull(model.metaData.createdBy);
-    assertNull(model.metaData.updatedBy);
+    assertNull(model.metaData.createdBy());
+    assertNull(model.metaData.updatedBy());
 
-    assertEquals("2022-08-12 01:50:15.398Z", dateTimeFormatter.format(model.metaData.createdAt));
-    assertEquals("2022-08-12 01:50:15.398Z", dateTimeFormatter.format(model.metaData.updatedAt));
-    assertEquals("2022-08-12 01:50:15.398Z", dateTimeFormatter.format(model.metaData.availableAt));
-    assertNull(model.metaData.expiresAt);
-    assertNull(model.metaData.refreshAt);
-    assertEquals("active", model.metaData.status);
-    assertEquals(0, (int) model.metaData.version);
-    assertEquals(0, (int) model.metaData.ttl);
-    assertEquals(0, (int) model.metaData.ttb);
-    assertNull(model.metaData.ttr);
-    assertNull(model.metaData.ccd);
-    assertFalse(model.metaData.isBinary);
-    assertFalse(model.metaData.isEncrypted);
-    assertNull(model.metaData.dataSignature);
-    assertNull(model.metaData.sharedKeyEnc);
-    assertNull(model.metaData.pubKeyCS);
-    assertNull(model.metaData.encoding);
+    assertEquals("2022-08-12 01:50:15.398Z", dateTimeFormatter.format(model.metaData.createdAt()));
+    assertEquals("2022-08-12 01:50:15.398Z", dateTimeFormatter.format(model.metaData.updatedAt()));
+    assertEquals("2022-08-12 01:50:15.398Z", dateTimeFormatter.format(model.metaData.availableAt()));
+    assertNull(model.metaData.expiresAt());
+    assertNull(model.metaData.refreshAt());
+    assertEquals("active", model.metaData.status());
+    assertEquals(0, (int) model.metaData.version());
+    assertEquals(0, model.metaData.ttl());
+    assertEquals(0, model.metaData.ttb());
+    assertNull(model.metaData.ttr());
+    assertNull(model.metaData.ccd());
+    assertFalse(model.metaData.isBinary());
+    assertFalse(model.metaData.isEncrypted());
+    assertNull(model.metaData.dataSignature());
+    assertNull(model.metaData.sharedKeyEnc());
+    assertNull(model.metaData.pubKeyCS());
+    assertNull(model.metaData.encoding());
   }
 }

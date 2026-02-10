@@ -1,17 +1,10 @@
 package org.atsign.client.cli;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
-import static org.atsign.client.util.EncryptionUtil.aesDecryptFromBase64;
-import static org.atsign.client.util.EncryptionUtil.aesEncryptToBase64;
-import static org.atsign.client.util.EncryptionUtil.generateAESKeyBase64;
-import static org.atsign.client.util.EncryptionUtil.generateRSAKeyPair;
-import static org.atsign.client.util.EncryptionUtil.generateRandomIvBase64;
-import static org.atsign.client.util.EncryptionUtil.rsaDecryptFromBase64;
-import static org.atsign.client.util.EncryptionUtil.rsaEncryptToBase64;
+import static org.atsign.client.util.EncryptionUtil.*;
 import static org.atsign.client.util.EnrollmentId.createEnrollmentId;
 import static org.atsign.client.util.KeysUtil.saveKeys;
 import static org.atsign.client.util.Preconditions.checkNotNull;
+import static org.atsign.common.VerbBuilders.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +16,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.atsign.client.api.AtKeyNames;
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.impl.connections.AtSecondaryConnection;
 import org.atsign.client.util.AuthUtil;
@@ -30,6 +24,7 @@ import org.atsign.client.util.EnrollmentId;
 import org.atsign.client.util.KeysUtil;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
+import org.atsign.common.VerbBuilders;
 import org.atsign.common.exceptions.AtUnauthenticatedException;
 
 import picocli.CommandLine;
@@ -208,7 +203,7 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
                                        keys,
                                        ensureNotNull(appName, DEFAULT_FIRST_APP),
                                        ensureNotNull(deviceName, DEFAULT_FIRST_DEVICE));
-    keys.setEnrollmentId(enrollmentId);
+    keys = keys.toBuilder().enrollmentId(enrollmentId).build();
     authenticateWithApkam(connection, atSign, keys);
     saveKeys(keys, file);
     storeEncryptPublicKey(connection, atSign, keys);
@@ -236,7 +231,10 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
   }
 
   public List<EnrollmentId> list(AtSecondaryConnection connection, String status) throws Exception {
-    String command = "enroll:list:" + encodeAsJson(singletonMap("enrollmentStatusFilter", singletonList(status)));
+    String command = enrollCommandBuilder()
+        .operation(VerbBuilders.EnrollOperation.list)
+        .status(status)
+        .build();
     return matchDataJsonMapOfObjects(connection.executeCommand(command), true).keySet().stream()
         .map(Activate::inferEnrollmentId)
         .collect(Collectors.toList());
@@ -265,27 +263,35 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
     String key = fetchApkamSymmetricKey(connection, enrollmentId);
     String privateKeyIv = generateRandomIvBase64(16);
     String encryptPrivateKey = aesEncryptToBase64(keys.getEncryptPrivateKey(), key, privateKeyIv);
-    String selfKeyIv = generateRandomIvBase64(16);
-    String selfEncryptKey = aesEncryptToBase64(keys.getSelfEncryptKey(), key, selfKeyIv);
-    String json = encodeKeyValuesAsJson("enrollmentId", enrollmentId,
-                                        "encryptedDefaultEncryptionPrivateKey", encryptPrivateKey,
-                                        "encPrivateKeyIV", privateKeyIv,
-                                        "encryptedDefaultSelfEncryptionKey", selfEncryptKey,
-                                        "selfEncKeyIV", selfKeyIv);
+    String selfEncryptKeyIv = generateRandomIvBase64(16);
+    String selfEncryptKey = aesEncryptToBase64(keys.getSelfEncryptKey(), key, selfEncryptKeyIv);
 
-    Map<String, String> response = matchDataJsonMapOfStrings(connection.executeCommand("enroll:approve:" + json));
+    String command = enrollCommandBuilder()
+        .operation(VerbBuilders.EnrollOperation.approve)
+        .enrollmentId(enrollmentId)
+        .encryptPrivateKey(encryptPrivateKey)
+        .encryptPrivateKeyIv(privateKeyIv)
+        .selfEncryptKey(selfEncryptKey)
+        .selfEncryptKeyIv(selfEncryptKeyIv)
+        .build();
+
+    Map<String, String> response = matchDataJsonMapOfStrings(connection.executeCommand(command));
     if (!"approved".equals(response.get("status"))) {
       throw new RuntimeException("status is not approved : " + response.get("status"));
     }
   }
 
   private String fetchApkamSymmetricKey(AtSecondaryConnection connection, EnrollmentId enrollmentId) throws Exception {
-    String command = "enroll:fetch:" + encodeKeyValuesAsJson("enrollmentId", enrollmentId);
+    String command = enrollCommandBuilder()
+        .operation(VerbBuilders.EnrollOperation.fetch)
+        .enrollmentId(enrollmentId)
+        .build();
     Map<String, Object> request = matchDataJsonMapOfObjects(connection.executeCommand(command));
     if (!"pending".equals(request.get("status"))) {
       throw new RuntimeException("status is not pending : " + request.get("status"));
     }
-    String encryptedApkamSymmetricKey = (String) request.get("encryptedAPKAMSymmetricKey");
+    String encryptedApkamSymmetricKey =
+        (String) request.get(VerbBuilders.EnrollParameters.ENCRYPTED_APKAM_SYMMETRIC_KEY);
     return rsaDecryptFromBase64(encryptedApkamSymmetricKey, keys.getEncryptPrivateKey());
   }
 
@@ -351,7 +357,8 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
     File file = checkExists(getAtKeysFile(keysFile, atSign));
     AtKeys keys = KeysUtil.loadKeys(file);
     authenticateWithApkam(connection, atSign, keys);
-    return match(connection.executeCommand("otp:get"), DATA_NON_WHITESPACE);
+    String command = otpCommandBuilder().build();
+    return match(connection.executeCommand(command), DATA_NON_WHITESPACE);
   }
 
   public List<String> scan() throws Exception {
@@ -361,7 +368,11 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
   }
 
   public List<String> scan(AtSecondaryConnection connection) throws Exception {
-    return matchDataJsonListOfStrings(connection.executeCommand("scan:showHidden:true .*"));
+    String command = scanCommandBuilder()
+        .showHidden(true)
+        .regex(".*")
+        .build();
+    return matchDataJsonListOfStrings(connection.executeCommand(command));
   }
 
   private void singleArgEnrollAction(AtSecondaryConnection connection,
@@ -369,7 +380,10 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
                                      EnrollmentId enrollmentId,
                                      String expectedStatus)
       throws Exception {
-    String command = "enroll:" + action + ":" + encodeKeyValuesAsJson("enrollmentId", enrollmentId);
+    String command = enrollCommandBuilder()
+        .operation(VerbBuilders.EnrollOperation.valueOf(action))
+        .enrollmentId(enrollmentId)
+        .build();
     Map<String, String> map = matchDataJsonMapOfStrings(connection.executeCommand(command));
     if (!expectedStatus.equals(map.get("status"))) {
       throw new RuntimeException("status is not " + expectedStatus + " : " + map.get("status"));
@@ -387,11 +401,13 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
                                      String appName,
                                      String deviceName)
       throws Exception {
-    String json = encodeKeyValuesAsJson(
-                                        "appName", appName,
-                                        "deviceName", deviceName,
-                                        "apkamPublicKey", keys.getApkamPublicKey());
-    Map<String, String> response = matchDataJsonMapOfStrings(connection.executeCommand("enroll:request:" + json));
+    String command = enrollCommandBuilder()
+        .operation(VerbBuilders.EnrollOperation.request)
+        .appName(appName)
+        .deviceName(deviceName)
+        .apkamPublicKey(keys.getApkamPublicKey())
+        .build();
+    Map<String, String> response = matchDataJsonMapOfStrings(connection.executeCommand(command));
     if (!response.get("status").equals("approved")) {
       throw new RuntimeException("enroll request failed, expected status approved : " + response);
     }
@@ -400,22 +416,28 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
 
   protected static void storeEncryptPublicKey(AtSecondaryConnection connection, AtSign atSign, AtKeys keys)
       throws IOException {
-    match(connection.executeCommand("update:public:publickey" + atSign + " " + keys.getEncryptPublicKey()), DATA_INT);
+    String command = updateCommandBuilder()
+        .sharedBy(atSign)
+        .keyName(AtKeyNames.PUBLIC_ENCRYPT)
+        .isPublic(true)
+        .value(keys.getEncryptPublicKey())
+        .build();
+    match(connection.executeCommand(command), DATA_INT);
   }
 
   protected static void deleteCramSecret(AtSecondaryConnection connection) {
-    deleteKey(connection, "privatekey:at_secret");
+    deleteKey(connection, AtKeyNames.PRIVATE_AT_SECRET);
   }
 
   protected static AtKeys generateAtKeys(boolean generateEncryptionKeyPair) throws NoSuchAlgorithmException {
-    AtKeys keys = new AtKeys()
-        .setSelfEncryptKey(generateAESKeyBase64())
-        .setApkamKeyPair(generateRSAKeyPair())
-        .setApkamSymmetricKey(generateAESKeyBase64());
+    AtKeys.AtKeysBuilder builder = AtKeys.builder()
+        .selfEncryptKey(generateAESKeyBase64())
+        .apkamKeyPair(generateRSAKeyPair())
+        .apkamSymmetricKey(generateAESKeyBase64());
     if (generateEncryptionKeyPair) {
-      keys.setEncryptKeyPair(generateRSAKeyPair());
+      builder.encryptKeyPair(generateRSAKeyPair());
     }
-    return keys;
+    return builder.build();
   }
 
   public EnrollmentId enroll() throws Exception {
@@ -425,28 +447,34 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
   }
 
   public EnrollmentId enroll(AtSecondaryConnection connection) throws Exception {
-    String publicKey = matchDataString(connection.executeCommand("lookup:publickey" + atSign));
+    String command = lookupCommandBuilder()
+        .keyName(AtKeyNames.PUBLIC_ENCRYPT)
+        .sharedBy(atSign)
+        .build();
+    String publicKey = matchDataString(connection.executeCommand(command));
     File file = keysFile;
     if (!overwriteKeysFile) {
       checkNotExists(file);
     }
-    AtKeys keys = generateAtKeys(false);
-    keys.setEncryptPublicKey(publicKey);
-    keys.setEnrollmentId(enroll(connection, keys));
+    AtKeys keys = generateAtKeys(false).toBuilder()
+        .encryptPublicKey(publicKey)
+        .build();
+    enrollmentId = enroll(connection, keys);
+    keys = keys.toBuilder().enrollmentId(enrollmentId).build();
     KeysUtil.saveKeys(keys, keysFile);
     return keys.getEnrollmentId();
   }
 
   private EnrollmentId enroll(AtSecondaryConnection connection, AtKeys keys) throws Exception {
-    Map<String, Object> args = toObjectMap("appName", appName,
-                                           "deviceName", deviceName,
-                                           "apkamPublicKey", keys.getApkamPublicKey(),
-                                           "encryptedAPKAMSymmetricKey",
-                                           rsaEncryptToBase64(keys.getApkamSymmetricKey(), keys.getEncryptPublicKey()),
-                                           "otp", otp,
-                                           "namespaces", namespaces,
-                                           "apkamKeysExpiryInMillis", 0);
-    String command = "enroll:request:" + encodeAsJson(args);
+    String command = enrollCommandBuilder()
+        .operation(VerbBuilders.EnrollOperation.request)
+        .appName(appName)
+        .deviceName(deviceName)
+        .apkamPublicKey(keys.getApkamPublicKey())
+        .apkamSymmetricKey(rsaEncryptToBase64(keys.getApkamSymmetricKey(), keys.getEncryptPublicKey()))
+        .otp(otp)
+        .namespaces(namespaces)
+        .build();
     Map<String, String> response = matchDataJsonMapOfStrings(connection.executeCommand(command));
     if ("pending".equals(response.get("status"))) {
       return EnrollmentId.createEnrollmentId(response.get("enrollmentId"));
@@ -464,8 +492,12 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
   public void complete(AtSecondaryConnection connection) throws Exception {
     AtKeys keys = KeysUtil.loadKeys(keysFile);
     authenticate(connection);
-    keys.setSelfEncryptKey(keysGetDecrypted(connection, atSign, keys, "default_self_enc_key"));
-    keys.setEncryptPrivateKey(keysGetDecrypted(connection, atSign, keys, "default_enc_private_key"));
+    String selfEncryptKey = keysGetDecrypted(connection, atSign, keys, AtKeyNames.SELF_ENCRYPTION_KEY);
+    String encryptPrivateKey = keysGetDecrypted(connection, atSign, keys, AtKeyNames.ENCRYPT_PRIVATE_KEY);
+    keys = keys.toBuilder()
+        .selfEncryptKey(selfEncryptKey)
+        .encryptPrivateKey(encryptPrivateKey)
+        .build();
     KeysUtil.saveKeys(keys, keysFile);
   }
 
@@ -499,8 +531,11 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
                                          AtKeys keys,
                                          String keyConstant)
       throws Exception {
-    EnrollmentId enrollmentId = keys.getEnrollmentId();
-    String command = "keys:get:keyName:" + enrollmentId + "." + keyConstant + ".__manage" + atSign;
+    String rawKeyName = keys.getEnrollmentId() + "." + keyConstant + ".__manage" + atSign;
+    String command = keysCommandBuilder()
+        .operation(VerbBuilders.KeysOperation.get)
+        .keyName(rawKeyName)
+        .build();
     return decryptEncryptedKey(connection.executeCommand(command), keys.getApkamSymmetricKey());
   }
 

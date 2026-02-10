@@ -6,7 +6,7 @@ import java.util.concurrent.ExecutionException;
 import org.atsign.client.api.AtClient;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
-import org.atsign.common.KeyBuilders;
+import org.atsign.common.Keys;
 import org.atsign.common.Keys.PublicKey;
 import org.atsign.common.options.GetRequestOptions;
 
@@ -28,7 +28,7 @@ public class PublicKeyGetBypassCacheExample {
     try (AtClient atClient = AtClient.withRemoteSecondary(ROOT_URL, atSign, loadKeys(atSign), VERBOSE)) {
 
       // 4. create the key
-      PublicKey pk = new KeyBuilders.PublicKeyBuilder(new AtSign("@bob")).key(KEY_NAME).build();
+      PublicKey pk = Keys.publicKeyBuilder().sharedBy(new AtSign("@bob")).name(KEY_NAME).build();
 
       // 5. get the value associated with the key
       String response = atClient.get(pk, (GetRequestOptions) new GetRequestOptions().bypassCache(true).build()).get();

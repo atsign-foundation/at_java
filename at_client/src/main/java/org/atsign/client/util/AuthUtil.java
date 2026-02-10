@@ -1,5 +1,7 @@
 package org.atsign.client.util;
 
+import static org.atsign.common.VerbBuilders.*;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -31,7 +33,7 @@ public class AuthUtil {
    */
   public void authenticateWithCram(AtSecondaryConnection connection, AtSign atSign, String cramSecret)
       throws AtException, IOException {
-    String fromResponse = connection.executeCommand("from:" + atSign);
+    String fromResponse = connection.executeCommand(fromCommandBuilder().atSign(atSign).build());
     if (!fromResponse.startsWith("data:")) {
       throw new AtUnauthenticatedException("Invalid response to 'from': " + fromResponse);
     }
@@ -44,7 +46,7 @@ public class AuthUtil {
       throw new AtEncryptionException("Failed to generate cramDigest", e);
     }
 
-    String cramResponse = connection.executeCommand("cram:" + cramDigest);
+    String cramResponse = connection.executeCommand(cramCommandBuilder().digest(cramDigest).build());
     if (!cramResponse.startsWith("data:success")) {
       throw new AtUnauthenticatedException("CRAM command failed: " + cramResponse);
     }
@@ -61,11 +63,11 @@ public class AuthUtil {
    */
   public void authenticateWithPkam(AtConnection connection, AtSign atSign, AtKeys keys)
       throws AtException, IOException {
-    if (!keys.hasPkamKeys()) {
+    if (!keys.hasPkamKey()) {
       throw new AtClientConfigException("Cannot authenticate with PKAM: Keys file does not contain PKAM keys");
     }
 
-    String fromResponse = connection.executeCommand("from:" + atSign);
+    String fromResponse = connection.executeCommand(fromCommandBuilder().atSign(atSign).build());
 
     String dataPrefix = "data:";
     if (!fromResponse.startsWith(dataPrefix)) {
@@ -87,15 +89,15 @@ public class AuthUtil {
       throw new AtEncryptionException("Failed to create SHA256 signature");
     }
 
-    StringBuilder builder = new StringBuilder().append("pkam");
+    PkamCommandBuilder builder = pkamCommandBuilder();
     if (keys.hasEnrollmentId()) {
-      builder.append(":signingAlgo:").append(EncryptionUtil.SIGNING_ALGO_RSA)
-          .append(":hashingAlgo:").append(EncryptionUtil.HASHING_ALGO_SHA256)
-          .append(":enrollmentId:").append(keys.getEnrollmentId());
+      builder.signingAlgo(EncryptionUtil.SIGNING_ALGO_RSA);
+      builder.hashingAlgo(EncryptionUtil.HASHING_ALGO_SHA256);
+      builder.enrollmentId(keys.getEnrollmentId());
     }
-    builder.append(":").append(signature);
+    builder.digest(signature);
 
-    String pkamResponse = connection.executeCommand(builder.toString());
+    String pkamResponse = connection.executeCommand(builder.build());
 
     if (!pkamResponse.startsWith("data:success")) {
       throw new AtUnauthenticatedException("PKAM command failed: " + pkamResponse);

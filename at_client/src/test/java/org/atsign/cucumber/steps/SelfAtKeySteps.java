@@ -7,9 +7,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 
 import org.atsign.client.api.AtClient;
-import org.atsign.client.util.KeyStringUtil;
 import org.atsign.common.AtSign;
-import org.atsign.common.KeyBuilders;
 import org.atsign.common.Keys;
 
 import io.cucumber.java.en.Then;
@@ -150,20 +148,20 @@ public class SelfAtKeySteps {
   }
 
   private Keys.SelfKey createKey(AtSign owner, String s) {
-    KeyBuilders.SelfKeyBuilder builder = new KeyBuilders.SelfKeyBuilder(owner);
-    Matcher matcher = KeyStringUtil.createNamespaceQualifiedKeyNameMatcher(s);
+    Keys.SelfKeyBuilder builder = Keys.selfKeyBuilder()
+        .sharedBy(owner)
+        .ttl(context.getKeyTtl());
+    Matcher matcher = Keys.createNamespaceQualifiedKeyNameMatcher(s);
     if (matcher.matches()) {
       if (context.isNamespaceSet()) {
         throw new IllegalArgumentException("context has namespace set, intention is ambiguous");
       }
-      builder.namespace(matcher.group(2)).key(matcher.group(1));
+      builder.namespace(matcher.group(2)).name(matcher.group(1));
     } else if (context.isNamespaceSet()) {
-      builder.namespace(context.getNamespace()).key(s);
+      builder.namespace(context.getNamespace()).name(s);
     } else {
-      builder.key(s);
+      builder.name(s);
     }
-    Keys.SelfKey key = builder.build();
-    key.metadata.ttl = (int) context.getKeyTtl();
-    return key;
+    return builder.build();
   }
 }

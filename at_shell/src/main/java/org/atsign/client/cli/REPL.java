@@ -12,7 +12,6 @@ import org.atsign.client.api.AtEvents;
 import org.atsign.client.api.AtEvents.AtEventType;
 import org.atsign.client.api.Secondary;
 import org.atsign.client.util.ArgsUtil;
-import org.atsign.client.util.KeyStringUtil;
 import org.atsign.client.util.KeysUtil;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
@@ -100,21 +99,17 @@ public class REPL {
               printHelpInstructions();
             } else if ("get".equals(verb)) {
               String fullKeyName = parts[1];
-              KeyStringUtil keyStringUtil = new KeyStringUtil(fullKeyName);
-              KeyStringUtil.KeyType keyType = keyStringUtil.getKeyType();
-              if (keyType.equals(KeyStringUtil.KeyType.PUBLIC_KEY)) {
-                PublicKey pk = (PublicKey) Keys.fromString(fullKeyName);
-                String value = client.get(pk).get();
+              Keys.AtKey key = Keys.keyBuilder().rawKey(fullKeyName).build();
+              if (key instanceof PublicKey) {
+                String value = client.get((PublicKey) key).get();
                 System.out.println("  => \033[31m" + value + "\033[0m");
-              } else if (keyType.equals(KeyStringUtil.KeyType.SELF_KEY)) {
-                SelfKey sk = (SelfKey) Keys.fromString(fullKeyName);
-                String value = client.get(sk).get();
+              } else if (key instanceof SelfKey) {
+                String value = client.get((SelfKey) key).get();
                 System.out.println("  => \033[31m" + value + "\033[0m");
-              } else if (keyType.equals(KeyStringUtil.KeyType.SHARED_KEY)) {
-                SharedKey sk = Keys.SharedKey.fromString(fullKeyName);
-                String value = client.get(sk).get();
+              } else if (key instanceof SharedKey) {
+                String value = client.get((SharedKey) key).get();
                 System.out.println("  => \033[31m" + value + "\033[0m");
-              } else if (keyType.equals(KeyStringUtil.KeyType.PRIVATE_HIDDEN_KEY)) {
+              } else if (key instanceof Keys.PrivateHiddenKey) {
                 throw new UnsupportedOperationException("PrivateHiddenKey is not implemented yet");
               } else {
                 throw new AtInvalidSyntaxException("Could not evaluate the key type of: " + fullKeyName);
@@ -122,21 +117,17 @@ public class REPL {
             } else if ("put".equals(verb)) {
               String fullKeyName = parts[1];
               String value = command.substring(verb.length() + fullKeyName.length() + 2).trim();
-              KeyStringUtil keyStringUtil = new KeyStringUtil(fullKeyName);
-              KeyStringUtil.KeyType keyType = keyStringUtil.getKeyType();
-              if (keyType.equals(KeyStringUtil.KeyType.PUBLIC_KEY)) {
-                PublicKey pk = (PublicKey) Keys.fromString(fullKeyName);
-                String data = client.put(pk, value).get();
+              Keys.AtKey key = Keys.keyBuilder().rawKey(fullKeyName).build();
+              if (key instanceof PublicKey) {
+                String data = client.put((PublicKey) key, value).get();
                 System.out.println("  => \033[31m" + data + "\033[0m");
-              } else if (keyType.equals(KeyStringUtil.KeyType.SELF_KEY)) {
-                SelfKey sk = (SelfKey) Keys.fromString(fullKeyName);
-                String data = client.put(sk, value).get();
+              } else if (key instanceof SelfKey) {
+                String data = client.put((SelfKey) key, value).get();
                 System.out.println("  => \033[31m" + data + "\033[0m");
-              } else if (keyType.equals(KeyStringUtil.KeyType.SHARED_KEY)) {
-                SharedKey sk = Keys.SharedKey.fromString(fullKeyName);
-                String data = client.put(sk, value).get();
+              } else if (key instanceof SharedKey) {
+                String data = client.put((SharedKey) key, value).get();
                 System.out.println("  => \033[31m" + data + "\033[0m");
-              } else if (keyType.equals(KeyStringUtil.KeyType.PRIVATE_HIDDEN_KEY)) {
+              } else if (key instanceof Keys.PrivateHiddenKey) {
                 throw new UnsupportedOperationException("PrivateHiddenKey is not implemented yet");
               } else {
                 throw new AtIllegalArgumentException("Could not evaluate the key type of: " + fullKeyName);
@@ -150,21 +141,17 @@ public class REPL {
               System.out.println("  => \033[31m" + value + "\033[0m");
             } else if ("delete".equals(verb)) {
               String fullKeyName = parts[1];
-              KeyStringUtil keyStringUtil = new KeyStringUtil(fullKeyName);
-              KeyStringUtil.KeyType keyType = keyStringUtil.getKeyType();
-              if (keyType.equals(KeyStringUtil.KeyType.PUBLIC_KEY)) {
-                PublicKey pk = (PublicKey) Keys.fromString(fullKeyName);
-                String data = client.delete(pk).get();
+              Keys.AtKey key = Keys.keyBuilder().rawKey(fullKeyName).build();
+              if (key instanceof PublicKey) {
+                String data = client.delete((PublicKey) key).get();
                 System.out.println("  => \033[31m" + data + "\033[0m");
-              } else if (keyType.equals(KeyStringUtil.KeyType.SELF_KEY)) {
-                SelfKey sk = (SelfKey) Keys.fromString(fullKeyName);
-                String data = client.delete(sk).get();
+              } else if (key instanceof SelfKey) {
+                String data = client.delete((SelfKey) key).get();
                 System.out.println("  => \033[31m" + data + "\033[0m");
-              } else if (keyType.equals(KeyStringUtil.KeyType.SHARED_KEY)) {
-                SharedKey sk = Keys.SharedKey.fromString(fullKeyName);
-                String data = client.delete(sk).get();
+              } else if (key instanceof SharedKey) {
+                String data = client.delete((SharedKey) key).get();
                 System.out.println("  => \033[31m" + data + "\033[0m");
-              } else if (keyType.equals(KeyStringUtil.KeyType.PRIVATE_HIDDEN_KEY)) {
+              } else if (key instanceof Keys.PrivateHiddenKey) {
                 throw new UnsupportedOperationException("PrivateHiddenKey is not implemented yet");
               } else {
                 throw new AtIllegalArgumentException("Could not evaluate the key type of: " + fullKeyName);
@@ -214,7 +201,7 @@ public class REPL {
       String decryptedValue;
       switch (eventType) {
         case decryptedUpdateNotification:
-          sharedKey = Keys.SharedKey.fromString((String) eventData.get("key"));
+          sharedKey = Keys.sharedKeyBuilder().rawKey((String) eventData.get("key")).build();
           value = (String) eventData.get("value");
           decryptedValue = (String) eventData.get("decryptedValue");
           System.out.println("  => Notification ==> \033[31m Key: [" + sharedKey + "]  ==> EncryptedValue [" + value
@@ -227,7 +214,7 @@ public class REPL {
           break;
         case updateNotification:
           try {
-            sharedKey = Keys.SharedKey.fromString((String) eventData.get("key"));
+            sharedKey = Keys.sharedKeyBuilder().rawKey((String) eventData.get("key")).build();
             String encryptedValue = (String) eventData.get("value");
             decryptedValue = client.get(sharedKey).get();
             System.out.println("  => Notification ==> \033[31m Key: [" + sharedKey + "]  ==> EncryptedValue ["

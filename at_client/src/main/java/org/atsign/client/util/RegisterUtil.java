@@ -18,6 +18,7 @@ import javax.net.ssl.HttpsURLConnection;
 
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
+import org.atsign.common.Json;
 import org.atsign.common.exceptions.AtRegistrarException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,7 +27,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * Utility class for obtaining a new {@link AtSign}
  */
 public class RegisterUtil {
-  ObjectMapper objectMapper = new ObjectMapper();
+
+  ObjectMapper objectMapper = Json.MAPPER;
 
   /**
    * Calls API to get atsigns which are ready to be claimed. Returns a free atsign.

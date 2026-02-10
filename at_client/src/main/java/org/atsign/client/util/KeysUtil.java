@@ -12,13 +12,16 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
 import org.atsign.client.api.AtKeys;
 import org.atsign.common.AtSign;
+import org.atsign.common.Json;
 import org.atsign.common.exceptions.AtClientConfigException;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.atsign.common.exceptions.AtDecryptionException;
 
 /**
  * Utility class for loading a saving {@link AtKeys} from the file system
@@ -28,7 +31,7 @@ public class KeysUtil {
 
   static private final String EMPTY_IV = Base64.getEncoder().encodeToString(new byte[16]);
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = Json.MAPPER;
 
   private static final TypeReference<Map<String, String>> STRING_MAP_TYPE = new TypeReference<>() {};
 
@@ -80,7 +83,7 @@ public class KeysUtil {
 
   public static AtKeys loadKeys(File file) throws AtClientConfigException {
     try {
-      return setAtKeysFromJson(new AtKeys(), Files.readString(file.toPath()));
+      return createAtKeysFromJson(Files.readString(file.toPath()));
     } catch (IOException e) {
       throw new AtClientConfigException("failed to read " + file, e);
     }
@@ -141,30 +144,31 @@ public class KeysUtil {
     }
   }
 
-  private static AtKeys setAtKeysFromJson(AtKeys keys, String json) {
+  private static AtKeys createAtKeysFromJson(String json) throws AtClientConfigException {
     try {
       Map<String, String> map = MAPPER.readValue(json, STRING_MAP_TYPE);
       String version = map.getOrDefault(VERSION_KEY, VERSION_1);
       if (version.equals(VERSION_1)) {
-        setAtKeysVersion1(keys, map);
+        return createAtKeysVersion1(map);
       } else {
-        throw new RuntimeException("unsupported version of atKeys json : " + version);
+        throw new AtClientConfigException("unsupported version of AtKeys json : " + version);
       }
-    } catch (Exception e) {
-      throw new RuntimeException(e);
+    } catch (JsonProcessingException | AtDecryptionException e) {
+      throw new AtClientConfigException("failed to create AtKeys from json", e);
     }
-    return keys;
   }
 
-  private static void setAtKeysVersion1(AtKeys keys, Map<String, String> map) throws Exception {
-    keys.setSelfEncryptKey(mapGet(map, SELF_ENCRYPT_KEY));
-    keys.setEnrollmentId(mapGetEnrollmentId(map, ENROLLMENT_ID));
-    keys.setApkamSymmetricKey(mapGet(map, APKAM_SYMMETRIC_KEY));
-
-    keys.setApkamPublicKey(mapGetDecrypted(map, PKAM_PUBLIC_KEY, keys.getSelfEncryptKey()));
-    keys.setApkamPrivateKey(mapGetDecrypted(map, PKAM_PRIVATE_KEY, keys.getSelfEncryptKey()));
-    keys.setEncryptPublicKey(mapGetDecrypted(map, ENCRYPT_PUBLIC_KEY, keys.getSelfEncryptKey()));
-    keys.setEncryptPrivateKey(mapGetDecrypted(map, ENCRYPT_PRIVATE_KEY, keys.getSelfEncryptKey()));
+  private static AtKeys createAtKeysVersion1(Map<String, String> map) throws AtDecryptionException {
+    String selfEncryptKey = mapGet(map, SELF_ENCRYPT_KEY);
+    return AtKeys.builder()
+        .selfEncryptKey(selfEncryptKey)
+        .enrollmentId(mapGetEnrollmentId(map, ENROLLMENT_ID))
+        .apkamSymmetricKey(mapGet(map, APKAM_SYMMETRIC_KEY))
+        .apkamPublicKey(mapGetDecrypted(map, PKAM_PUBLIC_KEY, selfEncryptKey))
+        .apkamPrivateKey(mapGetDecrypted(map, PKAM_PRIVATE_KEY, selfEncryptKey))
+        .encryptPublicKey(mapGetDecrypted(map, ENCRYPT_PUBLIC_KEY, selfEncryptKey))
+        .encryptPrivateKey(mapGetDecrypted(map, ENCRYPT_PRIVATE_KEY, selfEncryptKey))
+        .build();
   }
 
   private static void mapPut(Map<String, String> map, String key, String value) {
@@ -194,7 +198,8 @@ public class KeysUtil {
     return map.get(key);
   }
 
-  private static String mapGetDecrypted(Map<String, String> map, String key, String decryptKey) throws Exception {
+  private static String mapGetDecrypted(Map<String, String> map, String key, String decryptKey)
+      throws AtDecryptionException {
     String value = map.get(key);
     return value != null ? aesDecryptFromBase64(value, decryptKey, EMPTY_IV) : null;
   }

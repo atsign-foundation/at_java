@@ -6,9 +6,7 @@ import static org.hamcrest.Matchers.equalTo;
 import java.util.regex.Matcher;
 
 import org.atsign.client.api.AtClient;
-import org.atsign.client.util.KeyStringUtil;
 import org.atsign.common.AtSign;
-import org.atsign.common.KeyBuilders;
 import org.atsign.common.Keys;
 
 import io.cucumber.java.en.Then;
@@ -206,21 +204,22 @@ public class SharedAtKeySteps {
   }
 
   private Keys.SharedKey createKey(AtSign sharedBy, String s, AtSign sharedWith) {
-    KeyBuilders.SharedKeyBuilder builder = new KeyBuilders.SharedKeyBuilder(sharedBy, sharedWith);
-    Matcher matcher = KeyStringUtil.createNamespaceQualifiedKeyNameMatcher(s);
+    Keys.SharedKeyBuilder builder = Keys.sharedKeyBuilder()
+        .sharedBy(sharedBy)
+        .sharedWith(sharedWith)
+        .ttl(context.getKeyTtl());
+    Matcher matcher = Keys.createNamespaceQualifiedKeyNameMatcher(s);
     if (matcher.matches()) {
       if (context.isNamespaceSet()) {
         throw new IllegalArgumentException("context has namespace set, intention is ambiguous");
       }
-      builder.namespace(matcher.group(2)).key(matcher.group(1));
+      builder.namespace(matcher.group(2)).name(matcher.group(1));
     } else if (context.isNamespaceSet()) {
-      builder.namespace(context.getNamespace()).key(s);
+      builder.namespace(context.getNamespace()).name(s);
     } else {
-      builder.key(s);
+      builder.name(s);
     }
-    Keys.SharedKey key = builder.build();
-    key.metadata.ttl = (int) context.getKeyTtl();
-    return key;
+    return builder.build();
   }
 
 }

@@ -30,10 +30,11 @@ public class KeysUtilTest {
     assertFalse(expected.exists());
 
     // Given a Map of keys (like Onboard creates)
-    AtKeys keys = new AtKeys()
-        .setEncryptKeyPair(generateRSAKeyPair())
-        .setApkamKeyPair(generateRSAKeyPair())
-        .setSelfEncryptKey(generateAESKeyBase64());
+    AtKeys keys = AtKeys.builder()
+        .encryptKeyPair(generateRSAKeyPair())
+        .apkamKeyPair(generateRSAKeyPair())
+        .selfEncryptKey(generateAESKeyBase64())
+        .build();
 
     // When we call KeysUtil.saveKeys
     KeysUtil.saveKeys(testAtSign, keys);
@@ -45,10 +46,11 @@ public class KeysUtilTest {
   @Test
   public void testLoadKeysFile() throws Exception {
     // Given a correctly formatted keys file in the canonical location
-    AtKeys keys = new AtKeys()
-        .setEncryptKeyPair(generateRSAKeyPair())
-        .setApkamKeyPair(generateRSAKeyPair())
-        .setSelfEncryptKey(generateAESKeyBase64());
+    AtKeys keys = AtKeys.builder()
+        .encryptKeyPair(generateRSAKeyPair())
+        .apkamKeyPair(generateRSAKeyPair())
+        .selfEncryptKey(generateAESKeyBase64())
+        .build();
     KeysUtil.saveKeys(testAtSign, keys);
 
     // When we call KeysUtil.loadKeys
@@ -60,10 +62,11 @@ public class KeysUtilTest {
 
   @Test
   public void testLoadKeysFileLegacy() throws Exception {
-    AtKeys keys = new AtKeys()
-        .setEncryptKeyPair(generateRSAKeyPair())
-        .setApkamKeyPair(generateRSAKeyPair())
-        .setSelfEncryptKey(generateAESKeyBase64());
+    AtKeys keys = AtKeys.builder()
+        .encryptKeyPair(generateRSAKeyPair())
+        .apkamKeyPair(generateRSAKeyPair())
+        .selfEncryptKey(generateAESKeyBase64())
+        .build();
 
     KeysUtil.saveKeys(testAtSign, keys);
     File expected = KeysUtil.getKeysFile(testAtSign, KeysUtil.expectedKeysFilesLocation);

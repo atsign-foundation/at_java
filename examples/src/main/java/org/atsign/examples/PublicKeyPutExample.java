@@ -1,15 +1,15 @@
 package org.atsign.examples;
 
+import static org.atsign.client.util.KeysUtil.loadKeys;
+
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 import org.atsign.client.api.AtClient;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
-import org.atsign.common.KeyBuilders;
+import org.atsign.common.Keys;
 import org.atsign.common.Keys.PublicKey;
-
-import static org.atsign.client.util.KeysUtil.loadKeys;
 
 public class PublicKeyPutExample {
 
@@ -29,7 +29,7 @@ public class PublicKeyPutExample {
     try (AtClient atClient = AtClient.withRemoteSecondary(ROOT_URL, atSign, loadKeys(atSign), VERBOSE)) {
 
       // 4. create a new public key
-      PublicKey pk = new KeyBuilders.PublicKeyBuilder(atSign).key(KEY_NAME).build();
+      PublicKey pk = Keys.publicKeyBuilder().sharedBy(atSign).name(KEY_NAME).build();
 
       // 5. put the key
       String response = atClient.put(pk, VALUE).get();

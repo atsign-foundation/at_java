@@ -1,291 +1,550 @@
 package org.atsign.common;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.atsign.client.util.EnrollmentId.createEnrollmentId;
+import static org.atsign.common.AtSign.createAtSign;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import org.atsign.client.api.AtKeyNames;
 import org.atsign.common.Keys.PublicKey;
 import org.atsign.common.Keys.SelfKey;
 import org.atsign.common.Keys.SharedKey;
-import org.atsign.common.VerbBuilders.PlookupVerbBuilder.Type;
-import org.atsign.common.VerbBuilders.*;
+import org.atsign.common.VerbBuilders.EnrollOperation;
+import org.atsign.common.VerbBuilders.LookupOperation;
+import org.atsign.common.VerbBuilders.NotifyOperation;
+import org.atsign.common.VerbBuilders.UpdateCommandBuilder;
 import org.junit.jupiter.api.Test;
 
 public class VerbBuildersTest {
 
   @Test
-  public void fromVerbBuilderTest() {
-    FromVerbBuilder builder;
-    String command;
+  public void testFromBuilderGeneratesExpectedOutput() {
 
-    builder = new FromVerbBuilder();
-    builder.setAtSign("@bob");
-    command = builder.build(); // "from:@bob"
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                                               () -> VerbBuilders.fromCommandBuilder().build());
+    assertThat(ex.getMessage(), containsString("atSign not set"));
+
+    String command = VerbBuilders.fromCommandBuilder()
+        .atSign(createAtSign("@bob"))
+        .build();
     assertEquals("from:@bob", command);
   }
 
   @Test
-  public void cramVerbBuilderTest() {
-    CRAMVerbBuilder builder;
-    String command;
+  public void testCramBuilderGeneratesExpectedOutput() {
 
-    builder = new CRAMVerbBuilder();
-    builder.setDigest("digest");
-    command = builder.build(); // "cram:digest"
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                                               () -> VerbBuilders.cramCommandBuilder().build());
+    assertThat(ex.getMessage(), containsString("digest not set"));
+
+    String command = VerbBuilders.cramCommandBuilder()
+        .digest("digest")
+        .build();
     assertEquals("cram:digest", command);
   }
 
   @Test
-  public void polVerbBuilderTest() {
-    POLVerbBuilder builder;
-    String command;
-
-    builder = new POLVerbBuilder();
-    command = builder.build(); // "pol"
+  public void testPolBuilderGeneratesExpectedOutput() {
+    String command = VerbBuilders.polCommandBuilder().build();
     assertEquals("pol", command);
   }
 
   @Test
-  public void pkamVerbBuilderTest() {
-    PKAMVerbBuilder builder;
-    String command;
+  public void testPkamBuilderGeneratesExpectedOutput() {
 
-    builder = new PKAMVerbBuilder();
-    builder.setDigest("digest");
-    command = builder.build(); // "pkam:digest"
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                                               () -> VerbBuilders.pkamCommandBuilder().build());
+    assertThat(ex.getMessage(), containsString("digest not set"));
+
+    String command = VerbBuilders.pkamCommandBuilder()
+        .digest("digest")
+        .build();
     assertEquals("pkam:digest", command);
   }
 
   @Test
-  public void updateVerbBuilderTest() {
-    UpdateVerbBuilder builder;
+  public void testPkamBuilderGeneratesExpectedOutputWhenEnrollmentIdIsSet() {
+
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                                               () -> VerbBuilders.pkamCommandBuilder()
+                                                   .digest("digest")
+                                                   .enrollmentId(createEnrollmentId("12345-6789"))
+                                                   .signingAlgo("RSA")
+                                                   .build());
+    assertThat(ex.getMessage(), containsString("hashingAlgo not set"));
+
+    ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.pkamCommandBuilder()
+        .digest("digest")
+        .enrollmentId(createEnrollmentId("12345-6789"))
+        .hashingAlgo("SHA")
+        .build());
+    assertThat(ex.getMessage(), containsString("signingAlgo not set"));
+
+    String command = VerbBuilders.pkamCommandBuilder()
+        .digest("digest")
+        .enrollmentId(createEnrollmentId("12345-6789"))
+        .signingAlgo("RSA")
+        .hashingAlgo("SHA")
+        .build();
+    assertEquals("pkam:signingAlgo:RSA:hashingAlgo:SHA:enrollmentId:12345-6789:digest", command);
+  }
+
+  @Test
+  public void testUpdateBuilderThrowsExceptionsWhenMandatoryFieldsAreNotSet() {
+
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                                               () -> VerbBuilders.updateCommandBuilder().build());
+    assertThat(ex.getMessage(), containsString("keyName not set"));
+
+    ex = assertThrows(IllegalArgumentException.class,
+                      () -> VerbBuilders.updateCommandBuilder().keyName("test").build());
+    assertThat(ex.getMessage(), containsString("sharedBy not set"));
+
+    ex = assertThrows(IllegalArgumentException.class,
+                      () -> VerbBuilders.updateCommandBuilder().keyName("test").sharedBy(createAtSign("fred")).build());
+    assertThat(ex.getMessage(), containsString("value not set"));
+
+    ex = assertThrows(IllegalArgumentException.class,
+                      () -> VerbBuilders.updateCommandBuilder().isPublic(true).rawKey("@colin:key1@fred").build());
+    assertThat(ex.getMessage(), containsString("both rawKeys and isHidden, isPublic isCached set"));
+
+    ex = assertThrows(IllegalArgumentException.class,
+                      () -> VerbBuilders.updateCommandBuilder().keyName("test").rawKey("@colin:key1@fred").build());
+    assertThat(ex.getMessage(), containsString("both rawKeys and key fields set"));
+  }
+
+  @Test
+  public void testUpdateBuilderMetadataSettersOverrideKeyMetadata() {
+    PublicKey key = Keys.publicKeyBuilder().sharedBy(createAtSign("fred")).name("test").build();
+    UpdateCommandBuilder builder = VerbBuilders.updateCommandBuilder().key(key).value("x");
+
+    builder = VerbBuilders.updateCommandBuilder().keyName(key.name()).sharedBy(key.sharedBy()).value("x");
+    assertThat(builder.isPublic(true).build(),
+               equalTo("update:public:test@fred x"));
+    assertThat(builder.isPublic(false).build(),
+               equalTo("update:test@fred x"));
+
+    builder = VerbBuilders.updateCommandBuilder().keyName(key.name()).sharedBy(key.sharedBy()).value("x");
+    assertThat(builder.isHidden(true).build(),
+               equalTo("update:_test@fred x"));
+    assertThat(builder.isHidden(false).build(),
+               equalTo("update:test@fred x"));
+
+    builder = VerbBuilders.updateCommandBuilder().keyName(key.name()).sharedBy(key.sharedBy()).value("x");
+    assertThat(builder.isCached(true).build(),
+               equalTo("update:cached:test@fred x"));
+    assertThat(builder.isCached(false).build(),
+               equalTo("update:test@fred x"));
+
+    builder =
+        VerbBuilders.updateCommandBuilder().keyName(key.name()).sharedBy(key.sharedBy()).isPublic(true).value("x");
+    assertThat(builder.ttl(SECONDS.toMillis(1)).build(),
+               equalTo("update:ttl:1000:public:test@fred x"));
+    assertThat(builder.ttl(null).build(),
+               equalTo("update:public:test@fred x"));
+
+    builder =
+        VerbBuilders.updateCommandBuilder().keyName(key.name()).sharedBy(key.sharedBy()).isPublic(true).value("x");
+    assertThat(builder.ttb(SECONDS.toMillis(2)).build(),
+               equalTo("update:ttb:2000:public:test@fred x"));
+    assertThat(builder.ttb(null).build(),
+               equalTo("update:public:test@fred x"));
+
+    builder =
+        VerbBuilders.updateCommandBuilder().keyName(key.name()).sharedBy(key.sharedBy()).isPublic(true).value("x");
+    assertThat(builder.ttr(SECONDS.toMillis(3)).build(),
+               equalTo("update:ttr:3000:public:test@fred x"));
+    assertThat(builder.ttr(null).build(),
+               equalTo("update:public:test@fred x"));
+
+    builder =
+        VerbBuilders.updateCommandBuilder().keyName(key.name()).sharedBy(key.sharedBy()).isPublic(true).value("x");
+    assertThat(builder.ccd(true).build(),
+               equalTo("update:ccd:true:public:test@fred x"));
+    assertThat(builder.ccd(false).build(),
+               equalTo("update:ccd:false:public:test@fred x"));
+
+    builder =
+        VerbBuilders.updateCommandBuilder().keyName(key.name()).sharedBy(key.sharedBy()).isPublic(true).value("x");
+    assertThat(builder.isBinary(true).build(),
+               equalTo("update:isBinary:true:public:test@fred x"));
+    assertThat(builder.isBinary(false).build(),
+               equalTo("update:isBinary:false:public:test@fred x"));
+
+    builder =
+        VerbBuilders.updateCommandBuilder().keyName(key.name()).sharedBy(key.sharedBy()).isPublic(true).value("x");
+    assertThat(builder.isEncrypted(true).build(),
+               equalTo("update:isEncrypted:true:public:test@fred x"));
+    assertThat(builder.isEncrypted(false).build(),
+               equalTo("update:isEncrypted:false:public:test@fred x"));
+
+    builder =
+        VerbBuilders.updateCommandBuilder().keyName(key.name()).sharedBy(key.sharedBy()).isPublic(true).value("x");
+    assertThat(builder.dataSignature("XYZ").build(),
+               equalTo("update:dataSignature:XYZ:public:test@fred x"));
+    assertThat(builder.dataSignature(null).build(),
+               equalTo("update:public:test@fred x"));
+
+    builder =
+        VerbBuilders.updateCommandBuilder().keyName(key.name()).sharedBy(key.sharedBy()).isPublic(true).value("x");
+    assertThat(builder.sharedKeyEnc("abcdef").build(),
+               equalTo("update:sharedKeyEnc:abcdef:public:test@fred x"));
+    assertThat(builder.sharedKeyEnc(null).build(),
+               equalTo("update:public:test@fred x"));
+
+    builder =
+        VerbBuilders.updateCommandBuilder().keyName(key.name()).sharedBy(key.sharedBy()).isPublic(true).value("x");
+    assertThat(builder.pubKeyCS("xxxx").build(),
+               equalTo("update:pubKeyCS:xxxx:public:test@fred x"));
+    assertThat(builder.pubKeyCS(null).build(),
+               equalTo("update:public:test@fred x"));
+
+    builder =
+        VerbBuilders.updateCommandBuilder().keyName(key.name()).sharedBy(key.sharedBy()).isPublic(true).value("x");
+    assertThat(builder.encoding("en").build(),
+               equalTo("update:encoding:en:public:test@fred x"));
+    assertThat(builder.encoding(null).build(),
+               equalTo("update:public:test@fred x"));
+
+    builder =
+        VerbBuilders.updateCommandBuilder().keyName(key.name()).sharedBy(key.sharedBy()).isPublic(true).value("x");
+    assertThat(builder.ivNonce("abc123op").build(),
+               equalTo("update:ivNonce:abc123op:public:test@fred x"));
+    assertThat(builder.ivNonce(null).build(),
+               equalTo("update:public:test@fred x"));
+  }
+
+  @Test
+  public void testUpdateBuilderThrowsExceptionIfMutuallyExclusiveFieldsHaveBeenSet() {
+    PublicKey key = Keys.publicKeyBuilder()
+        .sharedBy(createAtSign("fred"))
+        .name("test")
+        .build();
+
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> {
+      VerbBuilders.updateCommandBuilder()
+          .key(key)
+          .sharedBy(key.sharedBy())
+          .ccd(true)
+          .value("x")
+          .build();
+    });
+    assertThat(ex.getMessage(), containsString("both key and key fields set"));
+
+  }
+
+  @Test
+  public void testUpdateBuilderGeneratesExpectedOutput() {
     String command;
 
     // self key
-    builder = new UpdateVerbBuilder();
-    builder.setKeyName("test");
-    builder.setSharedBy("@bob");
-    builder.setValue("my Value 123");
-    command = builder.build(); // "update:test@bob my Value 123"
+    command = VerbBuilders.updateCommandBuilder()
+        .keyName("test")
+        .sharedBy(createAtSign("@bob"))
+        .value("my Value 123")
+        .build();
     assertEquals("update:test@bob my Value 123", command);
 
     // self key but shared with self
-    builder = new UpdateVerbBuilder();
-    builder.setKeyName("test");
-    builder.setSharedBy("@bob");
-    builder.setSharedWith("@bob");
-    builder.setValue("My value 123");
-    command = builder.build(); // "update:@alice:test@bob My value 123"
+    command = VerbBuilders.updateCommandBuilder()
+        .keyName("test")
+        .sharedBy(createAtSign("bob"))
+        .sharedWith(createAtSign("bob"))
+        .value("My value 123")
+        .build();
     assertEquals("update:@bob:test@bob My value 123", command);
 
     // public key
-    builder = new UpdateVerbBuilder();
-    builder.setKeyName("publickey");
-    builder.setSharedBy("@bob");
-    builder.setIsPublic(true);
-    builder.setValue("my Value 123");
-    command = builder.build(); // "update:public:publickey@bob my Value 123"
+    command = VerbBuilders.updateCommandBuilder()
+        .keyName("publickey")
+        .sharedBy(createAtSign("bob"))
+        .isPublic(true)
+        .value("my Value 123")
+        .build();
     assertEquals("update:public:publickey@bob my Value 123", command);
 
     // cached public key
-    builder = new UpdateVerbBuilder();
-    builder.setKeyName("publickey");
-    builder.setSharedBy("@alice");
-    builder.setIsPublic(true);
-    builder.setIsCached(true);
-    builder.setValue("my Value 123");
-    command = builder.build(); // "update:cached:public:publickey@alice my Value 123"
+    command = VerbBuilders.updateCommandBuilder()
+        .keyName("publickey")
+        .sharedBy(createAtSign("alice"))
+        .isPublic(true)
+        .isCached(true)
+        .value("my Value 123")
+        .build();
     assertEquals("update:cached:public:publickey@alice my Value 123", command);
 
     // shared key
-    builder = new UpdateVerbBuilder();
-    builder.setKeyName("sharedkey");
-    builder.setSharedBy("@bob");
-    builder.setSharedWith("@alice");
-    builder.setValue("my Value 123");
-    command = builder.build(); // "update:@alice:sharedkey@bob my Value 123"
+    command = VerbBuilders.updateCommandBuilder()
+        .keyName("sharedkey")
+        .sharedBy(createAtSign("@bob"))
+        .sharedWith(createAtSign("@alice"))
+        .value("my Value 123")
+        .build();
     assertEquals("update:@alice:sharedkey@bob my Value 123", command);
 
     // with shared key
-    builder = new UpdateVerbBuilder();
-    SharedKey sk1 = new KeyBuilders.SharedKeyBuilder(new AtSign("@bob"), new AtSign("@alice")).key("test").build();
-    sk1.metadata.isBinary = true;
-    sk1.metadata.ttl = 1000 * 60 * 10; // 10 minutes
-    builder.with(sk1, "myBinaryValue123456");
-    command = builder.build(); // update:ttl:600000:isBinary:true:isEncrypted:true:@alice:test@bob myBinaryValue123456
+    SharedKey sk1 = Keys.sharedKeyBuilder()
+        .sharedBy(new AtSign("@bob"))
+        .sharedWith(new AtSign("@alice"))
+        .name("test")
+        .ttl(TimeUnit.MINUTES.toMillis(10))
+        .isBinary(true)
+        .build();
+    command = VerbBuilders.updateCommandBuilder()
+        .key(sk1)
+        .value("myBinaryValue123456")
+        .build();
     assertEquals("update:ttl:600000:isBinary:true:isEncrypted:true:@alice:test@bob myBinaryValue123456", command);
 
     // with public key
-    builder = new UpdateVerbBuilder();
-    PublicKey pk1 = new KeyBuilders.PublicKeyBuilder(new AtSign("@bob")).key("test").build();
-    pk1.metadata.isCached = true;
-    builder.with(pk1, "myValue123");
-    command = builder.build(); // update:cached:public:test@bob myValue123
-    assertEquals("update:isBinary:false:isEncrypted:false:cached:public:test@bob myValue123", command);
+    PublicKey pk1 = Keys.publicKeyBuilder()
+        .sharedBy(new AtSign("@bob"))
+        .name("test")
+        .isCached(true)
+        .build();
+    command = VerbBuilders.updateCommandBuilder()
+        .key(pk1)
+        .value("myValue123")
+        .build();
+    assertEquals("update:isEncrypted:false:cached:public:test@bob myValue123", command);
 
     // with self key
-    builder = new UpdateVerbBuilder();
-    SelfKey sk2 = new KeyBuilders.SelfKeyBuilder(new AtSign("@bob")).key("test").build();
-    sk2.metadata.ttl = 1000 * 60 * 10; // 10 minutes
-    builder.with(sk2, "myValue123");
-    command = builder.build(); // update:ttl:600000:test@bob myValue123
-    assertEquals("update:ttl:600000:isBinary:false:isEncrypted:true:test@bob myValue123", command);
+    SelfKey sk2 = Keys.selfKeyBuilder()
+        .sharedBy(new AtSign("@bob"))
+        .name("test")
+        .ttl(TimeUnit.MINUTES.toMillis(10))
+        .build();
+    command = VerbBuilders.updateCommandBuilder()
+        .key(sk2)
+        .value("myValue123")
+        .build();
+    assertEquals("update:ttl:600000:isEncrypted:true:test@bob myValue123", command);
 
     // with self key (shared with self)
-    builder = new UpdateVerbBuilder();
-    AtSign bob = new AtSign("@bob");
-    SelfKey sk3 = new KeyBuilders.SelfKeyBuilder(bob, bob).key("test").build();
-    sk3.metadata.ttl = 1000 * 60 * 10; // 10 minutes
-    builder.with(sk3, "myValue123");
-    command = builder.build(); // update:ttl:600000:@bob:test@bob myValue123
-    assertEquals("update:ttl:600000:isBinary:false:isEncrypted:true:@bob:test@bob myValue123", command);
+    AtSign bob = createAtSign("@bob");
+    SelfKey sk3 = Keys.selfKeyBuilder()
+        .sharedBy(bob)
+        .sharedWith(bob)
+        .name("test")
+        .ttl(TimeUnit.MINUTES.toMillis(10))
+        .build();
+    command = VerbBuilders.updateCommandBuilder()
+        .key(sk3)
+        .value("myValue123")
+        .build();
+    assertEquals("update:ttl:600000:isEncrypted:true:@bob:test@bob myValue123", command);
 
     // private hidden key
     // TODO with private hidden key when implemented
   }
 
   @Test
-  public void testUpdateVerbBuilderForPublicKeyWithNamespace() {
-    PublicKey key = new KeyBuilders.PublicKeyBuilder(new AtSign("@alice"))
-        .key("test")
+  public void testUpdateBuilderGeneratesExpectedOutputForPublicKeyWithNamespace() {
+    PublicKey key = Keys.publicKeyBuilder()
+        .sharedBy(new AtSign("@alice"))
+        .name("test")
         .namespace("testns")
         .build();
-    UpdateVerbBuilder builder = new UpdateVerbBuilder();
-    builder.with(key, "testvalue");
+    String command = VerbBuilders.updateCommandBuilder()
+        .key(key)
+        .value("testvalue")
+        .build();
 
-    assertThat(builder.build(), equalTo("update:isBinary:false:isEncrypted:false:public:test.testns@alice testvalue"));
+    assertThat(command, equalTo("update:isEncrypted:false:public:test.testns@alice testvalue"));
   }
 
   @Test
-  public void testUpdateVerbBuilderForSelfKeyWithNamespace() {
-    SelfKey key = new KeyBuilders.SelfKeyBuilder(new AtSign("@alice"))
-        .key("test")
+  public void testUpdateBuilderGeneratesExpectedOutputForSelfKeyWithNamespace() {
+    SelfKey key = Keys.selfKeyBuilder()
+        .sharedBy(new AtSign("@alice"))
+        .name("test")
         .namespace("testns")
         .build();
-    UpdateVerbBuilder builder = new UpdateVerbBuilder();
-    builder.with(key, "testvalue");
+    String command = VerbBuilders.updateCommandBuilder()
+        .key(key)
+        .value("testvalue")
+        .build();
 
-    assertThat(builder.build(), equalTo("update:isBinary:false:isEncrypted:true:test.testns@alice testvalue"));
+    assertThat(command, equalTo("update:isEncrypted:true:test.testns@alice testvalue"));
   }
 
   @Test
-  public void testUpdateVerbBuilderForSharedKeyWithNamespace() {
-    SharedKey key = new KeyBuilders.SharedKeyBuilder(new AtSign("@alice"), new AtSign("@bob"))
-        .key("test")
+  public void testUpdateBuilderGeneratesExpectedOutputForSharedKeyWithNamespace() {
+    SharedKey key = Keys.sharedKeyBuilder()
+        .sharedBy(new AtSign("@alice"))
+        .sharedWith(new AtSign("@bob"))
+        .name("test")
         .namespace("testns")
         .build();
-    UpdateVerbBuilder builder = new UpdateVerbBuilder();
-    builder.with(key, "testvalue");
+    String command = VerbBuilders.updateCommandBuilder()
+        .key(key)
+        .value("testvalue")
+        .build();
 
-    assertThat(builder.build(), equalTo("update:isBinary:false:isEncrypted:true:@bob:test.testns@alice testvalue"));
+    assertThat(command, equalTo("update:isEncrypted:true:@bob:test.testns@alice testvalue"));
   }
 
   @Test
-  public void llookupVerbBuilderTest() {
-    LlookupVerbBuilder builder;
+  public void testUpdateBuilderGeneratesExpectedOutputForSharedEncryption() {
+    AtSign sharedBy = createAtSign("sharedBy");
+    AtSign sharedWith = createAtSign("sharedWith");
+
+    String command = VerbBuilders.updateCommandBuilder()
+        .keyName(AtKeyNames.toSharedByMeKeyName(sharedWith))
+        .sharedBy(sharedBy)
+        .value("XXXX")
+        .build();
+
+    assertThat(command, equalTo("update:shared_key.sharedWith@sharedBy XXXX"));
+
+    command = VerbBuilders.updateCommandBuilder()
+        .keyName(AtKeyNames.SHARED_KEY)
+        .sharedBy(sharedBy)
+        .sharedWith(sharedWith)
+        .ttr(TimeUnit.HOURS.toMillis(24))
+        .value("XXXX")
+        .build();
+
+    assertThat(command, equalTo("update:ttr:86400000:@sharedWith:shared_key@sharedBy XXXX"));
+  }
+
+  @Test
+  public void testUpdateBuilderGeneratesExpectedOutputForPublicEncyrptionKey() {
+    String command = VerbBuilders.updateCommandBuilder()
+        .sharedBy(createAtSign("fred"))
+        .keyName(AtKeyNames.PUBLIC_ENCRYPT)
+        .isPublic(true)
+        .value("XXXX")
+        .build();
+    assertThat(command, equalTo("update:public:publickey@fred XXXX"));
+  }
+
+  @Test
+  public void testLlookupBuilderGeneratesExpectedOutput() {
     String command;
 
     // Type.NONE self key
-    builder = new LlookupVerbBuilder();
-    builder.setKeyName("test");
-    builder.setSharedBy("@alice");
-    command = builder.build(); // "llookup:test@alice"
+    command = VerbBuilders.llookupCommandBuilder()
+        .keyName("test")
+        .sharedBy(createAtSign("@alice"))
+        .build();
     assertEquals("llookup:test@alice", command);
 
     // Type.METADATA self key
-    builder = new LlookupVerbBuilder();
-    builder.setKeyName("test");
-    builder.setSharedBy("@alice");
-    builder.setType(LlookupVerbBuilder.Type.METADATA);
-    command = builder.build(); // "llookup:meta:test@alice"
+    command = VerbBuilders.llookupCommandBuilder()
+        .keyName("test")
+        .sharedBy(createAtSign("@alice"))
+        .operation(LookupOperation.meta)
+        .build();
     assertEquals("llookup:meta:test@alice", command);
 
     // hidden self key, meta
-    builder = new LlookupVerbBuilder();
-    builder.setKeyName("test");
-    builder.setSharedBy("@alice");
-    builder.setType(LlookupVerbBuilder.Type.METADATA);
-    builder.setIsHidden(true);
-    command = builder.build(); // "llookup:meta:_test@alice"
+    command = VerbBuilders.llookupCommandBuilder()
+        .keyName("test")
+        .sharedBy(createAtSign("@alice"))
+        .operation(LookupOperation.meta)
+        .isHidden(true)
+        .build();
     assertEquals("llookup:meta:_test@alice", command);
 
     // Type.ALL public cached key
-    builder = new LlookupVerbBuilder();
-    builder.setKeyName("publickey");
-    builder.setSharedBy("@alice");
-    builder.setIsCached(true);
-    builder.setIsPublic(true);
-    builder.setType(LlookupVerbBuilder.Type.ALL);
-    command = builder.build(); // "llookup:cached:public:publickey@alice:all"
+    command = VerbBuilders.llookupCommandBuilder()
+        .keyName("publickey")
+        .sharedBy(createAtSign("@alice"))
+        .isCached(true)
+        .isPublic(true)
+        .operation(LookupOperation.all)
+        .build();
     assertEquals("llookup:all:cached:public:publickey@alice", command);
 
     // no key name
-    assertThrows(IllegalArgumentException.class, () -> {
-      LlookupVerbBuilder b = new LlookupVerbBuilder();
-      b = new LlookupVerbBuilder();
-      b.setSharedBy("@alice");
-      b.build();
-    });
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                                               () -> VerbBuilders.llookupCommandBuilder()
+                                                   .sharedBy(createAtSign("@alice")).build());
+    assertThat(ex.getMessage(), containsString("keyName not set"));
 
     // no shared by
-    assertThrows(IllegalArgumentException.class, () -> {
-      LlookupVerbBuilder b = new LlookupVerbBuilder();
-      b = new LlookupVerbBuilder();
-      b.setKeyName("test");
-      b.build();
-    });
+    ex = assertThrows(IllegalArgumentException.class,
+                      () -> VerbBuilders.llookupCommandBuilder().keyName("test").build());
+    assertThat(ex.getMessage(), containsString("sharedBy not set"));
 
-    // no key name and no shared by
-    assertThrows(IllegalArgumentException.class, () -> {
-      LlookupVerbBuilder b = new LlookupVerbBuilder();
-      b.build();
-    });
+    ex = assertThrows(IllegalArgumentException.class,
+                      () -> VerbBuilders.llookupCommandBuilder().keyName("test").rawKey("public:publickey@alice")
+                          .build());
+    assertThat(ex.getMessage(), containsString("both rawKey and key fields are set"));
 
     // with public key
-    builder = new LlookupVerbBuilder();
-    PublicKey pk = new KeyBuilders.PublicKeyBuilder(new AtSign("@bob")).key("publickey").build();
-    builder.with(pk, LlookupVerbBuilder.Type.METADATA);
-    command = builder.build(); // "llookup:meta:public:publickey@bob"
+    PublicKey pk = Keys.publicKeyBuilder().sharedBy(new AtSign("@bob")).name("publickey").build();
+    command = VerbBuilders.llookupCommandBuilder()
+        .key(pk)
+        .operation(LookupOperation.meta)
+        .build();
+    assertEquals("llookup:meta:public:publickey@bob", command);
+    command = VerbBuilders.llookupCommandBuilder()
+        .rawKey("public:publickey@bob")
+        .operation(LookupOperation.meta)
+        .build();
     assertEquals("llookup:meta:public:publickey@bob", command);
 
     // with shared key
-    builder = new LlookupVerbBuilder();
-    SharedKey sk = new KeyBuilders.SharedKeyBuilder(new AtSign("@bob"), new AtSign("@alice")).key("sharedkey").build();
-    builder.with(sk, LlookupVerbBuilder.Type.NONE);
-    command = builder.build(); // "llookup:@alice:sharedkey@bob"
+    SharedKey sk = Keys.sharedKeyBuilder()
+        .sharedBy(new AtSign("@bob"))
+        .sharedWith(new AtSign("@alice"))
+        .name("sharedkey")
+        .build();
+    command = VerbBuilders.llookupCommandBuilder()
+        .key(sk)
+        .operation(LookupOperation.none)
+        .build();
     assertEquals("llookup:@alice:sharedkey@bob", command);
 
     // with self key
-    builder = new LlookupVerbBuilder();
-    SelfKey selfKey1 = new KeyBuilders.SelfKeyBuilder(new AtSign("@bob")).key("test").build();
-    builder.with(selfKey1, LlookupVerbBuilder.Type.ALL);
-    command = builder.build(); // "llookup:all:test@bob"
+    SelfKey selfKey1 = Keys.selfKeyBuilder().sharedBy(new AtSign("@bob")).name("test").build();
+    command = VerbBuilders.llookupCommandBuilder()
+        .key(selfKey1)
+        .operation(LookupOperation.all)
+        .build(); // "llookup:all:test@bob"
     assertEquals("llookup:all:test@bob", command);
 
     // with self key (shared with self)
-    builder = new LlookupVerbBuilder();
     AtSign as = new AtSign("@bob");
-    SelfKey selfKey2 = new KeyBuilders.SelfKeyBuilder(as, as).key("test").build();
-    builder.with(selfKey2, LlookupVerbBuilder.Type.ALL);
-    command = builder.build(); // "llookup:all:@bob:test@bob"
+    SelfKey selfKey2 = Keys.selfKeyBuilder().sharedBy(as).sharedWith(as).name("test").build();
+    command = VerbBuilders.llookupCommandBuilder()
+        .key(selfKey2)
+        .operation(LookupOperation.all)
+        .build();
     assertEquals("llookup:all:@bob:test@bob", command);
 
-
     // with cached public key
-    builder = new LlookupVerbBuilder();
-    PublicKey pk2 = new KeyBuilders.PublicKeyBuilder(new AtSign("@bob")).key("publickey").build();
-    pk2.metadata.isCached = true;
-    builder.with(pk2, LlookupVerbBuilder.Type.ALL);
-    command = builder.build(); // "llookup:all:cached:public:publickey@bob"
+    PublicKey pk2 = Keys.publicKeyBuilder()
+        .sharedBy(new AtSign("@bob"))
+        .name("publickey")
+        .isCached(true)
+        .build();
+    command = VerbBuilders.llookupCommandBuilder()
+        .key(pk2)
+        .operation(LookupOperation.all)
+        .build();
     assertEquals("llookup:all:cached:public:publickey@bob", command);
 
     // with cached shared key
-    builder = new LlookupVerbBuilder();
-    SharedKey sk2 = new KeyBuilders.SharedKeyBuilder(new AtSign("@bob"), new AtSign("@alice")).key("sharedkey").build();
-    sk2.metadata.isCached = true;
-    builder.with(sk2, LlookupVerbBuilder.Type.NONE);
-    command = builder.build(); // "llookup:cached:@alice:sharedkey@bob"
+    SharedKey sk2 = Keys.sharedKeyBuilder()
+        .sharedBy(new AtSign("@bob"))
+        .sharedWith(new AtSign("@alice"))
+        .name("sharedkey")
+        .isCached(true)
+        .build();
+    command = VerbBuilders.llookupCommandBuilder()
+        .key(sk2)
+        .operation(LookupOperation.none)
+        .build();
     assertEquals("llookup:cached:@alice:sharedkey@bob", command);
 
     // with private hidden key
@@ -294,492 +553,798 @@ public class VerbBuildersTest {
   }
 
   @Test
-  public void testLlookupVerbBuilderFoPublicKeyWithNamespace() {
-    PublicKey key = new KeyBuilders.PublicKeyBuilder(new AtSign("@alice"))
-        .key("test")
+  public void testLlookupBuilderGeneratesExpectedOutputForPublicKeyWithNamespace() {
+    PublicKey key = Keys.publicKeyBuilder().sharedBy(new AtSign("@alice"))
+        .name("test")
         .namespace("testns")
         .build();
-    LlookupVerbBuilder builder = new LlookupVerbBuilder();
-    builder.with(key, LlookupVerbBuilder.Type.METADATA);
-
-    assertThat(builder.build(), equalTo("llookup:meta:public:test.testns@alice"));
+    String command = VerbBuilders.llookupCommandBuilder()
+        .key(key)
+        .operation(LookupOperation.meta)
+        .build();
+    assertThat(command, equalTo("llookup:meta:public:test.testns@alice"));
   }
 
   @Test
-  public void testLlookupVerbBuilderForSelfKeyWithNamespace() {
-    SelfKey key = new KeyBuilders.SelfKeyBuilder(new AtSign("@alice"))
-        .key("test")
+  public void testLlookupBuilderGeneratesExpectedOutputForSelfKeyWithNamespace() {
+    SelfKey key = Keys.selfKeyBuilder()
+        .sharedBy(new AtSign("@alice"))
+        .name("test")
         .namespace("testns")
         .build();
-    LlookupVerbBuilder builder = new LlookupVerbBuilder();
-    builder.with(key, LlookupVerbBuilder.Type.METADATA);
-
-    assertThat(builder.build(), equalTo("llookup:meta:test.testns@alice"));
+    String command = VerbBuilders.llookupCommandBuilder()
+        .key(key)
+        .operation(LookupOperation.meta)
+        .build();
+    assertThat(command, equalTo("llookup:meta:test.testns@alice"));
   }
 
   @Test
-  public void testLlookupVerbBuilderForSharedKeyWithNamespace() {
-    SharedKey key = new KeyBuilders.SharedKeyBuilder(new AtSign("@alice"), new AtSign("@bob"))
-        .key("test")
+  public void testLlookupBuilderGeneratesExpectedOutputForSharedKeyWithNamespace() {
+    SharedKey key = Keys.sharedKeyBuilder().sharedBy(new AtSign("@alice"))
+        .sharedWith(new AtSign("@bob"))
+        .name("test")
         .namespace("testns")
         .build();
-    LlookupVerbBuilder builder = new LlookupVerbBuilder();
-    builder.with(key, LlookupVerbBuilder.Type.METADATA);
-
-    assertThat(builder.build(), equalTo("llookup:meta:@bob:test.testns@alice"));
+    String command = VerbBuilders.llookupCommandBuilder()
+        .key(key)
+        .operation(LookupOperation.meta)
+        .build();
+    assertThat(command, equalTo("llookup:meta:@bob:test.testns@alice"));
   }
 
   @Test
   public void lookupVerbBuilderTest() {
-    LookupVerbBuilder builder;
     String command;
 
     // Type.NONE
-    builder = new LookupVerbBuilder();
-    builder.setKeyName("test");
-    builder.setSharedBy("@alice");
-    command = builder.build(); // "lookup:test@alice"
+    command = VerbBuilders.lookupCommandBuilder()
+        .keyName("test")
+        .sharedBy(createAtSign("@alice"))
+        .build();
+    assertEquals("lookup:test@alice", command);
+    command = VerbBuilders.lookupCommandBuilder()
+        .rawKey("test@alice")
+        .build();
     assertEquals("lookup:test@alice", command);
 
     // Type.METADATA
-    builder = new LookupVerbBuilder();
-    builder.setKeyName("test");
-    builder.setSharedBy("@alice");
-    builder.setType(LookupVerbBuilder.Type.METADATA);
-    command = builder.build(); // "lookup:meta:test@alice"
+    command = VerbBuilders.lookupCommandBuilder()
+        .keyName("test")
+        .sharedBy(createAtSign("@alice"))
+        .operation(LookupOperation.meta)
+        .build();
     assertEquals("lookup:meta:test@alice", command);
 
     // Type.ALL
-    builder = new LookupVerbBuilder();
-    builder.setKeyName("test");
-    builder.setSharedBy("@alice");
-    builder.setType(LookupVerbBuilder.Type.ALL);
-    command = builder.build(); // "lookup:test@alice"
+    command = VerbBuilders.lookupCommandBuilder()
+        .keyName("test")
+        .sharedBy(createAtSign("@alice"))
+        .operation(LookupOperation.all)
+        .build(); // "lookup:test@alice"
     assertEquals("lookup:all:test@alice", command);
 
     // no key name
-    assertThrows(IllegalArgumentException.class, () -> {
-      LookupVerbBuilder b = new LookupVerbBuilder();
-      b = new LookupVerbBuilder();
-      b.setSharedBy("@alice");
-      b.build();
-    });
+    IllegalArgumentException ex =
+        assertThrows(IllegalArgumentException.class,
+                     () -> VerbBuilders.lookupCommandBuilder().sharedBy(createAtSign("@alice")).build());
+    assertThat(ex.getMessage(), containsString("keyName not set"));
 
-    // no sharedWith
-    assertThrows(IllegalArgumentException.class, () -> {
-      LookupVerbBuilder b = new LookupVerbBuilder();
-      b = new LookupVerbBuilder();
-      b.setKeyName("test");
-      b.build();
-    });
-
-    // no key name and no shared with
-    assertThrows(IllegalArgumentException.class, () -> {
-      LookupVerbBuilder b = new LookupVerbBuilder();
-      b.build();
-    });
+    // no sharedBy
+    ex = assertThrows(IllegalArgumentException.class,
+                      () -> VerbBuilders.lookupCommandBuilder().keyName("test").build());
+    assertThat(ex.getMessage(), containsString("sharedBy not set"));
 
     // with shared key
-    builder = new LookupVerbBuilder();
-    SharedKey sk =
-        new KeyBuilders.SharedKeyBuilder(new AtSign("@sharedby"), new AtSign("@sharedwith")).key("test").build();
-    builder.with(sk, LookupVerbBuilder.Type.METADATA);
-    command = builder.build(); // "lookup:meta:test@sharedby"
+    SharedKey sk = Keys.sharedKeyBuilder().sharedBy(new AtSign("@sharedby"))
+        .sharedWith(new AtSign("@sharedwith"))
+        .name("test")
+        .build();
+    command = VerbBuilders.lookupCommandBuilder()
+        .key(sk)
+        .operation(LookupOperation.meta)
+        .build();
     assertEquals("lookup:meta:test@sharedby", command);
   }
 
   @Test
   public void testLookupVerbBuilderForSharedKeyWithNamespace() {
-    SharedKey key = new KeyBuilders.SharedKeyBuilder(new AtSign("@alice"), new AtSign("@bob"))
-        .key("test")
+    SharedKey key = Keys.sharedKeyBuilder().sharedBy(new AtSign("@alice"))
+        .sharedWith(new AtSign("@bob"))
+        .name("test")
         .namespace("testns")
         .build();
-    LookupVerbBuilder builder = new LookupVerbBuilder();
-    builder.with(key, LookupVerbBuilder.Type.METADATA);
-
-    assertThat(builder.build(), equalTo("lookup:meta:test.testns@alice"));
+    String command = VerbBuilders.lookupCommandBuilder()
+        .key(key)
+        .operation(LookupOperation.meta)
+        .build();
+    assertThat(command, equalTo("lookup:meta:test.testns@alice"));
   }
 
   @Test
   public void plookupVerbBuilderTest() {
-    PlookupVerbBuilder builder;
     String command;
 
     // Type.NONE
-    builder = new PlookupVerbBuilder();
-    builder.setKeyName("publickey");
-    builder.setSharedBy("@alice");
-    command = builder.build(); // "plookup:publickey@alice"
+    command = VerbBuilders.plookupCommandBuilder()
+        .keyName("publickey")
+        .sharedBy(createAtSign("@alice"))
+        .build(); // "plookup:publickey@alice"
+    assertEquals("plookup:publickey@alice", command);
+    command = VerbBuilders.plookupCommandBuilder()
+        .rawKey("publickey@alice")
+        .build(); // "plookup:publickey@alice"
     assertEquals("plookup:publickey@alice", command);
 
     // Type.METADATA
-    builder = new PlookupVerbBuilder();
-    builder.setKeyName("publickey");
-    builder.setSharedBy("@alice");
-    builder.setType(PlookupVerbBuilder.Type.METADATA);
-    command = builder.build(); // "plookup:meta:publickey@alice"
+    command = VerbBuilders.plookupCommandBuilder()
+        .keyName("publickey")
+        .sharedBy(createAtSign("@alice"))
+        .operation(LookupOperation.meta)
+        .build();
     assertEquals("plookup:meta:publickey@alice", command);
 
     // Type.ALL
-    builder = new PlookupVerbBuilder();
-    builder.setKeyName("publickey");
-    builder.setSharedBy("@alice");
-    builder.setType(PlookupVerbBuilder.Type.ALL);
-    command = builder.build(); // "plookup:all:publickey@alice"
+    command = VerbBuilders.plookupCommandBuilder()
+        .keyName("publickey")
+        .sharedBy(createAtSign("@alice"))
+        .operation(LookupOperation.all)
+        .build();
     assertEquals("plookup:all:publickey@alice", command);
 
     // no key
-    assertThrows(IllegalArgumentException.class, () -> {
-      PlookupVerbBuilder b = new PlookupVerbBuilder();
-      b.setSharedBy("@alice");
-      b.setType(Type.ALL);
-      b.build();
-    });
-
+    IllegalArgumentException ex =
+        assertThrows(IllegalArgumentException.class,
+                     () -> VerbBuilders.plookupCommandBuilder().sharedBy(createAtSign("@alice"))
+                         .operation(LookupOperation.all)
+                         .build());
+    assertThat(ex.getMessage(), containsString("keyName not set"));
     // no shared by
-    assertThrows(IllegalArgumentException.class, () -> {
-      PlookupVerbBuilder b = new PlookupVerbBuilder();
-      b.setKeyName("publickey");
-      b.setType(Type.ALL);
-      b.build();
-    });
-
-    // no key and no shared by
-    assertThrows(IllegalArgumentException.class, () -> {
-      PlookupVerbBuilder b = new PlookupVerbBuilder();
-      b.setType(Type.ALL);
-      b.build();
-    });
+    ex = assertThrows(IllegalArgumentException.class,
+                      () -> VerbBuilders.plookupCommandBuilder().keyName("publickey").operation(LookupOperation.all)
+                          .build());
+    assertThat(ex.getMessage(), containsString("sharedBy not set"));
 
     // with
-    builder = new PlookupVerbBuilder();
-    PublicKey pk = new KeyBuilders.PublicKeyBuilder(new AtSign("@bob")).key("publickey").build();
-    builder.with(pk, Type.ALL);
-    command = builder.build(); // "plookup:all:publickey@bob"
+    PublicKey pk = Keys.publicKeyBuilder().sharedBy(new AtSign("@bob")).name("publickey").build();
+    command = VerbBuilders.plookupCommandBuilder()
+        .key(pk)
+        .operation(LookupOperation.all)
+        .build();
     assertEquals("plookup:all:publickey@bob", command);
 
     // bypasscache true
-    builder = new PlookupVerbBuilder();
-    builder.setKeyName("publickey");
-    builder.setSharedBy("@alice");
-    builder.setBypassCache(true);
-    builder.setType(Type.ALL);
-    command = builder.build(); // "plookup:bypassCache:true:all:publickey@alice"
+    command = VerbBuilders.plookupCommandBuilder()
+        .keyName("publickey")
+        .sharedBy(createAtSign("@alice"))
+        .bypassCache(true)
+        .operation(LookupOperation.all)
+        .build();
     assertEquals("plookup:bypassCache:true:all:publickey@alice", command);
   }
 
   @Test
   public void testPlookupVerbBuilderForPublicKeyWithNamespace() {
-    PublicKey key = new KeyBuilders.PublicKeyBuilder(new AtSign("@alice"))
-        .key("test")
+    PublicKey key = Keys.publicKeyBuilder()
+        .sharedBy(new AtSign("@alice"))
+        .name("test")
         .namespace("testns")
         .build();
-    PlookupVerbBuilder builder = new PlookupVerbBuilder();
-    builder.with(key, PlookupVerbBuilder.Type.METADATA);
-
-    assertThat(builder.build(), equalTo("plookup:meta:test.testns@alice"));
+    String command = VerbBuilders.plookupCommandBuilder()
+        .key(key)
+        .operation(LookupOperation.meta)
+        .build();
+    assertThat(command, equalTo("plookup:meta:test.testns@alice"));
   }
 
 
   @Test
   public void deleteVerbBuilderTest() {
-    DeleteVerbBuilder builder;
     String command;
 
     // delete a public key
-    builder = new DeleteVerbBuilder();
-    builder.setIsPublic(true);
-    builder.setKeyName("publickey");
-    builder.setSharedBy("@alice");
-    command = builder.build();
+    command = VerbBuilders.deleteCommandBuilder()
+        .isPublic(true)
+        .keyName("publickey")
+        .sharedBy(createAtSign("@alice"))
+        .build();
+    assertEquals("delete:public:publickey@alice", command);
+    command = VerbBuilders.deleteCommandBuilder()
+        .rawKey("public:publickey@alice")
+        .build();
     assertEquals("delete:public:publickey@alice", command);
 
     // delete a cached public key
-    builder = new DeleteVerbBuilder();
-    builder.setIsCached(true);
-    builder.setIsPublic(true);
-    builder.setKeyName("publickey");
-    builder.setSharedBy("@bob");
-    command = builder.build();
+    command = VerbBuilders.deleteCommandBuilder()
+        .isCached(true)
+        .isPublic(true)
+        .keyName("publickey")
+        .sharedBy(createAtSign("@bob"))
+        .build();
     assertEquals("delete:cached:public:publickey@bob", command);
 
     // delete a self key
-    builder = new DeleteVerbBuilder();
-    builder.setKeyName("test");
-    builder.setSharedBy("@alice");
-    command = builder.build();
+    command = VerbBuilders.deleteCommandBuilder()
+        .keyName("test")
+        .sharedBy(createAtSign("@alice"))
+        .build();
     assertEquals("delete:test@alice", command);
 
     // delete a hidden self key
-    builder = new DeleteVerbBuilder();
-    builder.setIsHidden(true);
-    builder.setKeyName("test");
-    builder.setSharedBy("@alice");
-    command = builder.build();
+    command = VerbBuilders.deleteCommandBuilder()
+        .isHidden(true)
+        .keyName("test")
+        .sharedBy(createAtSign("@alice"))
+        .build();
     assertEquals("delete:_test@alice", command);
 
     // delete a shared key
-    builder = new DeleteVerbBuilder();
-    builder.setKeyName("test");
-    builder.setSharedBy("@alice");
-    builder.setSharedWith("@bob");
-    command = builder.build();
+    command = VerbBuilders.deleteCommandBuilder()
+        .keyName("test")
+        .sharedBy(createAtSign("@alice"))
+        .sharedWith(createAtSign("@bob"))
+        .build();
     assertEquals("delete:@bob:test@alice", command);
 
     // delete a cached shared key
-    builder = new DeleteVerbBuilder();
-    builder.setIsCached(true);
-    builder.setKeyName("test");
-    builder.setSharedBy("@alice");
-    builder.setSharedWith("@bob");
-    command = builder.build();
+    command = VerbBuilders.deleteCommandBuilder()
+        .isCached(true)
+        .keyName("test")
+        .sharedBy(createAtSign("@alice"))
+        .sharedWith(createAtSign("@bob"))
+        .build();
     assertEquals("delete:cached:@bob:test@alice", command);
 
     // missing key name
-    assertThrows(IllegalArgumentException.class, () -> {
-      DeleteVerbBuilder b = new DeleteVerbBuilder();
-      b.setSharedBy("@alice");
-      b.setSharedWith("@bob");
-      b.build();
-    });
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                                               () -> VerbBuilders.deleteCommandBuilder()
+                                                   .sharedBy(createAtSign("@alice"))
+                                                   .sharedWith(createAtSign("@bob"))
+                                                   .build());
+    assertThat(ex.getMessage(), containsString("keyName not set"));
 
     // missing shared by
-    assertThrows(IllegalArgumentException.class, () -> {
-      DeleteVerbBuilder b = new DeleteVerbBuilder();
-      b.setKeyName("test");
-      b.build();
-    });
-
-    // missing key name and shared by
-    assertThrows(IllegalArgumentException.class, () -> {
-      DeleteVerbBuilder b = new DeleteVerbBuilder();
-      b.build();
-    });
+    ex = assertThrows(IllegalArgumentException.class,
+                      () -> VerbBuilders.deleteCommandBuilder().keyName("test").build());
+    assertThat(ex.getMessage(), containsString("sharedBy not set"));
 
     // with self key
-    builder = new DeleteVerbBuilder();
-    SelfKey selfKey = new KeyBuilders.SelfKeyBuilder(new AtSign("@alice")).key("test").build();
-    builder.with(selfKey);
-    command = builder.build();
+    SelfKey selfKey = Keys.selfKeyBuilder().sharedBy(new AtSign("@alice")).name("test").build();
+    command = VerbBuilders.deleteCommandBuilder()
+        .key(selfKey)
+        .build();
     assertEquals("delete:test@alice", command);
 
     // with public key
-    builder = new DeleteVerbBuilder();
-    PublicKey pk = new KeyBuilders.PublicKeyBuilder(new AtSign("@bob")).key("publickey").build();
-    builder.with(pk);
-    command = builder.build();
+    PublicKey pk = Keys.publicKeyBuilder().sharedBy(new AtSign("@bob")).name("publickey").build();
+    command = VerbBuilders.deleteCommandBuilder()
+        .key(pk)
+        .build();
 
     // with shared key
-    builder = new DeleteVerbBuilder();
-    SharedKey sk = new KeyBuilders.SharedKeyBuilder(new AtSign("@alice"), new AtSign("@bob")).key("test").build();
-    builder.with(sk);
-    command = builder.build();
+    SharedKey sk = Keys.sharedKeyBuilder()
+        .sharedBy(new AtSign("@alice"))
+        .sharedWith(new AtSign("@bob"))
+        .name("test")
+        .build();
+    command = VerbBuilders.deleteCommandBuilder()
+        .key(sk)
+        .build();
     assertEquals("delete:@bob:test@alice", command);
-
   }
 
   @Test
   public void testDeleteVerbBuilderForPublicKeyWithNamespace() {
-    PublicKey key = new KeyBuilders.PublicKeyBuilder(new AtSign("@alice"))
-        .key("test")
+    PublicKey key = Keys.publicKeyBuilder()
+        .sharedBy(new AtSign("@alice"))
+        .name("test")
         .namespace("testns")
         .build();
-    DeleteVerbBuilder builder = new DeleteVerbBuilder();
-    builder.with(key);
-
-    assertThat(builder.build(), equalTo("delete:public:test.testns@alice"));
+    String command = VerbBuilders.deleteCommandBuilder()
+        .key(key)
+        .build();
+    assertThat(command, equalTo("delete:public:test.testns@alice"));
   }
 
   @Test
   public void testDeleteVerbBuilderForSelfKeyWithNamespace() {
-    SelfKey key = new KeyBuilders.SelfKeyBuilder(new AtSign("@alice"))
-        .key("test")
+    SelfKey key = Keys.selfKeyBuilder()
+        .sharedBy(new AtSign("@alice"))
+        .name("test")
         .namespace("testns")
         .build();
-    DeleteVerbBuilder builder = new DeleteVerbBuilder();
-    builder.with(key);
-
-    assertThat(builder.build(), equalTo("delete:test.testns@alice"));
+    String command = VerbBuilders.deleteCommandBuilder()
+        .key(key)
+        .build();
+    assertThat(command, equalTo("delete:test.testns@alice"));
   }
 
   @Test
   public void testDeleteVerbBuilderForSharedKeyWithNamespace() {
-    SharedKey key = new KeyBuilders.SharedKeyBuilder(new AtSign("@alice"), new AtSign("@bob"))
-        .key("test")
+    SharedKey key = Keys.sharedKeyBuilder()
+        .sharedBy(new AtSign("@alice")).sharedWith(new AtSign("@bob"))
+        .name("test")
         .namespace("testns")
         .build();
-    DeleteVerbBuilder builder = new DeleteVerbBuilder();
-    builder.with(key);
-
-    assertThat(builder.build(), equalTo("delete:@bob:test.testns@alice"));
+    String command = VerbBuilders.deleteCommandBuilder()
+        .key(key)
+        .build();
+    assertThat(command, equalTo("delete:@bob:test.testns@alice"));
   }
 
   @Test
   public void scanVerbBuilderTest() {
 
     // Test not setting any parameters
-    ScanVerbBuilder scanVerbBuilder = new ScanVerbBuilder();
-    String command = scanVerbBuilder.build();
+    String command = VerbBuilders.scanCommandBuilder().build();
     assertEquals("scan", command);
 
     // Test setting just regex
-    scanVerbBuilder = new ScanVerbBuilder();
-    scanVerbBuilder.setRegex("*.public");
-    command = scanVerbBuilder.build();
+    command = VerbBuilders.scanCommandBuilder().regex("*.public")
+        .build();
     assertEquals("scan *.public", command);
 
     // Test setting just fromAtSign
-    scanVerbBuilder = new ScanVerbBuilder();
-    scanVerbBuilder.setFromAtSign("@other");
-    command = scanVerbBuilder.build();
+    command = VerbBuilders.scanCommandBuilder()
+        .fromAtSign(createAtSign("@other"))
+        .build();
     assertEquals("scan:@other", command);
 
     // Test seting just showHidden
-    scanVerbBuilder = new ScanVerbBuilder();
-    scanVerbBuilder.setShowHidden(true);
-    command = scanVerbBuilder.build();
+    command = VerbBuilders.scanCommandBuilder()
+        .showHidden(true)
+        .build();
     assertEquals("scan:showHidden:true", command);
 
     // Test setting regex & fromAtSign
-    scanVerbBuilder = new ScanVerbBuilder();
-    scanVerbBuilder.setRegex("*.public");
-    scanVerbBuilder.setFromAtSign("@other");
-    command = scanVerbBuilder.build();
+    command = VerbBuilders.scanCommandBuilder()
+        .regex("*.public")
+        .fromAtSign(createAtSign("@other"))
+        .build();
     assertEquals("scan:@other *.public", command);
 
     // Test setting regex & showHidden
-    scanVerbBuilder = new ScanVerbBuilder();
-    scanVerbBuilder.setRegex("*.public");
-    scanVerbBuilder.setShowHidden(true);
-    command = scanVerbBuilder.build();
+    command = VerbBuilders.scanCommandBuilder()
+        .regex("*.public")
+        .showHidden(true)
+        .build();
     assertEquals("scan:showHidden:true *.public", command);
 
     // Test setting fromAtSign & showHidden
-    scanVerbBuilder = new ScanVerbBuilder();
-    scanVerbBuilder.setFromAtSign("@other");
-    scanVerbBuilder.setShowHidden(true);
-    command = scanVerbBuilder.build();
+    command = VerbBuilders.scanCommandBuilder()
+        .fromAtSign(createAtSign("@other"))
+        .showHidden(true)
+        .build();
     assertEquals("scan:showHidden:true:@other", command);
 
     // Test setting regex & fromAtSign & showHidden
-    scanVerbBuilder = new ScanVerbBuilder();
-    scanVerbBuilder.setRegex("*.public");
-    scanVerbBuilder.setFromAtSign("@other");
-    scanVerbBuilder.setShowHidden(true);
-    command = scanVerbBuilder.build();
+    command = VerbBuilders.scanCommandBuilder()
+        .regex("*.public")
+        .fromAtSign(createAtSign("@other"))
+        .showHidden(true)
+        .build();
     assertEquals("scan:showHidden:true:@other *.public", command);
   }
 
   @Test
-  public void notifyTextBuilderTest() {
+  public void testNotifyTextBuilderGeneratesTheExpectedOutput() {
     // Test not setting any parameters
-    final NotifyTextVerbBuilder builderWithNoFieldsSet = new NotifyTextVerbBuilder();
-    assertThrows(IllegalArgumentException.class, builderWithNoFieldsSet::build,
-                 "Recipient @sign and text are mandatory. Expecting a IllegalArgumentException being thrown.");
+    IllegalArgumentException ex =
+        assertThrows(IllegalArgumentException.class, () -> VerbBuilders.notifyTextCommandBuilder().build());
+    assertThat(ex.getMessage(), containsString("recipient not set"));
 
     // Test not setting the text
-    final NotifyTextVerbBuilder builderWithTextFieldUnset = new NotifyTextVerbBuilder();
-    builderWithTextFieldUnset.setRecipientAtSign("@test");
-    assertThrows(IllegalArgumentException.class, builderWithTextFieldUnset::build,
-                 "Text is mandatory. Expecting a IllegalArgumentException being thrown.");
+    ex = assertThrows(IllegalArgumentException.class,
+                      () -> VerbBuilders.notifyTextCommandBuilder().recipient(createAtSign("@somebody")).build());
+    assertThat(ex.getMessage(), containsString("text not set"));
 
-    NotifyTextVerbBuilder notifyTextBuilder = new NotifyTextVerbBuilder();
-    notifyTextBuilder.setText("Hi");
-    notifyTextBuilder.setRecipientAtSign("@test");
-    String expectedResult = "notify:messageType:text:@test:Hi";
-    assertEquals(expectedResult, notifyTextBuilder.build());
-
-    // test not setting an '@' sign to the recipients at sign and expect it to be
-    // appended properly
-    notifyTextBuilder = new NotifyTextVerbBuilder();
-    notifyTextBuilder.setText("Hello");
-    notifyTextBuilder.setRecipientAtSign("test");
-    expectedResult = "notify:messageType:text:@test:Hello";
-    assertEquals(expectedResult, notifyTextBuilder.build());
-
+    String command = VerbBuilders.notifyTextCommandBuilder()
+        .recipient(createAtSign("@test"))
+        .text("Hi")
+        .build();
+    assertEquals("notify:messageType:text:@test:Hi", command);
   }
 
   @Test
   public void notifyKeyChangeBuilderTest() {
     // Test not setting any parameters
-    final NotifyKeyChangeBuilder builderWithNoArgsSet = new NotifyKeyChangeBuilder();
-    assertThrows(IllegalArgumentException.class, builderWithNoArgsSet::build,
-                 "Mandatory fields are not set. Expecting a IllegalArgumentException being thrown.");
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                                               () -> VerbBuilders.notifyKeyChangeCommandBuilder()
+                                                   .operation(NotifyOperation.update)
+                                                   .sender(createAtSign("sender"))
+                                                   .recipient(createAtSign("recipient"))
+                                                   .build());
+    assertThat(ex.getMessage(), containsString("key not set"));
 
-    // Test not setting the key
-    final NotifyKeyChangeBuilder builderWithNoKeySet = new NotifyKeyChangeBuilder();
-    builderWithNoKeySet.setOperation("update");
-    builderWithNoKeySet.setSenderAtSign("@sender");
-    builderWithNoKeySet.setRecipientAtSign("@recipient");
-    assertThrows(IllegalArgumentException.class, builderWithNoKeySet::build,
-                 "Key is mandatory. Expecting a IllegalArgumentException being thrown.");
+    ex = assertThrows(IllegalArgumentException.class,
+                      () -> VerbBuilders.notifyKeyChangeCommandBuilder().key("key").build());
+    assertThat(ex.getMessage(), containsString("operation not set"));
 
     // Test setting the value when ttr has been set
-    final NotifyKeyChangeBuilder builderWithTrrSetButNoValue = new NotifyKeyChangeBuilder();
-    builderWithTrrSetButNoValue.setOperation("update");
-    builderWithTrrSetButNoValue.setSenderAtSign("@sender");
-    builderWithTrrSetButNoValue.setRecipientAtSign("@recipient");
-    builderWithTrrSetButNoValue.setKey("phone");
-    builderWithTrrSetButNoValue.setTtr(10000);
-    assertThrows(IllegalArgumentException.class, builderWithTrrSetButNoValue::build,
-                 "Value is mandatory if ttr has been set. Expecting a IllegalArgumentException being thrown.");
+    ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.notifyKeyChangeCommandBuilder()
+        .operation(NotifyOperation.update)
+        .sender(createAtSign("sender"))
+        .recipient(createAtSign("recipient"))
+        .key("phone")
+        .ttr(10000L)
+        .build());
+    assertThat(ex.getMessage(), containsString("value not set (mandatory when ttr is set)"));
 
     // Test setting invalid ttr
-    final NotifyKeyChangeBuilder builderWithNegativeTrrSetButNoValue = new NotifyKeyChangeBuilder();
-    builderWithNegativeTrrSetButNoValue.setOperation("update");
-    builderWithNegativeTrrSetButNoValue.setSenderAtSign("@sender");
-    builderWithNegativeTrrSetButNoValue.setRecipientAtSign("@recipient");
-    builderWithNegativeTrrSetButNoValue.setKey("phone");
-    builderWithNegativeTrrSetButNoValue.setTtr(-100);
-    assertThrows(IllegalArgumentException.class, builderWithNegativeTrrSetButNoValue::build,
-                 "Value is mandatory if ttr has been set. Expecting a IllegalArgumentException being thrown.");
+    ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.notifyKeyChangeCommandBuilder()
+        .operation(NotifyOperation.update)
+        .sender(createAtSign("sender"))
+        .recipient(createAtSign("recipient"))
+        .key("phone")
+        .ttr(-100L)
+        .build());
+    assertThat(ex.getMessage(), containsString("ttr < -1"));
 
     // test command
-    NotifyKeyChangeBuilder notifyKeyChangeBuilder = new NotifyKeyChangeBuilder();
-    notifyKeyChangeBuilder.setOperation("update");
-    notifyKeyChangeBuilder.setSenderAtSign("@sender");
-    notifyKeyChangeBuilder.setRecipientAtSign("@recipient");
-    notifyKeyChangeBuilder.setKey("phone");
-    // Expect build to throw Illegal argument exception for not setting the text
-    String command = notifyKeyChangeBuilder.build();
-    String expectedResult = "notify:update:messageType:key:@recipient:phone@sender";
-    assertEquals(expectedResult, command);
+    String command = VerbBuilders.notifyKeyChangeCommandBuilder()
+        .operation(NotifyOperation.update)
+        .sender(createAtSign("sender"))
+        .recipient(createAtSign("recipient"))
+        .key("phone")
+        .build();
+    assertEquals("notify:update:messageType:key:@recipient:phone@sender", command);
 
     // test command with a fully formed key
-    notifyKeyChangeBuilder = new NotifyKeyChangeBuilder();
-    notifyKeyChangeBuilder.setOperation("update");
-    notifyKeyChangeBuilder.setKey("@recipient:phone@sender");
-    // Expect build to throw Illegal argument exception for not setting the text
-    command = notifyKeyChangeBuilder.build();
-    expectedResult = "notify:update:messageType:key:@recipient:phone@sender";
-    assertEquals(expectedResult, command);
+    command = VerbBuilders.notifyKeyChangeCommandBuilder()
+        .operation(NotifyOperation.update)
+        .key("@recipient:phone@sender")
+        .build();
+    assertEquals("notify:update:messageType:key:@recipient:phone@sender", command);
 
     // test command when ttr and value are present
-    notifyKeyChangeBuilder = new NotifyKeyChangeBuilder();
-    notifyKeyChangeBuilder.setOperation("update");
-    notifyKeyChangeBuilder.setKey("@recipient:phone@sender");
-    notifyKeyChangeBuilder.setTtr(1000);
-    notifyKeyChangeBuilder.setValue("cache_me");
-    // Expect build to throw Illegal argument exception for not setting the text
-    command = notifyKeyChangeBuilder.build();
-    expectedResult = "notify:update:messageType:key:ttr:1000:@recipient:phone@sender:cache_me";
-    assertEquals(expectedResult, command);
-
+    command = VerbBuilders.notifyKeyChangeCommandBuilder()
+        .operation(NotifyOperation.update)
+        .key("@recipient:phone@sender")
+        .ttr(1000L)
+        .value("cache_me")
+        .build();
+    assertEquals("notify:update:messageType:key:ttr:1000:@recipient:phone@sender:cache_me", command);
   }
 
   @Test
   public void notificationStatusVerbBuilderTest() {
 
     // Test not setting any parameters
-    final NotificationStatusVerbBuilder builderWithNoFieldsSet = new NotificationStatusVerbBuilder();
-    assertThrows(IllegalArgumentException.class, builderWithNoFieldsSet::build,
-                 "Mandatory fields are not set. Expecting a IllegalArgumentException being thrown.");
+    IllegalArgumentException ex =
+        assertThrows(IllegalArgumentException.class, () -> VerbBuilders.notifyStatusCommandBuilder().build());
+    assertThat(ex.getMessage(), containsString("notificationId not set"));
 
-    final NotificationStatusVerbBuilder notificationStatusVerbBuilder = new NotificationStatusVerbBuilder();
-    notificationStatusVerbBuilder.setNotificationId("n1234");
-    String expectedResult = "notify:status:n1234";
-    assertEquals(expectedResult, notificationStatusVerbBuilder.build());
+    String command = VerbBuilders.notifyStatusCommandBuilder()
+        .notificationId("n1234").build();
+    assertEquals("notify:status:n1234", command);
+  }
 
+  @Test
+  void testEnrollThrowExceptionIfOperationIsNotSet() {
+    IllegalArgumentException ex =
+        assertThrows(IllegalArgumentException.class, () -> VerbBuilders.enrollCommandBuilder().build());
+    assertThat(ex.getMessage(), containsString("operation not set"));
+  }
+
+  @Test
+  void testEnrollListReturnsExpectedCommand() {
+    String result = VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.list)
+        .build();
+
+    assertThat(result, is("enroll:list"));
+  }
+
+  @Test
+  void testEnrollListWithStatusProducesCommandWithStatusFilter() {
+    String result = VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.list)
+        .status("pending")
+        .build();
+
+    assertThat(result, is("enroll:list{\"enrollmentStatusFilter\":[\"pending\"]}"));
+  }
+
+  @Test
+  void testEnrollApproveThrowsIfFieldsNotSet() {
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.approve)
+        .encryptPrivateKey("privKey")
+        .encryptPrivateKeyIv("privKeyIv")
+        .selfEncryptKey("selfKey")
+        .selfEncryptKeyIv("selfKeyIv")
+        .build());
+    assertThat(ex.getMessage(), containsString("enrollmentId not set"));
+
+    ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.approve)
+        .enrollmentId(createEnrollmentId("abc123"))
+        .encryptPrivateKeyIv("privKeyIv")
+        .selfEncryptKey("selfKey")
+        .selfEncryptKeyIv("selfKeyIv")
+        .build());
+    assertThat(ex.getMessage(), containsString("encryptPrivateKey not set"));
+
+    ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.approve)
+        .enrollmentId(createEnrollmentId("abc123"))
+        .encryptPrivateKey("privKey")
+        .selfEncryptKey("selfKey")
+        .selfEncryptKeyIv("selfKeyIv")
+        .build());
+
+    assertThat(ex.getMessage(), containsString("encryptPrivateKeyIv not set"));
+
+    ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.approve)
+        .enrollmentId(createEnrollmentId("abc123"))
+        .encryptPrivateKey("privKey")
+        .encryptPrivateKeyIv("privKeyIv")
+        .selfEncryptKeyIv("selfKeyIv")
+        .build());
+
+    assertThat(ex.getMessage(), containsString("selfEncryptKey not set"));
+
+    ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.approve)
+        .enrollmentId(createEnrollmentId("abc123"))
+        .encryptPrivateKey("privKey")
+        .encryptPrivateKeyIv("privKeyIv")
+        .selfEncryptKey("selfKey")
+        .build());
+
+    assertThat(ex.getMessage(), containsString("selfEncryptKeyIv not set"));
+
+  }
+
+  @Test
+  void testEnrollApproveWithAllRequiredParamsReturnsExpectedCommand() {
+    String result = VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.approve)
+        .enrollmentId(createEnrollmentId("abc123"))
+        .encryptPrivateKey("privKey")
+        .encryptPrivateKeyIv("privKeyIv")
+        .selfEncryptKey("selfKey")
+        .selfEncryptKeyIv("selfKeyIv")
+        .build();
+
+    assertThat(result, is("enroll:approve{" +
+        "\"enrollmentId\":\"abc123\"," +
+        "\"encryptedDefaultEncryptionPrivateKey\":\"privKey\"," +
+        "\"encPrivateKeyIV\":\"privKeyIv\"," +
+        "\"encryptedDefaultSelfEncryptionKey\":\"selfKey\"," +
+        "\"selfEncKeyIV\":\"selfKeyIv\"" +
+        "}"));
+  }
+
+  @Test
+  void testEnrollFetchThrowsExpectedExceptionWhenFieldsAreNotSet() {
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.fetch)
+        .build());
+
+    assertThat(ex.getMessage(), containsString("enrollmentId not set"));
+  }
+
+  @Test
+  void testEnrollFetchWithEnrollmentIdReturnsExpectedCommand() {
+    String result = VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.fetch)
+        .enrollmentId(createEnrollmentId("abc123"))
+        .build();
+
+    assertThat(result, is("enroll:fetch{\"enrollmentId\":\"abc123\"}"));
+  }
+
+  @Test
+  void testEnrollDenyThrowExceptionIfEnrollmentIdIsNotSet() {
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.deny)
+        .build());
+
+    assertThat(ex.getMessage(), containsString("enrollmentId not set"));
+  }
+
+  @Test
+  void testEnrollDenyWithEnrollmentIdProducesCorrectCommand() {
+    String result = VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.deny)
+        .enrollmentId(createEnrollmentId("abc123"))
+        .build();
+
+    assertThat(result, is("enroll:deny{\"enrollmentId\":\"abc123\"}"));
+  }
+
+  @Test
+  void testEnrollRevokeThrowExceptionIfEnrollmentIdIsNotSet() {
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.revoke)
+        .build());
+
+    assertThat(ex.getMessage(), containsString("enrollmentId not set"));
+  }
+
+  @Test
+  void testEnrollRevokeWithEnrollmentIdProducesCorrectCommand() {
+    String result = VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.revoke)
+        .enrollmentId(createEnrollmentId("abc123"))
+        .build();
+
+    assertThat(result, is("enroll:revoke{\"enrollmentId\":\"abc123\"}"));
+  }
+
+  @Test
+  void testEnrollUnrevokeThrowExceptionIfEnrollmentIdIsNotSet() {
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.unrevoke)
+        .build());
+
+    assertThat(ex.getMessage(), containsString("enrollmentId not set"));
+  }
+
+  @Test
+  void testEnrollUnrevokeWithEnrollmentIdProducesCorrectCommand() {
+    String result = VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.unrevoke)
+        .enrollmentId(createEnrollmentId("abc123"))
+        .build();
+
+    assertThat(result, is("enroll:unrevoke{\"enrollmentId\":\"abc123\"}"));
+  }
+
+  @Test
+  void testEnrollDeleteThrowExceptionIfEnrollmentIdIsNotSet() {
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.delete)
+        .build());
+
+    assertThat(ex.getMessage(), containsString("enrollmentId not set"));
+  }
+
+  @Test
+  void testEnrollDeleteWithEnrollmentIdProducesCorrectCommand() {
+    String result = VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.delete)
+        .enrollmentId(createEnrollmentId("abc123"))
+        .build();
+
+    assertThat(result, is("enroll:delete{\"enrollmentId\":\"abc123\"}"));
+  }
+
+  @Test
+  void testEnrollRequestThrowExceptionIfFieldsNotSet() {
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.request)
+        .deviceName("myDevice")
+        .apkamPublicKey("pubKey")
+        .build());
+    assertThat(ex.getMessage(), containsString("appName not set"));
+
+    ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.request)
+        .appName("")
+        .deviceName("myDevice")
+        .apkamPublicKey("pubKey")
+        .build());
+    assertThat(ex.getMessage(), containsString("appName not set"));
+
+    ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.request)
+        .appName("myApp")
+        .apkamPublicKey("pubKey")
+        .build());
+    assertThat(ex.getMessage(), containsString("deviceName not set"));
+
+    ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.request)
+        .appName("myApp")
+        .deviceName("")
+        .apkamPublicKey("pubKey")
+        .build());
+    assertThat(ex.getMessage(), containsString("deviceName not set"));
+
+    ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.request)
+        .appName("myApp")
+        .deviceName("myDevice")
+        .build());
+    assertThat(ex.getMessage(), containsString("apkamPublicKey not set"));
+
+    ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.request)
+        .otp("")
+        .appName("myApp")
+        .deviceName("myDevice")
+        .apkamPublicKey("pubKey")
+        .build());
+    assertThat(ex.getMessage(), containsString("otp not set"));
+
+    ex = assertThrows(IllegalArgumentException.class, () -> VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.request)
+        .otp("AZ19")
+        .appName("myApp")
+        .deviceName("myDevice")
+        .apkamPublicKey("pubKey")
+        .build());
+    assertThat(ex.getMessage(), containsString("namespaces not set"));
+  }
+
+  @Test
+  void testInitialEnrollRequestReturnsExpectedCommand() {
+    String result = VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.request)
+        .appName("myApp")
+        .deviceName("myDevice")
+        .apkamPublicKey("pubKey")
+        .build();
+
+    assertThat(result, is("enroll:request{" +
+        "\"appName\":\"myApp\"," +
+        "\"deviceName\":\"myDevice\"," +
+        "\"apkamPublicKey\":\"pubKey\"" +
+        "}"));
+  }
+
+  @Test
+  void testSubsequentEnrollRequestReturnsExpectedCommand() {
+    Map<String, String> namespaces = new LinkedHashMap<>();
+    namespaces.put("ns1", "rw");
+
+    String result = VerbBuilders.enrollCommandBuilder()
+        .operation(EnrollOperation.request)
+        .appName("myApp")
+        .deviceName("myDevice")
+        .apkamPublicKey("pubKey")
+        .apkamSymmetricKey("symKey")
+        .otp("123456")
+        .namespaces(namespaces)
+        .ttl(86400000L)
+        .build();
+
+    assertThat(result, is("enroll:request{" +
+        "\"appName\":\"myApp\"," +
+        "\"deviceName\":\"myDevice\"," +
+        "\"apkamPublicKey\":\"pubKey\"," +
+        "\"encryptedAPKAMSymmetricKey\":\"symKey\"," +
+        "\"otp\":\"123456\"," +
+        "\"namespaces\":{\"ns1\":\"rw\"}," +
+        "\"apkamKeysExpiryInMillis\":86400000" +
+        "}"));
+  }
+
+  @Test
+  public void testOtpBuilderGeneratesExpectedOutput() {
+    String command = VerbBuilders.otpCommandBuilder().build();
+    assertEquals("otp:get", command);
+  }
+
+  @Test
+  void testKeysBuilderThrowsExceptionIfFieldsNotSet() {
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                                               () -> VerbBuilders.keysCommandBuilder().build());
+    assertThat(ex.getMessage(), containsString("operation not set"));
+
+    ex = assertThrows(IllegalArgumentException.class,
+                      () -> VerbBuilders.keysCommandBuilder().operation(VerbBuilders.KeysOperation.get).build());
+    assertThat(ex.getMessage(), containsString("keyName not set"));
+
+    ex = assertThrows(IllegalArgumentException.class,
+                      () -> VerbBuilders.keysCommandBuilder()
+                          .operation(VerbBuilders.KeysOperation.delete)
+                          .keyName("private:_secret@fred")
+                          .build());
+    assertThat(ex.getMessage(), containsString("delete not supported"));
+  }
+
+
+  @Test
+  void testKeysBuilderReturnsExpectedCommand() {
+    String command = VerbBuilders.keysCommandBuilder()
+        .operation(VerbBuilders.KeysOperation.get)
+        .keyName("private:_secret@fred")
+        .build();
+    assertThat(command, equalTo("keys:get:keyName:private:_secret@fred"));
   }
 
 }

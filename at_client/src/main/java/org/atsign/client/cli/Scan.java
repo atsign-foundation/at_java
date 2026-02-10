@@ -64,7 +64,7 @@ public class Scan {
     out.println("atKeys: {");
     for (int i = 0; i < keys.size(); i++) {
       AtKey key = keys.get(i);
-      out.println("  " + i + ":  " + (key.metadata.isCached ? "cached:" : "") + key);
+      out.println("  " + i + ":  " + (key.metadata().isCached() ? "cached:" : "") + key);
     }
     out.println("}");
   }
@@ -72,36 +72,36 @@ public class Scan {
   private static void printKeyInfo(AtKey key, PrintStream out) {
     out.println("======================");
     out.println("Full KeyName: " + key.toString());
-    out.println("KeyName: " + key.name);
-    out.println("Namespace: " + key.getNamespace());
-    out.println("SharedBy: " + key.sharedBy.atSign);
-    out.println("SharedWith: " + (key.sharedWith != null ? key.sharedWith.atSign : "null"));
+    out.println("KeyName: " + key.nameWithoutNamespace());
+    out.println("Namespace: " + key.namespace());
+    out.println("SharedBy: " + key.sharedBy());
+    out.println("SharedWith: " + (key.sharedWith() != null ? key.sharedWith() : "null"));
     out.println("KeyType: " + key.getClass().toString().split("\\$")[1]);
     out.println("Metadata -------------------");
-    printKeyMetadata(key.metadata, out);
+    printKeyMetadata(key.metadata(), out);
     out.println("======================");
     out.println();
   }
 
   private static void printKeyMetadata(Metadata metadata, PrintStream out) {
-    out.println("ttl: " + metadata.ttl);
-    out.println("ttb: " + metadata.ttb);
-    out.println("ttr: " + metadata.ttr);
-    out.println("ccd: " + metadata.ccd);
-    out.println("availableAt: " + (metadata.availableAt != null ? metadata.availableAt.toString() : "null"));
-    out.println("expiresAt: " + (metadata.expiresAt != null ? metadata.expiresAt.toString() : "null"));
-    out.println("refreshAt: " + (metadata.refreshAt != null ? metadata.refreshAt.toString() : "null"));
-    out.println("createdAt: " + (metadata.createdAt != null ? metadata.createdAt.toString() : "null"));
-    out.println("updatedAt: " + (metadata.updatedAt != null ? metadata.updatedAt.toString() : "null"));
-    out.println("dataSignature: " + metadata.dataSignature);
-    out.println("sharedKeyStatus: " + metadata.sharedKeyStatus);
-    out.println("isPublic: " + metadata.isPublic);
-    out.println("isEncrypted: " + metadata.isEncrypted);
-    out.println("isHidden: " + metadata.isHidden);
-    out.println("namespaceAware: " + metadata.namespaceAware);
-    out.println("isBinary: " + metadata.isBinary);
-    out.println("isCached: " + metadata.isCached);
-    out.println("sharedKeyEnc: " + metadata.sharedKeyEnc);
-    out.println("pubKeyCS: " + metadata.pubKeyCS);
+    out.println("ttl: " + metadata.ttl());
+    out.println("ttb: " + metadata.ttb());
+    out.println("ttr: " + metadata.ttr());
+    out.println("ccd: " + metadata.ccd());
+    out.println("availableAt: " + (metadata.availableAt() != null ? metadata.availableAt().toString() : "null"));
+    out.println("expiresAt: " + (metadata.expiresAt() != null ? metadata.expiresAt().toString() : "null"));
+    out.println("refreshAt: " + (metadata.refreshAt() != null ? metadata.refreshAt().toString() : "null"));
+    out.println("createdAt: " + (metadata.createdAt() != null ? metadata.createdAt().toString() : "null"));
+    out.println("updatedAt: " + (metadata.updatedAt() != null ? metadata.updatedAt().toString() : "null"));
+    out.println("dataSignature: " + metadata.dataSignature());
+    out.println("sharedKeyStatus: " + metadata.sharedKeyStatus());
+    out.println("isPublic: " + metadata.isPublic());
+    out.println("isEncrypted: " + metadata.isEncrypted());
+    out.println("isHidden: " + metadata.isHidden());
+    out.println("namespaceAware: " + metadata.namespaceAware());
+    out.println("isBinary: " + metadata.isBinary());
+    out.println("isCached: " + metadata.isCached());
+    out.println("sharedKeyEnc: " + metadata.sharedKeyEnc());
+    out.println("pubKeyCS: " + metadata.pubKeyCS());
   }
 }

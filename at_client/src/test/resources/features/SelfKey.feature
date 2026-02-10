@@ -31,7 +31,6 @@ Feature: AtClient API tests for SelfKeys
       | test@gary |
 
   Scenario: SelfKeys are invisible to other at signs
-    And dump keys
     And AtClient.put for SelfKey test and value "hello world"
     Then @colin AtClient.getAtKeys for ".+" does NOT contain
       | test@gary |
