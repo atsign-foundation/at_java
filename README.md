@@ -8,23 +8,23 @@
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/atsign-foundation/at_java/badge)](https://securityscorecards.dev/viewer/?uri=github.com/atsign-foundation/at_java&sort_by=check-score&sort_direction=desc)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8116/badge)](https://www.bestpractices.dev/projects/8116)
 
-## The AtPlatform for Java developers
+## The Atsign Platform for Java developers
 
 This repository contains libraries, tools, samples and examples for developers that
-wish to work with the AtPlatform from Java code.
+wish to work with the Atsign Platform from Java code.
 
 ## Modules
 
 There are 4 modules.
 
-* **at_client** is the Java SDK for interacting with the AtPlatform
+1. **at_client** is the Java SDK for interacting with the Atsign Platform
   [README](at_client/README.md).
-* **at_shell** is a self-contained "fatjar" that provides an interactive command
+2. **at_shell** is a self-contained "fatjar" that provides an interactive command
   line interface for performing various operations and tests
   [README](at_shell/README.md).
-* **at_utils** contains useful code which is not part of the SDK
+3. **at_utils** contains useful code which is not part of the SDK
   [README](at_utils/README.md).
-* **examples** contains sample code which illustrates how to use the SDK
+4. **examples** contains sample code which illustrates how to use the SDK
   [README](examples/README.md).
 
 ## Build Process
@@ -105,7 +105,7 @@ updated to the latest release.
 possible. This relies on teardown steps. If you are debugging tests and terminate
 the execution then this can leave the virtual env in an unreset state. Running
 the test again might fail because of this BUT that teardown should successfully
-reset the env and allow the next run to succeed. In extreme circumstances if may
+reset the env and allow the next run to succeed. In extreme circumstances it may
 be necessary to reset the docker container, like this:
 
 ```shell
@@ -159,7 +159,7 @@ mvn spotless:apply
 ### Intellij
 
 To configure Intellij to use the same settings
-1. Add the **Adaptor for Eclopse Code Formatter** plugin and configure in
+1. Add the **Adaptor for Eclipse Code Formatter** plugin and configure in
 **Settings -> Adaptor for Eclipse Code Formatter** by setting
 **Eclipse workspace/project folder or config file** as
 config/java-format.xml
