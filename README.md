@@ -8,161 +8,132 @@
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/atsign-foundation/at_java/badge)](https://securityscorecards.dev/viewer/?uri=github.com/atsign-foundation/at_java&sort_by=check-score&sort_direction=desc)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8116/badge)](https://www.bestpractices.dev/projects/8116)
 
-## The atPlatform for Java developers
+## The Atsign Platform for Java developers
 
-This repo contains libraries, tools, samples and examples for developers who wish
-to work with the atPlatform from Java code.
+This repository contains libraries, tools, samples and examples for developers that
+wish to work with the Atsign Platform from Java code.
 
-## Maven Dependency
+## Modules
 
-The Java SDK can be added to your project through a compiled JAR or by Maven!
+There are 4 modules.
 
-```xml
-  <repositories>
-    <repository>
-      <name>Central Portal Snapshots</name>
-      <id>central-portal-snapshots</id>
-      <url>https://central.sonatype.com/repository/maven-snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
+1. **at_client** is the Java SDK for interacting with the Atsign Platform
+  [README](at_client/README.md).
+2. **at_shell** is a self-contained "fatjar" that provides an interactive command
+  line interface for performing various operations and tests
+  [README](at_shell/README.md).
+3. **at_utils** contains useful code which is not part of the SDK
+  [README](at_utils/README.md).
+4. **examples** contains sample code which illustrates how to use the SDK
+  [README](examples/README.md).
 
-  <dependencies>
-    <dependency>
-      <groupId>org.atsign</groupId>
-      <artifactId>at_client</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
-    </dependency>
-  </dependencies>
-```
-
-## Getting Started
+## Build Process
 
 ### Prerequisites
 
-* Java (JDK 8)
-* Maven
+* Java (JDK 11 or above)
+* Maven (3.6.3 or above)
 
-### Steps
+Check out, build and test with the following commands:
 
-Clone the at_java repo from GitHub using
-
-```shell
+```text
 git clone https://github.com/atsign-foundation/at_java.git
-```
-
-Change directory into at_java/at_client
-
-```shell
-cd at_client
-```
-
-Compile the package using maven with the following command
-
-```shell
 mvn install
 ```
 
-Now that the programs have been compiled, execute the following command to use at_java
+**Note:** The integration tests rely on the virtual env. The tests
+will attempt to start a docker container with this image but that relies
+on dockerd (or desktop docker). If you want to skip these tests then add
+**-DskipITs**. See subsequent section for more information.
 
-```shell
-java -cp "target/at_client-1.0-SNAPSHOT.jar:target/lib/*" \
-org.atsign.client.cli.<class> [required arguments]
+## Unit Tests
+
+These have no external dependencies and are run as part of the maven **test**
+lifecycle. The surefire plugin will pick up classes that end in the following:
+
+```text
+**/*Test.java
+**/*Tests.java
+**/*TestCase.java
 ```
 
-## Main Classes
+Use **-DskipTests** to avoid running unit tests.
 
-1) REPL
-2) Share
-3) Get
-4) Delete
-5) Register
-6) Activate
+### Integration Tests
 
-**Note:** Each of these classes requires a different set of arguments, make
-sure to read the help text and provide necessary arguments.
+These depend on running the atsign virtual environment and are run as part
+of the maven **verify** lifecycle. The failsafe plugin will pick up classes that
+end in the following:
 
-### Register
-
-A class that accepts command line arguments which are used to fetch a free
-atsign and register it to the email provided. Further, this atsign can be
-activated using a verification code sent to the registered email.
-
-To run use the following command:
-
-```shell
-java -cp "target/at_client-1.0-SNAPSHOT.jar:target/lib/*" \
-org.atsign.client.cli.Register -e email@example.com
+```text
+**/*IT.java
 ```
 
-### Register with SUPER_API Key
+Use **-DskipITs** to avoid running integration tests.
 
-Register can also be used with a SUPER_API Key that has privileges to preset
-and atsign with an activation code.
+The integration tests check to see if a virtual env is running. If not they will
+attempt to start one. This requires dockerd or desktop docker to be running.
 
-To run use the following command:
+For CI, "standing up" and then "tearing down" the docker container is the intended
+behavior. However, for a developer this will be slow so it's preferable to "standup"
+the virtual env independently, like this:
 
 ```shell
-java -cp "target/at_client-1.0-SNAPSHOT.jar:target/lib/*" \
-org.atsign.client.cli.Register -k <SUPER_API Key>
+cd at_client/src/test/resources/org/atsign/virtualenv
+docker compose -f up
 ```
 
-When using the SUPER_API Key to register an atsign, the following sequence of
-calls take place:
-1) User provides at_java/Register with the SUPER_API Key passed as an argument
-2) at_java calls the AtSign Registrar API* Endpoint(get-atsign) with the
-SUPER_API Key provided
-3) The AtSign registrar API responds with an AtSign-ActivationKey pair
-4) at_java now call the AtSign Registrar API* Endpoint(activate-atsign) with
-the AtSign-ActivationKey pair
-5) The API responds with a json containing the CRAM_KEY* for the concerned
-atsign
-6) This CRAM_KEY* can be used to activate the atsign further making it usable
-7) at_java does the activation automatically for you and stores your atKeys*
-file at path '~/.atsign/keys'
-8) Now the atsign is activated and the atKeys file can be used to
-authenticate and perform protected operation with/on the atSign.
+The start-up can take a few minutes and involves running scripts that install the
+test configuration. The environment is ready to test with when you see the
+following log output:
 
-### Things to know about at_platform
+```text
+...
+virtualenv-1  | SHOUT|...| install_PKAM_Keys |cramAndPkamAuth successful for @chris
+virtualenv-1  | SHOUT|...| install_PKAM_Keys |cramAndPkamAuth successful for @policy1
+virtualenv-1  | SHOUT|...| install_PKAM_Keys |cramAndPkamAuth successful for @emoji
+```
 
-1) Register: This is a class in at_java that has the functionality to call
-the necessary API, handle responses in order to fetch and register atsigns.
-2) AtSign Registrar API: An AtSign service that is responsible for handling
-atsign's server creation, registration, authentication, reset and deletion.
-3) SUPER_API Key
-   * All calls to the AtSign Registrar API require an API_KEY. But the
-   SUPER_API Key has some additional privileges.
-   * SUPER_API Keys have the privilege to preset an AtSign with an activation
-   key so that this AtSign can be activated without manually entering a
-   verification code that is sent to the registered email.
-   * All SUPER_API Keys have a name containing two elements [say pre and
-   post], all the atsigns generated using this API_Key will be of the
-   following format: (pre)atsign(post). Now the atsign will be @preatsignpost.
-   This is done to separate atsigns generated using SUPER_API Keys to the
-   atsigns that are generated through other methods.
-4) CRAM_KEY: This is an authentication key that will be used for a one-time
-authentication to activate an atsign which allows for assigning random,
-secure non-symmetric keypairs which will be further stored in the users
-atKeys file.
-   * Note: CRAM_KEY will be deleted from the atsign server after an atKeys
-   file has been generated, so only you have the keys to authenticate into
-   your atsign.
-5) atKeys file: This will be a file generated during activation of an atsign
-that stores all the keys necessary for authenticating into atSign
-   * That would mean users have to keep this file in a secured location
-   * Users should keep this file safe, as there's only one copy of this file
-   and losing it would mean the user would be unable to log in to the atsign.
-   * If lost, users can reset the atsign and get a new atKeys file. This
-   would result in loss of all data stored in the atsign's server.
+The tests require test keys (CRAM keys and atKeys) which the virtual env was
+built with. The pom contains a plugin which downloads the
+[at_demo_data](https://pub.dev/packages/at_demo_data) package and unpacks it
+under target. When the tests run this is where they expect to find keys. The
+release version is specified as property in the POM and needs to be periodically
+updated to the latest release.
 
-### Code Style And Formatting
+**Note:** The integration tests are designed to reset the virtual env as best as
+possible. This relies on teardown steps. If you are debugging tests and terminate
+the execution then this can leave the virtual env in an unreset state. Running
+the test again might fail because of this BUT that teardown should successfully
+reset the env and allow the next run to succeed. In extreme circumstances it may
+be necessary to reset the docker container, like this:
 
-The maven pom contains the following plugins to enforce a consistent coding
+```shell
+cd at_client/src/test/resources/org/atsign/virtualenv
+docker compose -f down
+docker compose -f up
+```
+
+## Virtual Environment
+
+This is a docker image that bundles the following:
+
+* redis
+* root server
+* multiple at_servers in different states of configuration
+
+The docker image is published as part of the
+[at_server](https://github.com/atsign-foundation/at_server) repository.
+
+The keys (CRAM secrets, pre-cut AtKeys) are part the
+[at_demos](https://github.com/atsign-foundation/at_demos) repository.
+
+The pom.xml for modules which run have integration tests include a plugin
+which downloads the at_demos package to target.
+
+## Code Style And Formatting
+
+The maven poms contain the following plugins to enforce a consistent coding
 style and format.
 
 * [checkstyle](https://checkstyle.org)
@@ -170,8 +141,8 @@ style and format.
 
 The rules which configure the respective plugins are here
 
-* [config/checkstyle.xml](config/checkstyle.xml)
-* [config/java-format.xml](config/java-format.xml)
+* [checkstyle.xml](config/checkstyle.xml)
+* [java-format.xml](config/java-format.xml)
 
 Run the following maven command run the checks:
 
@@ -185,17 +156,17 @@ Run the following maven command to fix the spotless violations:
 mvn spotless:apply
 ```
 
-#### Intellij
+### Intellij
 
 To configure Intellij to use the same settings
-1. Add the **Adaptor for Eclopse Code Formatter** plugin and configure in
+1. Add the **Adaptor for Eclipse Code Formatter** plugin and configure in
 **Settings -> Adaptor for Eclipse Code Formatter** by setting
 **Eclipse workspace/project folder or config file** as
 config/java-format.xml
 2. Add **CheckStyle-IDEA** plugin and configure in
 **Settings -> Tools -> Checkstyle** by adding config/checkstyle.xml
 
-### Contributions welcome
+## Contributions welcome
 
 All of our software is open with intent. We welcome contributions - we want
 pull requests, and we want to hear about issues. See also

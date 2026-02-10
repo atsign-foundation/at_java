@@ -1,7 +1,32 @@
-# AtSign Java SDK
+# Java Client SDK
+
 This module contains the AtSign Java SDK.
 
-Add the following Maven configuration to your pom in order to use the latest version of this library.
+## Using the SDK
+
+If you are using maven, add the following to your pom.xml
+
+```xml
+  <dependencies>
+    <dependency>
+      <groupId>org.atsign</groupId>
+      <artifactId>at_client</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+  </dependencies>
+```
+
+If you are using gradle, add the following to your build.gradle
+
+```text
+dependencies {
+    implementation 'org.atsign:at_client:1.0.0'
+}
+```
+
+### Snapshot Version
+
+The latest snapshot version can be added as a maven dependency like this...
 
 ```xml
   <repositories>
@@ -22,96 +47,163 @@ Add the following Maven configuration to your pom in order to use the latest ver
     <dependency>
       <groupId>org.atsign</groupId>
       <artifactId>at_client</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
+      <version>1.0.1-SNAPSHOT</version>
     </dependency>
   </dependencies>
 ```
 
+## Logging
+
+The SDK uses the slf4j-api. It is up to you to decide which slf4j binding to use.
+See [slf4j providers](https://slf4j.org/manual.html#swapping).
+
 ## Dependencies
 
-The library currently depends on the following
+The SDK currently depends on the following
 
-* Bouncycastle
-* Jackson
-* Pico CLI
+* Bouncycastle (encryption, decryption, and cryptography utilities)
+* Jackson (support for JSON and YAML encoding and decoding)
+* Pico CLI (lightweight command line interface framework)
+* Slf4j api (Simple logging facade that can be bound a variety of logging
+  frameworks)
 
-## Developer Instructions
+## Example Usage
 
-The following command will compile, run unit tests and integration tests
+The command line classes under
+[src/main/java/org/atsign/client/cli](src/main/java/org/atsign/client/cli)
+serve as simple examples of how to instantiate an AtClient instance and invoke its
+interface.
 
-```shell
-mvn clean install
-```
+See also the [examples](../examples) module.
 
-### Unit Tests
+---
 
-These have no external dependencies. 
+## Command Line Utilities
 
-The following command will compile and run these
+The following utilities provide a simple way to test behavior as-well as illustrating
+the fundamentals of using the SDK.
 
-```shell
-mvn clean test
-```
+**Note:** The example command lines use the **exec-maven-plugin** as this will handle
+setting the classpath (see Dependencies section above).
 
-The surefire plugin should pick up classes that end in the following
+**Note:** The example command lines which include vip.ve.atsign.zone:64 assume that
+you are running the virtual environment (see section below).
 
-```text
-**/*Test.java
-**/*Tests.java
-**/*TestCase.java
-```
+### Share
 
-### Integration Tests
-
-These depend on running the at virtual environment. The integration tests check to see if a virtual env is running. 
-If not they will attempt to start one. This requires dockerd or desktop docker to be running. For CI standing up
-and then tearing down the docker container is the intended behavior. For a developer this can be expensive so it's
-preferable to "standup" the virtual env independently.
+The utility **org.atsign.client.cli.Share** can be used to share a value with
+another AtSign. In this case, **@gary** is sharing the key value pair
+(**message**, **hello**) with **@colin**.
 
 ```shell
-cd src/test/resources/org/atsign/virtualenv
-docker compose up
+mvn exec:java -Dexec.mainClass=org.atsign.client.cli.Share \
+  -Dexec.args="vip.ve.atsign.zone:64 @gary @colin message hello"
 ```
 
-The start up can take a few minutes and involves running scripts that install test configuration. The environment
-is ready to test with when you see the following log output
+### Get
 
-```text
-...
-virtualenv-1  | SHOUT|2026-02-04 07:16:40.933352| install_PKAM_Keys |cramAndPkamAuth successful for @chris
-virtualenv-1  | SHOUT|2026-02-04 07:16:40.933750| install_PKAM_Keys |cramAndPkamAuth successful for @policy1
-virtualenv-1  | SHOUT|2026-02-04 07:16:40.934626| install_PKAM_Keys |cramAndPkamAuth successful for @emoji
-```
-
-The following command will compile, run unit tests and then run the integration tests
+The utility **org.atsign.client.cli.Get** can be used to get a value that has
+been shared by another AtSign. In this case **@colin** is getting the value
+for the key **message** which has been shared by **@gary**.
 
 ```shell
-mvn clean verify
+mvn exec:java -Dexec.mainClass=org.atsign.client.cli.Get \
+  -Dexec.args="vip.ve.atsign.zone:64 @colin @gary message"
 ```
 
-The tests require test keys (CRAM keys and atKeys)  which the virtual env was built with. The pom contains a plugin
-which downloads the at_demo_data package [https://pub.dev/packages/at_demo_data](https://pub.dev/packages/at_demo_data)
-and unpacks it under target. The release version is specified as property in the POM and needs to be periodically
-updated to the latest release.
+### Scan
 
-The failsafe plugin should pick up classes that end in the following
+The utility **org.atsign.client.cli.Scan** can be used to list keys that exist
+at the AtServer of an AtSign. In this case **@gary** is listing the keys at his
+own AtServer.
 
-```text
-**/*IT.java
+```shell
+mvn exec:java -Dexec.mainClass=org.atsign.client.cli.Scan \
+  -Dexec.args="vip.ve.atsign.zone:64 @gary .*"
 ```
 
-### Virtual Environment
+### Delete
 
-This is a docker image that bundles the following.
-* redis
-* root server
-* multiple pre-configured at servers
+The utility **org.atsign.client.cli.Delete** can be used to delete a value that
+was previously shared. In this case, **@gary** is deleting the key value for
+**message** that was previously shared with **@colin**.
 
-This docker image is built as part of this repo
+```shell
+mvn exec:java -Dexec.mainClass=org.atsign.client.cli.Delete \
+  -Dexec.args="vip.ve.atsign.zone:64 @gary @colin message"
+```
 
-[https://github.com/atsign-foundation/at_server](https://github.com/atsign-foundation/at_server)
+### Register
 
-The keys (CRAM secrets, pre-cut AtKeys) are part of this repo
+The utility **org.atsign.client.cli.Register** can be used to perform
+registration operations.
 
-[https://github.com/atsign-foundation/at_demos](https://github.com/atsign-foundation/at_demos)
+```shell
+mvn exec:java -Dexec.mainClass=org.atsign.client.cli.Register -Dexec.args="--help"
+```
 
+When using the SUPER_API Key to register an atsign, the following sequence of
+calls take place:
+1. User provides at_java/Register with the SUPER_API Key passed as an argument
+2. at_java calls the AtSign Registrar API* Endpoint(get-atsign) with the
+   SUPER_API Key provided
+3. The AtSign registrar API responds with an AtSign-ActivationKey pair
+4. at_java now call the AtSign Registrar API* Endpoint(activate-atsign) with
+   the AtSign-ActivationKey pair
+5. The API responds with a json containing the CRAM_KEY* for the concerned
+   atsign
+6. This CRAM_KEY* can be used to activate the atsign further making it usable
+7. at_java does the activation automatically for you and stores your atKeys*
+   file at path '~/.atsign/keys'
+8. Now the atsign is activated and the atKeys file can be used to
+   authenticate and perform protected operation with/on the atSign.
+
+#### Things to know about at_platform
+
+1. Register: This is a class in at_java that has the functionality to call
+   the necessary API, handle responses in order to fetch and register atsigns.
+2. AtSign Registrar API: An AtSign service that is responsible for handling
+   atsign's server creation, registration, authentication, reset and deletion.
+3. SUPER_API Key
+   All calls to the AtSign Registrar API require an API_KEY. But the
+   SUPER_API Key has some additional privileges.
+   SUPER_API Keys have the privilege to preset an AtSign with an activation
+   key so that this AtSign can be activated without manually entering a
+   verification code that is sent to the registered email.
+   All SUPER_API Keys have a name containing two elements [say pre and
+   post], all the atsigns generated using this API_Key will be of the
+   following format: (pre)atsign(post). Now the atsign will be @preatsignpost.
+   This is done to separate atsigns generated using SUPER_API Keys to the
+   atsigns that are generated through other methods.
+4. CRAM_KEY: This is an authentication key that will be used for a one-time
+   authentication to activate an atsign which allows for assigning random,
+   secure non-symmetric keypairs which will be further stored in the users
+   atKeys file. **Note:** CRAM_KEY will be deleted from the atsign server after
+   an atKeys file has been generated, so only you have the keys to authenticate
+   into your atsign.
+5. atKeys file: This will be a file generated during activation of an atsign
+   that stores all the keys necessary for authenticating into atSign
+   That would mean users have to keep this file in a secured location
+   Users should keep this file safe, as there's only one copy of this file
+   and losing it would mean the user would be unable to log in to the atsign.
+   If lost, users can reset the atsign and get a new atKeys file. This
+   would result in loss of all data stored in the atsign's server.
+
+### Activate
+
+The utility **org.atsign.client.cli.Activate** can be used to perform
+onboarding and enrollment operations. Running using the **exec-maven-plugin**
+will handle the classpath dependencies.
+
+```shell
+mvn exec:java -Dexec.mainClass=org.atsign.client.cli.Activate -Dexec.args="--help"
+```
+
+### DumpKeys
+
+The utility **org.atsign.client.cli.DumpKeys** can be used to dumps the contents
+of an AtSigns AtKeys. In this case **@gary**.
+
+```shell
+mvn exec:java -Dexec.mainClass=org.atsign.client.cli.DumpKeys -Dexec.args="@gary"
+```
