@@ -1,6 +1,5 @@
 package org.atsign.common;
 
-import java.text.ParseException;
 
 import org.atsign.client.api.Secondary;
 import org.atsign.client.util.KeyStringUtil;
@@ -9,10 +8,16 @@ import org.atsign.common.exceptions.MalformedKeyException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+/**
+ * Parent class for key classes in the Atsign Platform
+ */
 @SuppressWarnings("unused")
 public abstract class Keys {
   public static AtSign defaultAtSign;
 
+  /**
+   * Base class for keys in the Atsign Platform
+   */
   public static abstract class AtKey {
     public String name;
     public AtSign sharedWith;
@@ -65,7 +70,9 @@ public abstract class Keys {
     }
   }
 
-  /// Represents a public key.
+  /**
+   * Represents a "public key" in the Atsign Platform
+   */
   public static class PublicKey extends AtKey {
     public PublicKey() {
       this(defaultAtSign);
@@ -79,7 +86,9 @@ public abstract class Keys {
     }
   }
 
-  /// Represents a Self key.
+  /**
+   * Represents a "self key" in the Atsign Platform
+   */
   public static class SelfKey extends AtKey {
     public SelfKey() {
       this(defaultAtSign);
@@ -98,7 +107,9 @@ public abstract class Keys {
     }
   }
 
-  /// Represents a key shared to another atSign.
+  /**
+   * Represents a "shared key" in the Atsign Platform
+   */
   public static class SharedKey extends AtKey {
     public SharedKey(AtSign sharedBy, AtSign sharedWith) {
       super(sharedBy);
@@ -138,7 +149,9 @@ public abstract class Keys {
     }
   }
 
-  // Represents a Private hidden key.
+  /**
+   * Represents a "private hidden key" in the Atsign Platform
+   */
   public static class PrivateHiddenKey extends AtKey {
     public PrivateHiddenKey() {
       this(defaultAtSign);
@@ -155,7 +168,7 @@ public abstract class Keys {
    *
    * @param fullAtKeyName eg: @bob:phone@alice
    * @return AtKey object
-   * @throws AtException
+   * @throws AtException if key string doesn't match recognized structure
    */
   @SuppressWarnings("JavaDoc")
   public static AtKey fromString(String fullAtKeyName) throws AtException {
@@ -197,15 +210,15 @@ public abstract class Keys {
   }
 
   /**
-   * Generate an AtKey object whose metadata is populated from the given `llookup:meta:<keyName>`
+   * Generate an {@link AtKey} whose metadata is populated from the given `llookup:meta:key`
    * response.
    *
    * @param fullAtKeyName The full AtKey name, eg: `@bob:phone@alice`
-   * @param metadataResponse `llookup:meta:<keyName>` rawResponse from secondary server
-   * @return AtKey whose metadata is populated from the llookup:meta:<keyName> rawResponse from
+   * @param metadataResponse `llookup:meta:key` rawResponse from secondary server
+   * @return AtKey whose metadata is populated from the llookup:meta:key rawResponse from
    *         secondary server
-   * @throws AtException
-   * @throws ParseException
+   * @throws AtException if key string doesn't match recognized structure
+   * @throws JsonProcessingException if metadataResponse is invalid JSON
    */
   @SuppressWarnings("JavaDoc")
   public static AtKey fromString(String fullAtKeyName, Secondary.Response metadataResponse)

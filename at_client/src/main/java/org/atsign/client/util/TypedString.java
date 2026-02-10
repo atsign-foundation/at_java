@@ -2,6 +2,9 @@ package org.atsign.client.util;
 
 import static org.atsign.client.util.Preconditions.checkNotNull;
 
+/**
+ * Base class for simple classes have String values
+ */
 public abstract class TypedString {
 
   private final String value;

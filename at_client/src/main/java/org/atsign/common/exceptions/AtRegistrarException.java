@@ -2,7 +2,11 @@ package org.atsign.common.exceptions;
 
 import org.atsign.common.AtException;
 
+/**
+ * Occurs if there is an exception during registration
+ */
 public class AtRegistrarException extends AtException {
+
   public AtRegistrarException(String message) {
     super(message);
   }

@@ -2,6 +2,9 @@ package org.atsign.client.util;
 
 import java.io.*;
 
+/**
+ * Utility class
+ */
 public class FileUtil {
 
   // This method converts a file to a byte array and returns the byte array
@@ -14,7 +17,7 @@ public class FileUtil {
   }
 
   // This method converts a byte array to a file and returns the file
-  public static File convert(byte data[], String fileName) throws IOException {
+  public static File convert(byte[] data, String fileName) throws IOException {
     File file = new File(fileName);
     OutputStream os = new FileOutputStream(file);
     os.write(data);

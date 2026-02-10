@@ -48,5 +48,19 @@
     <module name="OneStatementPerLine"/>
     <module name="MultipleVariableDeclarations"/>
 
+    <!-- Javadoc -->
+    <!-- Require Javadoc comments to exist -->
+    <module name="MissingJavadocType">
+      <property name="scope" value="public"/>
+      <property name="skipAnnotations" value="Generated"/>
+    </module>
+
+    <!-- Validate the content of existing Javadocs -->
+    <module name="JavadocType">
+      <property name="scope" value="public"/>
+      <property name="allowMissingParamTags" value="false"/>
+      <property name="allowUnknownTags" value="true"/>
+    </module>
+
   </module>
 </module>

@@ -14,7 +14,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- *
+ * In memory implementation of {@link AtEventBus} which will asynchronously dispatch
+ * events to registered listeners.
  */
 @Slf4j
 public class SimpleAtEventBus implements AtEventBus {

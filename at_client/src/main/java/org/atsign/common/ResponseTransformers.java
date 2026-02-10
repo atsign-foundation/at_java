@@ -1,6 +1,7 @@
 package org.atsign.common;
 
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -9,16 +10,17 @@ import org.atsign.client.api.Secondary.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * Parent class for transformers used to convert {@link Response} into fully decoded class instances
+ */
 @Slf4j
 public class ResponseTransformers {
   static final ObjectMapper mapper = new ObjectMapper();
 
-  /// Transforms the data from type T to type V
-  public interface ResponseTransformer<T, V> {
-    V transform(T value);
-  }
-
-  public static class ScanResponseTransformer implements ResponseTransformer<Response, List<String>> {
+  /**
+   * Transformer for scan command responses
+   */
+  public static class ScanResponseTransformer implements Function<Response, List<String>> {
 
     private final Predicate<String> filter;
 
@@ -31,7 +33,7 @@ public class ResponseTransformers {
     }
 
     @Override
-    public List<String> transform(Response value) {
+    public List<String> apply(Response value) {
 
       if (value.getRawDataResponse() == null || value.getRawDataResponse().isEmpty()) {
         return null;
@@ -48,19 +50,23 @@ public class ResponseTransformers {
 
   }
 
-  public static class NotifyResponseTransformer implements ResponseTransformer<Response, String> {
+  /**
+   * Transformer for notify command responses
+   */
+  public static class NotifyResponseTransformer implements Function<Response, String> {
     @Override
-    public String transform(Response value) {
-      throw new RuntimeException("Not Implemented");
+    public String apply(Response value) {
+      throw new UnsupportedOperationException();
     }
   }
 
-
-  public static class NotificationStatusResponseTransformer
-      implements ResponseTransformer<Response, NotificationStatus> {
+  /**
+   * Transformer for notify (status) command responses
+   */
+  public static class NotificationStatusResponseTransformer implements Function<Response, NotificationStatus> {
     @Override
-    public NotificationStatus transform(Response value) {
-      throw new RuntimeException("Not Implemented");
+    public NotificationStatus apply(Response value) {
+      throw new UnsupportedOperationException();
     }
   }
 }

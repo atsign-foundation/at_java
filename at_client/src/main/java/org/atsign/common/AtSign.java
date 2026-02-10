@@ -1,5 +1,8 @@
 package org.atsign.common;
 
+/**
+ * The identity of people, systems and devices in the Atsign Platform
+ */
 public class AtSign {
   public final String atSign;
   private final String withoutPrefix;
@@ -49,7 +52,7 @@ public class AtSign {
    * Returns a formatted atSign
    *
    * @param atSignStr e.g. "@bob"
-   * @return formatted atSign (e.g. "alice " --> "@alice")
+   * @return formatted atSign (e.g. "alice " {@code -->} "@alice")
    */
   public static String formatAtSign(String atSignStr) {
     atSignStr = atSignStr.trim();

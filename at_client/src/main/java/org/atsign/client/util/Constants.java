@@ -1,5 +1,8 @@
 package org.atsign.client.util;
 
+/**
+ * Atsign Platform constants
+ */
 public final class Constants {
   private Constants() {}
 

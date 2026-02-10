@@ -4,6 +4,9 @@ import org.atsign.common.Metadata;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Data class used to hold a response to lookup, llookup or plookup commands
+ */
 public class LookupResponse {
 
   @JsonProperty

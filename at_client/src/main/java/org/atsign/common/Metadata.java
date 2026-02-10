@@ -15,7 +15,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 
-
+/**
+ * Data class which models key metadata in the Atsign Platform
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Metadata {
   static final ObjectMapper mapper = new ObjectMapper();
@@ -240,6 +242,9 @@ public class Metadata {
     return metadata;
   }
 
+  /**
+   * Jackson serializer for DateTime strings
+   */
   @SuppressWarnings("unused")
   public static class AtStringDateTimeDeserializer extends StdDeserializer<OffsetDateTime> {
     public AtStringDateTimeDeserializer() {

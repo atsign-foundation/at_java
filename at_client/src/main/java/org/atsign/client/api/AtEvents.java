@@ -4,13 +4,20 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- *
+ * Parent interface for related interfaces
  */
 public interface AtEvents {
+
+  /**
+   * Represents something that will receive events
+   */
   interface AtEventListener {
     void handleEvent(AtEventType eventType, Map<String, Object> eventData);
   }
 
+  /**
+   * Represents something that can dispatch events to registered {@link AtEventListener}
+   */
   interface AtEventBus {
     /**
      * @param listener to handle various events which originate from Secondaries
@@ -26,6 +33,10 @@ public interface AtEvents {
     int publishEvent(AtEventType eventType, Map<String, Object> eventData);
 
   }
+
+  /**
+   * Different event types
+   */
   enum AtEventType {
     // events which originate from the client's "Monitor" connection, which asynchronously
     // receives notification events from its secondary server

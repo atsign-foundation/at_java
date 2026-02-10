@@ -22,7 +22,6 @@ import org.atsign.common.Keys.SelfKey;
 import org.atsign.common.Keys.SharedKey;
 import org.atsign.common.exceptions.AtIllegalArgumentException;
 import org.atsign.common.exceptions.AtInvalidSyntaxException;
-import org.atsign.common.exceptions.AtNotYetImplementedException;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 
@@ -116,7 +115,7 @@ public class REPL {
                 String value = client.get(sk).get();
                 System.out.println("  => \033[31m" + value + "\033[0m");
               } else if (keyType.equals(KeyStringUtil.KeyType.PRIVATE_HIDDEN_KEY)) {
-                throw new AtNotYetImplementedException("PrivateHiddenKey is not implemented yet");
+                throw new UnsupportedOperationException("PrivateHiddenKey is not implemented yet");
               } else {
                 throw new AtInvalidSyntaxException("Could not evaluate the key type of: " + fullKeyName);
               }
@@ -138,7 +137,7 @@ public class REPL {
                 String data = client.put(sk, value).get();
                 System.out.println("  => \033[31m" + data + "\033[0m");
               } else if (keyType.equals(KeyStringUtil.KeyType.PRIVATE_HIDDEN_KEY)) {
-                throw new AtNotYetImplementedException("PrivateHiddenKey is not implemented yet");
+                throw new UnsupportedOperationException("PrivateHiddenKey is not implemented yet");
               } else {
                 throw new AtIllegalArgumentException("Could not evaluate the key type of: " + fullKeyName);
               }
@@ -166,7 +165,7 @@ public class REPL {
                 String data = client.delete(sk).get();
                 System.out.println("  => \033[31m" + data + "\033[0m");
               } else if (keyType.equals(KeyStringUtil.KeyType.PRIVATE_HIDDEN_KEY)) {
-                throw new AtNotYetImplementedException("PrivateHiddenKey is not implemented yet");
+                throw new UnsupportedOperationException("PrivateHiddenKey is not implemented yet");
               } else {
                 throw new AtIllegalArgumentException("Could not evaluate the key type of: " + fullKeyName);
               }
@@ -195,7 +194,7 @@ public class REPL {
     System.out.print(ansi().bold().fg(Ansi.Color.MAGENTA).a(client.getAtSign() + "@ ").reset());
   }
 
-  public static class REPLEventListener implements AtEvents.AtEventListener {
+  private static class REPLEventListener implements AtEvents.AtEventListener {
     private final AtClient client;
 
     void writePrompt() {

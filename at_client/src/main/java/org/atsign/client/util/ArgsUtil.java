@@ -3,6 +3,10 @@ package org.atsign.client.util;
 import org.atsign.client.api.Secondary;
 import org.atsign.client.api.impl.connections.AtRootConnection;
 
+/**
+ * Utility class which contains a method for creating an
+ * {@link org.atsign.client.api.Secondary.AddressFinder}
+ */
 public class ArgsUtil {
   public static Secondary.AddressFinder createAddressFinder(String rootUrl) {
     Secondary.AddressFinder addressFinder;

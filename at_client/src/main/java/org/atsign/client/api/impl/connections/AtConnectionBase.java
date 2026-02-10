@@ -14,10 +14,15 @@ import org.atsign.client.api.AtEvents;
 import org.atsign.common.AtException;
 
 /**
- * @see org.atsign.client.api.AtConnection
+ * Core implementation of an {@link AtConnection} which uses Java NIO. This
+ * class contains the implementation of the socket connect / disconnect,
+ * writing atprotocol commands and reading atprotocol responses.
+ * If the socket becomes disconnected then it will be re-connected as part
+ * of sending the next command.
  */
 @Slf4j
 public abstract class AtConnectionBase implements AtConnection {
+
   private final String url;
 
   @Override

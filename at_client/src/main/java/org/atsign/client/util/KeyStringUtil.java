@@ -5,10 +5,26 @@ import static org.atsign.client.util.Preconditions.checkNotNull;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Utility class which parses a key string and can be used to extract key characteristics.
+ * Specifically:
+ * <ul>
+ * <li>{@link KeyType}</li>
+ * <li>namespace</li>
+ * <li>unqualfied key name</li>
+ * <li>"shared by" {@link org.atsign.common.AtSign}</li>
+ * <li>"shared with" {@link org.atsign.common.AtSign}</li>
+ * <li>whether key is cached on the {@link org.atsign.client.api.Secondary}</li>
+ * <li>whether key is hidden</li>
+ * </ul>
+ */
 public class KeyStringUtil {
 
   private static final Pattern NAMESPACE_QUALIFIED_KEY_NAME = Pattern.compile("^(?!shared_key)(.+)\\.([^.]+)$");
 
+  /**
+   * Different types of keys in the Atsign Platform
+   */
   public enum KeyType {
     PUBLIC_KEY, // PublicKey
     SHARED_KEY, // SharedKey

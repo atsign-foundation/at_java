@@ -20,6 +20,9 @@ import org.atsign.common.exceptions.AtClientConfigException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * Utility class for loading a saving {@link AtKeys} from the file system
+ */
 @Slf4j
 public class KeysUtil {
 
@@ -27,7 +30,7 @@ public class KeysUtil {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private static final TypeReference<Map<String, String>> STRING_MAP_TYPE = new TypeReference<Map<String, String>>() {};
+  private static final TypeReference<Map<String, String>> STRING_MAP_TYPE = new TypeReference<>() {};
 
   public static final String ATSIGN_KEYS_DIR = "ATSIGN_KEYS_DIR";
   public static final String ATSIGN_KEYS_SUFFIX = "ATSIGN_KEYS_SUFFIX";
@@ -77,7 +80,7 @@ public class KeysUtil {
 
   public static AtKeys loadKeys(File file) throws AtClientConfigException {
     try {
-      return setAtKeysFromJson(new AtKeys(), new String(Files.readAllBytes(file.toPath()), UTF_8));
+      return setAtKeysFromJson(new AtKeys(), Files.readString(file.toPath()));
     } catch (IOException e) {
       throw new AtClientConfigException("failed to read " + file, e);
     }

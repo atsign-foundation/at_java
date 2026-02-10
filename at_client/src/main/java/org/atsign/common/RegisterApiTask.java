@@ -7,6 +7,8 @@ import org.atsign.client.util.RegisterUtil;
 
 /**
  * Represents a task in an AtSign registration cycle
+ *
+ * @param <V> data type that this task returns
  */
 public abstract class RegisterApiTask<V> {
 
@@ -42,11 +44,10 @@ public abstract class RegisterApiTask<V> {
   abstract public V run();
 
   /**
-   * In case the task has returend an {@link #ApiCallStatus} of retry, this method is called. Re-runs
+   * In case the task has returned an {@link ApiCallStatus} of retry, this method is called. Re-runs
    * the task.
    *
-   * @return {@link #result} object with necessary information collected in the corresponding retry of
-   *         the API call
+   * @return true if accumulated retry count is still less than the max retry threshold
    */
   public boolean shouldRetry() {
     return retryCount < maxRetries;

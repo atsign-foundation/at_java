@@ -228,11 +228,6 @@
               <goals>
                 <goal>jar</goal>
               </goals>
-              <configuration>
-                <failOnError>false</failOnError>
-                <additionalOptions>-Xdoclint:none</additionalOptions>
-                <quiet>true</quiet>
-              </configuration>
             </execution>
           </executions>
         </plugin>

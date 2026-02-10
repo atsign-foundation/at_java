@@ -29,12 +29,37 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.Option;
 
+/**
+ * Base class for Command Line Interface utilities. Holds common fields such as root server
+ * the {@link AtSign} which is connecting and the file which contains the {@link AtKeys}
+ *
+ * @param <T> used to provide fluent builder style API
+ */
 public abstract class AbstractCli<T extends AbstractCli<T>> {
 
+  /**
+   * models server response string which is non-empty JSON map
+   */
   protected static final Pattern DATA_JSON_NON_EMPTY_MAP = Pattern.compile("data:(\\{.+})");
+
+  /**
+   * models server response string which is JSON map
+   */
   protected static final Pattern DATA_JSON_MAP = Pattern.compile("data:(\\{.*})");
+
+  /**
+   * models server response string which is non-empty JSON list
+   */
   protected static final Pattern DATA_JSON_NO_EMPTY_LIST = Pattern.compile("data:(\\[.+])");
+
+  /**
+   * models server response string which is integer
+   */
   protected static final Pattern DATA_INT = Pattern.compile("data:\\d+");
+
+  /**
+   * models server response string containing no whitespace
+   */
   public static final Pattern DATA_NON_WHITESPACE = Pattern.compile("data:(\\S+)");
 
   protected String rootUrl = "root.atsign.org";

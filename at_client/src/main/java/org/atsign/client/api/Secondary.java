@@ -16,8 +16,10 @@ import org.atsign.common.exceptions.*;
  * talks, via TLS over a secure socket, to the cloud Secondary server.
  * <br>
  * As we implement client-side offline storage, performance caching etc., we can expect e.g.
- * <br/>
- * AtClient -> FastCacheSecondary -> OfflineStorageSecondary -> RemoteSecondary<br/>
+ * <br>
+ * AtClient {@code ->} FastCacheSecondary {@code ->} OfflineStorageSecondary {@code ->}
+ * RemoteSecondary
+ * <br>
  * where FastCacheSecondary might be an in-memory LRU cache, and OfflineStorageSecondary is a
  * persistent cache of some or all of the information in the RemoteSecondary. To make this
  * possible, each Secondary will need to be able to fully handle the @ protocol, thus the
@@ -41,6 +43,9 @@ public interface Secondary extends AtEvents.AtEventListener, Closeable {
 
   boolean isMonitorRunning();
 
+  /**
+   * Used to hold the partially decoded response from a {@link Secondary}
+   */
   class Response {
     private String rawDataResponse = null;
     private String rawErrorResponse;
@@ -99,41 +104,41 @@ public interface Secondary extends AtEvents.AtEventListener, Closeable {
       if (!isError()) {
         return null;
       }
-      if ("AT0001".equals(errorCode)) {
+      if (AtServerRuntimeException.CODE.equals(errorCode)) {
         return new AtServerRuntimeException(errorText);
-      } else if ("AT0003".equals(errorCode)) {
+      } else if (AtInvalidSyntaxException.CODE.equals(errorCode)) {
         return new AtInvalidSyntaxException(errorText);
-      } else if ("AT0005".equals(errorCode)) {
+      } else if (AtBufferOverFlowException.CODE.equals(errorCode)) {
         return new AtBufferOverFlowException(errorText);
-      } else if ("AT0006".equals(errorCode)) {
+      } else if (AtOutboundConnectionLimitException.CODE.equals(errorCode)) {
         return new AtOutboundConnectionLimitException(errorText);
-      } else if ("AT0007".equals(errorCode)) {
+      } else if (AtSecondaryNotFoundException.CODE.equals(errorCode)) {
         return new AtSecondaryNotFoundException(errorText);
-      } else if ("AT0008".equals(errorCode)) {
+      } else if (AtHandShakeException.CODE.equals(errorCode)) {
         return new AtHandShakeException(errorText);
-      } else if ("AT0009".equals(errorCode)) {
+      } else if (AtUnauthorizedException.CODE.equals(errorCode)) {
         return new AtUnauthorizedException(errorText);
-      } else if ("AT0010".equals(errorCode)) {
+      } else if (AtInternalServerError.CODE.equals(errorCode)) {
         return new AtInternalServerError(errorText);
-      } else if ("AT0011".equals(errorCode)) {
+      } else if (AtInternalServerException.CODE.equals(errorCode)) {
         return new AtInternalServerException(errorText);
-      } else if ("AT0012".equals(errorCode)) {
+      } else if (AtInboundConnectionLimitException.CODE.equals(errorCode)) {
         return new AtInboundConnectionLimitException(errorText);
-      } else if ("AT0013".equals(errorCode)) {
+      } else if (AtBlockedConnectionException.CODE.equals(errorCode)) {
         return new AtBlockedConnectionException(errorText);
-      } else if ("AT0015".equals(errorCode)) {
+      } else if (AtKeyNotFoundException.CODE.equals(errorCode)) {
         return new AtKeyNotFoundException(errorText);
-      } else if ("AT0016".equals(errorCode)) {
+      } else if (AtInvalidAtKeyException.CODE.equals(errorCode)) {
         return new AtInvalidAtKeyException(errorText);
-      } else if ("AT0021".equals(errorCode)) {
+      } else if (AtSecondaryConnectException.CODE.equals(errorCode)) {
         return new AtSecondaryConnectException(errorText);
-      } else if ("AT0022".equals(errorCode)) {
+      } else if (AtIllegalArgumentException.CODE.equals(errorCode)) {
         return new AtIllegalArgumentException(errorText);
-      } else if ("AT0023".equals(errorCode)) {
+      } else if (AtTimeoutException.CODE.equals(errorCode)) {
         return new AtTimeoutException(errorText);
-      } else if ("AT0024".equals(errorCode)) {
+      } else if (AtServerIsPausedException.CODE.equals(errorCode)) {
         return new AtServerIsPausedException(errorText);
-      } else if ("AT0401".equals(errorCode)) {
+      } else if (AtUnauthenticatedException.CODE.equals(errorCode)) {
         return new AtUnauthenticatedException(errorText);
       }
 
@@ -141,6 +146,9 @@ public interface Secondary extends AtEvents.AtEventListener, Closeable {
     }
   }
 
+  /**
+   * Value class for hostname and port tuple
+   */
   class Address {
     public final String host;
     public final int port;
@@ -173,6 +181,10 @@ public interface Secondary extends AtEvents.AtEventListener, Closeable {
     }
   }
 
+  /**
+   * Represents something that, given an {@link AtSign}, can resolve the {@link Address} of the
+   * {@link Secondary} for this {@link AtSign}
+   */
   interface AddressFinder {
     Address findSecondary(AtSign atSign) throws IOException, AtSecondaryNotFoundException;
   }

@@ -14,6 +14,10 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+/**
+ * Utility class which registers bouncycastle as a security {@link Provider} and provides
+ * static methods for the various encryption functions required by Atsign client APIs
+ */
 public class EncryptionUtil {
 
   public static final String SIGNING_ALGO_RSA = "rsa2048";

@@ -17,7 +17,10 @@ import org.atsign.common.AtSign;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- *
+ * A {@link AtMonitorConnection} represents a connection to an AtServer which,
+ * when started will send the atprotocol monitor command and then processes
+ * notifications and heartbeat messages until it is stopped. If the socket disconnects
+ * then it will be automatically reconnected.
  */
 @Slf4j
 public class AtMonitorConnection extends AtSecondaryConnection implements Runnable {

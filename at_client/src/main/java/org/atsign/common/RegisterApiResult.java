@@ -1,11 +1,9 @@
 package org.atsign.common;
 
 /**
- * Stores processed data from Registrar API response
+ * Registrar API response record
  *
- * @data stores actual information extracted from API response
- * @apiCallStatus stores the present status of the API called
- * @atException stores the exception captured in case one occured
+ * @param <T> data type for the response record
  */
 public class RegisterApiResult<T> {
 
