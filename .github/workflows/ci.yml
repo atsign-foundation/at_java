@@ -24,5 +24,7 @@ jobs:
           cache: maven
       - name: Add virtual env entry to hosts file
         run: echo "127.0.0.1    vip.ve.atsign.zone" | sudo tee -a /etc/hosts
+      - name: Echo Docker Version
+        run: docker version
       - name: Build and run all tests
         run: mvn --batch-mode clean install
