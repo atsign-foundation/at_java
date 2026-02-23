@@ -1,65 +1,40 @@
 package org.atsign.common;
 
+import org.atsign.client.util.Preconditions;
+import org.atsign.client.util.TypedString;
+
+
 /**
- * The identity of people, systems and devices in the Atsign Platform
+ * The identity of a person or system in the Atsign Platform
  */
-public class AtSign {
-  public final String atSign;
-  private final String withoutPrefix;
+public class AtSign extends TypedString {
 
-  public AtSign(String atSign) {
-    if (atSign == null || atSign.trim().isEmpty()) {
-      throw new IllegalArgumentException("atSign may not be null or empty");
-    }
-
-    this.atSign = formatAtSign(atSign);
-
-    if ("@".equals(atSign)) {
-      throw new IllegalArgumentException("'" + atSign + "' is not a valid atSign");
-    }
-
-    this.withoutPrefix = this.atSign.substring(1);
+  public AtSign(String s) {
+    super(formatAtSign(s));
   }
 
   public String withoutPrefix() {
-    return withoutPrefix;
-  }
-
-  @Override
-  public String toString() {
-    return atSign;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    AtSign atSign1 = (AtSign) o;
-
-    return atSign.equals(atSign1.atSign);
-  }
-
-  @Override
-  public int hashCode() {
-    return atSign.hashCode();
+    return toString().substring(1);
   }
 
   /**
-   * Returns a formatted atSign
+   * Factory method
    *
-   * @param atSignStr e.g. "@bob"
-   * @return formatted atSign (e.g. "alice " {@code -->} "@alice")
+   * @param s the string representation of the Atsign (can be with our without @ prefix)
+   * @return null is s is null or blank, otherwise the corresponding {@link AtSign} for s
    */
-  public static String formatAtSign(String atSignStr) {
-    atSignStr = atSignStr.trim();
-    if (!atSignStr.startsWith("@")) {
-      atSignStr = "@" + atSignStr;
-    }
-    return atSignStr;
+  public static AtSign createAtSign(String s) {
+    return s != null && !s.isBlank() ? new AtSign(s) : null;
   }
 
+  /**
+   * Returns a formatted atSign, ensuring that there is an @ prefix
+   *
+   * @param s prefix or unprefixed atsign
+   * @return prefixed atsign
+   */
+  public static String formatAtSign(String s) {
+    String result = Preconditions.checkNotNull(s).trim();
+    return result.startsWith("@") ? result : "@" + s;
+  }
 }

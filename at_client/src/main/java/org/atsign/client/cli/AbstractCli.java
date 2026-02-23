@@ -1,10 +1,10 @@
 package org.atsign.client.cli;
 
 import static org.atsign.client.util.Preconditions.checkNotNull;
+import static org.atsign.common.VerbBuilders.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -17,14 +17,12 @@ import org.atsign.client.api.impl.connections.AtSecondaryConnection;
 import org.atsign.client.api.impl.events.SimpleAtEventBus;
 import org.atsign.client.util.AuthUtil;
 import org.atsign.client.util.KeysUtil;
-import org.atsign.client.util.TypedString;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
+import org.atsign.common.Json;
 import org.atsign.common.exceptions.AtSecondaryNotFoundException;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.Option;
@@ -118,15 +116,17 @@ public abstract class AbstractCli<T extends AbstractCli<T>> {
   }
 
   protected static void checkAtServerMatchesAtSign(AtSecondaryConnection connection, AtSign atSign) throws IOException {
-    if (!matchDataJsonList(connection.executeCommand("scan")).contains("signing_publickey" + atSign)) {
+    String command = scanCommandBuilder().build();
+    if (!matchDataJsonList(connection.executeCommand(command)).contains("signing_publickey" + atSign)) {
       // TODO: understand precisely what this means (observed in Dart SDK)
       throw new IllegalStateException("TBC");
     }
   }
 
-  protected static void deleteKey(AtSecondaryConnection connection, String key) {
+  protected static void deleteKey(AtSecondaryConnection connection, String rawKey) {
     try {
-      match(connection.executeCommand("delete:" + key), DATA_INT);
+      String command = deleteCommandBuilder().rawKey(rawKey).build();
+      match(connection.executeCommand(command), DATA_INT);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -175,35 +175,9 @@ public abstract class AbstractCli<T extends AbstractCli<T>> {
     throw ex;
   }
 
-  protected static String encodeKeyValuesAsJson(Object... nameValuePairs) throws Exception {
-    return encodeAsJson(toObjectMap(nameValuePairs));
-  }
-
-  protected static Map<String, Object> toObjectMap(Object... nameValuePairs) {
-    if ((nameValuePairs.length % 2) != 0) {
-      throw new IllegalArgumentException("odd number of parameters");
-    }
-    Map<String, Object> map = new HashMap<>();
-    for (int i = 0; i < nameValuePairs.length; i++) {
-      String key = nameValuePairs[i].toString();
-      Object value = nameValuePairs[++i];
-      if (value instanceof TypedString) {
-        map.put(key, value.toString());
-      } else {
-        map.put(key, value);
-      }
-    }
-    return map;
-  }
-
-  protected static String encodeAsJson(Map<String, ?> map) throws JsonProcessingException {
-    ObjectMapper objectMapper = new ObjectMapper();
-    return objectMapper.writeValueAsString(map);
-  }
-
   protected static Map<String, String> decodeJsonMapOfStrings(String json) {
     try {
-      return new ObjectMapper().readValue(json, new TypeReference<Map<String, String>>() {});
+      return Json.MAPPER.readValue(json, new TypeReference<Map<String, String>>() {});
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -211,7 +185,7 @@ public abstract class AbstractCli<T extends AbstractCli<T>> {
 
   protected static Map<String, Object> decodeJsonMapOfObjects(String json) {
     try {
-      return new ObjectMapper().readValue(json, new TypeReference<Map<String, Object>>() {});
+      return Json.MAPPER.readValue(json, new TypeReference<Map<String, Object>>() {});
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -219,7 +193,7 @@ public abstract class AbstractCli<T extends AbstractCli<T>> {
 
   protected static List<Object> decodeJsonList(String json) {
     try {
-      return new ObjectMapper().readValue(json, new TypeReference<List<Object>>() {});
+      return Json.MAPPER.readValue(json, new TypeReference<List<Object>>() {});
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -227,7 +201,7 @@ public abstract class AbstractCli<T extends AbstractCli<T>> {
 
   public static List<String> decodeJsonListOfStrings(String json) {
     try {
-      return new ObjectMapper().readValue(json, new TypeReference<List<String>>() {});
+      return Json.MAPPER.readValue(json, new TypeReference<List<String>>() {});
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

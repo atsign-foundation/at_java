@@ -4,7 +4,6 @@ import org.atsign.client.api.AtClient;
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.util.KeysUtil;
 import org.atsign.common.AtSign;
-import org.atsign.common.KeyBuilders;
 import org.atsign.common.Keys;
 
 import lombok.extern.slf4j.Slf4j;
@@ -33,10 +32,12 @@ public class Share {
     AtKeys keys = KeysUtil.loadKeys(atSign);
 
     try (AtClient atClient = AtClient.withRemoteSecondary(rootUrl, atSign, keys, true)) {
-
-      Keys.SharedKey key = new KeyBuilders.SharedKeyBuilder(atSign, otherAtSign)
-          .key(keyName)
-          .cache(ttr, true)
+      Keys.SharedKey key = Keys.sharedKeyBuilder()
+          .sharedBy(atSign)
+          .sharedWith(otherAtSign)
+          .name(keyName)
+          .ccd(true)
+          .ttr((long) ttr)
           .build();
 
       String response = atClient.put(key, toShare).get();

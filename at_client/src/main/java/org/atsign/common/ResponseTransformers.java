@@ -15,7 +15,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 @Slf4j
 public class ResponseTransformers {
-  static final ObjectMapper mapper = new ObjectMapper();
+
+  static final ObjectMapper mapper = Json.MAPPER;
 
   /**
    * Transformer for scan command responses

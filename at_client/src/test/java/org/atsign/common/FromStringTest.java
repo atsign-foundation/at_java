@@ -6,6 +6,7 @@ import org.atsign.common.Keys.AtKey;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.Test;
 
+import static org.atsign.common.AtSign.createAtSign;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class FromStringTest {
@@ -14,13 +15,14 @@ public class FromStringTest {
   @Test
   public void fromStringTest0() throws AtException {
     // no llookup meta
-    AtKey atKey = Keys.fromString("public:publickey@alice");
+    AtKey atKey = Keys.keyBuilder().rawKey("public:publickey@alice").build();
 
-    assertEquals(true, atKey.metadata.isPublic);
-    assertEquals(false, atKey.metadata.isEncrypted);
-    assertEquals(false, atKey.metadata.isHidden);
-    assertEquals("publickey", atKey.name);
-    assertEquals("@alice", atKey.sharedBy.toString());
+    Metadata metadata = atKey.metadata();
+    assertEquals(true, metadata.isPublic());
+    assertEquals(false, metadata.isEncrypted());
+    assertEquals(false, metadata.isHidden());
+    assertEquals("publickey", atKey.name());
+    assertEquals(createAtSign("@alice"), atKey.sharedBy());
   }
 
   @Test
@@ -35,26 +37,27 @@ public class FromStringTest {
         + "\"isBinary\":false,\"isEncrypted\":false,"
         + "\"dataSignature\":null,\"sharedKeyEnc\":null,\"pubKeyCS\":null}");
 
-    AtKey atKey = Keys.fromString(KEY_NAME_STR, response);
+    AtKey atKey = fromString(KEY_NAME_STR, response);
 
     assertEquals(KEY_NAME_STR, atKey.toString());
-    assertEquals(true, atKey.metadata.isPublic);
-    assertEquals("publickey", atKey.name);
-    assertEquals("@bob", atKey.sharedBy.toString());
-    assertEquals("2022-07-13T21:54:28.519Z", atKey.metadata.createdAt.toString());
-    assertEquals("2022-07-13T21:54:28.519Z", atKey.metadata.updatedAt.toString());
-    assertEquals("2022-07-13T21:54:28.519Z", atKey.metadata.availableAt.toString());
-    assertNull(atKey.metadata.expiresAt);
-    assertNull(atKey.metadata.refreshAt);
-    assertEquals(0, atKey.metadata.ttl.intValue());
-    assertEquals(0, atKey.metadata.ttb.intValue());
-    assertNull(atKey.metadata.ttr);
-    assertNull(atKey.metadata.ccd);
-    assertEquals(false, atKey.metadata.isBinary);
-    assertEquals(false, atKey.metadata.isEncrypted);
-    assertNull(atKey.metadata.dataSignature);
-    assertNull(atKey.metadata.sharedKeyEnc);
-    assertNull(atKey.metadata.pubKeyCS);
+    Metadata metadata = atKey.metadata();
+    assertEquals(true, metadata.isPublic());
+    assertEquals("publickey", atKey.name());
+    assertEquals("@bob", atKey.sharedBy().toString());
+    assertEquals("2022-07-13T21:54:28.519Z", metadata.createdAt().toString());
+    assertEquals("2022-07-13T21:54:28.519Z", metadata.updatedAt().toString());
+    assertEquals("2022-07-13T21:54:28.519Z", metadata.availableAt().toString());
+    assertNull(metadata.expiresAt());
+    assertNull(metadata.refreshAt());
+    assertEquals(0, metadata.ttl().intValue());
+    assertEquals(0, metadata.ttb().intValue());
+    assertNull(metadata.ttr());
+    assertNull(metadata.ccd());
+    assertEquals(false, metadata.isBinary());
+    assertEquals(false, metadata.isEncrypted());
+    assertNull(metadata.dataSignature());
+    assertNull(metadata.sharedKeyEnc());
+    assertNull(metadata.pubKeyCS());
   }
 
   @Test
@@ -72,29 +75,38 @@ public class FromStringTest {
     Secondary.Response response = new Secondary.Response();
     response.setRawDataResponse(LLOOKUP_META_STR);
 
-    AtKey atKey = Keys.fromString(KEY_NAME_STR, response);
+    AtKey atKey = fromString(KEY_NAME_STR, response);
 
     assertEquals(KEY_NAME_STR, atKey.toString());
-    assertEquals(false, atKey.metadata.isPublic);
-    assertEquals("test", atKey.name);
-    assertEquals("@bob", atKey.sharedBy.toString());
-    assertEquals("2022-07-27T22:12:58.077Z", atKey.metadata.createdAt.toString());
-    assertEquals("2022-07-27T22:12:58.077Z", atKey.metadata.updatedAt.toString());
-    assertEquals("2022-07-27T22:12:58.077Z", atKey.metadata.availableAt.toString());
-    assertEquals("2022-07-27T22:42:58.077Z", atKey.metadata.expiresAt.toString());
-    assertNull(atKey.metadata.refreshAt);
-    assertEquals(1800000, atKey.metadata.ttl.intValue());
-    assertEquals(0, atKey.metadata.ttb.intValue());
-    assertNull(atKey.metadata.ttr);
-    assertNull(atKey.metadata.ccd);
-    assertFalse(atKey.metadata.isBinary);
-    assertTrue(atKey.metadata.isEncrypted);
+    Metadata metadata = atKey.metadata();
+    assertEquals(false, metadata.isPublic());
+    assertEquals("test", atKey.name());
+    assertEquals("@bob", atKey.sharedBy().toString());
+    assertEquals("2022-07-27T22:12:58.077Z", metadata.createdAt().toString());
+    assertEquals("2022-07-27T22:12:58.077Z", metadata.updatedAt().toString());
+    assertEquals("2022-07-27T22:12:58.077Z", metadata.availableAt().toString());
+    assertEquals("2022-07-27T22:42:58.077Z", metadata.expiresAt().toString());
+    assertNull(metadata.refreshAt());
+    assertEquals(1800000L, metadata.ttl());
+    assertEquals(0L, metadata.ttb());
+    assertNull(metadata.ttr());
+    assertNull(metadata.ccd());
+    assertFalse(metadata.isBinary());
+    assertTrue(metadata.isEncrypted());
     // noinspection SpellCheckingInspection
     assertEquals(
                  "oIq0kHvwQieVrhOs4dJLN61qNP73bNLLNPTRW7tAdapIZF3kSMrNVCcTAWWWyzb2Tyii51uZ7zlIYmHWuS4tIE0lMzrUeXGcfQhOrdjkrxf4qEceNR1qLa7tDjOAb8xuhf/zJ3yaen8NGswfKWwQluga/52SchFClrR99xEI93s=",
-                 atKey.metadata.dataSignature);
-    assertNull(atKey.metadata.sharedKeyEnc);
-    assertNull(atKey.metadata.pubKeyCS);
+                 metadata.dataSignature());
+    assertNull(metadata.sharedKeyEnc());
+    assertNull(metadata.pubKeyCS());
   }
 
+  public static AtKey fromString(String rawKey, Secondary.Response metadataResponse)
+      throws AtException, JsonProcessingException {
+    Metadata metadata = Metadata.fromJson(metadataResponse.getRawDataResponse());
+    return Keys.keyBuilder()
+        .rawKey(rawKey)
+        .metadata(metadata)
+        .build();
+  }
 }

@@ -12,6 +12,8 @@ import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.atsign.common.exceptions.AtDecryptionException;
+import org.atsign.common.exceptions.AtEncryptionException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /**
@@ -28,19 +30,35 @@ public class EncryptionUtil {
   }
 
   public static String aesEncryptToBase64(String clearText, String keyBase64, String ivNonce)
-      throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException,
-      IllegalBlockSizeException, BadPaddingException, NoSuchProviderException {
-    Cipher cipher = createAesCipher(Cipher.ENCRYPT_MODE, keyBase64, ivNonce);
-    byte[] encrypted = cipher.doFinal(clearText.getBytes());
-    return Base64.getEncoder().encodeToString(encrypted);
+      throws AtEncryptionException {
+    try {
+      Cipher cipher = createAesCipher(Cipher.ENCRYPT_MODE, keyBase64, ivNonce);
+      byte[] encrypted = cipher.doFinal(clearText.getBytes());
+      return Base64.getEncoder().encodeToString(encrypted);
+    } catch (NoSuchAlgorithmException | NoSuchProviderException | BadPaddingException | IllegalBlockSizeException
+        | NoSuchPaddingException | InvalidKeyException | InvalidAlgorithmParameterException e) {
+      throw new AtEncryptionException("AES encryption failed", e);
+    }
   }
 
-  public static String aesDecryptFromBase64(String cipherTextBase64, String keyBase64, String ivNonce)
-      throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException,
-      IllegalBlockSizeException, BadPaddingException, NoSuchProviderException {
-    Cipher cipher = createAesCipher(Cipher.DECRYPT_MODE, keyBase64, ivNonce);
-    byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(cipherTextBase64));
-    return new String(decrypted);
+  /**
+   * Decrypts the text using AES {@link Cipher}
+   *
+   * @param text base64 encoded text to decrypt
+   * @param key base64 encoded AES key to use
+   * @param iv base64 encoded initialization vector to use
+   * @return decrypted text
+   * @throws AtDecryptionException with underlying cause
+   */
+  public static String aesDecryptFromBase64(String text, String key, String iv) throws AtDecryptionException {
+    try {
+      Cipher cipher = createAesCipher(Cipher.DECRYPT_MODE, key, iv);
+      byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(text));
+      return new String(decrypted);
+    } catch (NoSuchAlgorithmException | NoSuchProviderException | NoSuchPaddingException | InvalidKeyException
+        | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
+      throw new AtDecryptionException("AES decryption failed", e);
+    }
   }
 
   public static KeyPair generateRSAKeyPair() throws NoSuchAlgorithmException {
@@ -57,27 +75,33 @@ public class EncryptionUtil {
   }
 
   public static String rsaDecryptFromBase64(String cipherTextBase64, String privateKeyBase64)
-      throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException,
-      IllegalBlockSizeException, BadPaddingException {
-    PrivateKey privateKey = _privateKeyFromBase64(privateKeyBase64);
-    Cipher decryptCipher = Cipher.getInstance("RSA");
-    decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
-    byte[] decoded = Base64.getDecoder().decode(cipherTextBase64.getBytes(StandardCharsets.UTF_8));
-    byte[] decryptedMessageBytes = decryptCipher.doFinal(decoded);
-
-    return new String(decryptedMessageBytes, StandardCharsets.UTF_8);
+      throws AtDecryptionException {
+    try {
+      PrivateKey privateKey = _privateKeyFromBase64(privateKeyBase64);
+      Cipher decryptCipher = Cipher.getInstance("RSA");
+      decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
+      byte[] decoded = Base64.getDecoder().decode(cipherTextBase64.getBytes(StandardCharsets.UTF_8));
+      byte[] decryptedMessageBytes = decryptCipher.doFinal(decoded);
+      return new String(decryptedMessageBytes, StandardCharsets.UTF_8);
+    } catch (NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidKeyException
+        | IllegalBlockSizeException | BadPaddingException e) {
+      throw new AtDecryptionException("RSA decryption failed", e);
+    }
   }
 
   public static String rsaEncryptToBase64(String clearText, String publicKeyBase64)
-      throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException,
-      IllegalBlockSizeException, BadPaddingException {
-    PublicKey publicKey = _publicKeyFromBase64(publicKeyBase64);
-    Cipher encryptCipher = Cipher.getInstance("RSA");
-    encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
-    byte[] clearTextBytes = clearText.getBytes(StandardCharsets.UTF_8);
-    byte[] encryptedMessageBytes = encryptCipher.doFinal(clearTextBytes);
-
-    return Base64.getEncoder().encodeToString(encryptedMessageBytes);
+      throws AtEncryptionException {
+    try {
+      PublicKey publicKey = _publicKeyFromBase64(publicKeyBase64);
+      Cipher encryptCipher = Cipher.getInstance("RSA");
+      encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
+      byte[] clearTextBytes = clearText.getBytes(StandardCharsets.UTF_8);
+      byte[] encryptedMessageBytes = encryptCipher.doFinal(clearTextBytes);
+      return Base64.getEncoder().encodeToString(encryptedMessageBytes);
+    } catch (NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidKeyException
+        | IllegalBlockSizeException | BadPaddingException e) {
+      throw new AtEncryptionException("RSA encryption failed", e);
+    }
   }
 
   public static String signSHA256RSA(String value, String privateKeyBase64)

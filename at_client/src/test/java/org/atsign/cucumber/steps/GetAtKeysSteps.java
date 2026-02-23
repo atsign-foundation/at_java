@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 
 import org.atsign.client.api.AtClient;
 import org.atsign.common.AtSign;
-import org.atsign.common.KeyBuilders;
 import org.atsign.common.Keys;
 
 import io.cucumber.datatable.DataTable;
@@ -210,12 +209,14 @@ public class GetAtKeysSteps {
 
   private String lookupStringValue(AtClient atClient, Keys.AtKey key) {
     try {
-      if (key.sharedWith != null) {
-        return atClient.get(new KeyBuilders.SharedKeyBuilder(key.sharedBy, key.sharedWith).key(key.name).build()).get();
-      } else if (key.metadata.isPublic) {
-        return atClient.get(new KeyBuilders.PublicKeyBuilder(key.sharedBy).key(key.name).build()).get();
+      if (key instanceof Keys.SharedKey) {
+        return atClient.get((Keys.SharedKey) key).get();
+      } else if (key instanceof Keys.PublicKey) {
+        return atClient.get((Keys.PublicKey) key).get();
+      } else if (key instanceof Keys.SelfKey) {
+        return atClient.get((Keys.SelfKey) key).get();
       } else {
-        return atClient.get(new KeyBuilders.SelfKeyBuilder(key.sharedBy).key(key.name).build()).get();
+        return key.getClass().getSimpleName();
       }
     } catch (Exception e) {
       return e.getMessage();
@@ -233,88 +234,88 @@ public class GetAtKeysSteps {
           row.add(value);
           break;
         case "name":
-          row.add(k.name);
+          row.add(k.nameWithoutNamespace());
           break;
         case "namespace":
-          row.add(k.getNamespace());
+          row.add(k.namespace());
           break;
         case "sharedby":
-          row.add(k.sharedBy != null ? k.sharedBy.withoutPrefix() : null);
+          row.add(withoutPrefix(k.sharedBy()));
           break;
         case "sharedwith":
-          row.add(k.sharedWith != null ? k.sharedWith.withoutPrefix() : null);
+          row.add(withoutPrefix(k.sharedWith()));
           break;
         case "ttl":
-          row.add(k.metadata != null ? String.valueOf(k.metadata.ttl) : null);
+          row.add(toString(k.metadata().ttl()));
           break;
         case "ttb":
-          row.add(k.metadata != null ? String.valueOf(k.metadata.ttb) : null);
+          row.add(toString(k.metadata().ttb()));
           break;
         case "ttr":
-          row.add(k.metadata != null ? String.valueOf(k.metadata.ttr) : null);
+          row.add(toString(k.metadata().ttb()));
           break;
         case "ccd":
-          row.add(k.metadata != null ? String.valueOf(k.metadata.ccd) : null);
+          row.add(toString(k.metadata().ccd()));
           break;
         case "createdby":
-          row.add(k.metadata != null ? k.metadata.createdBy : null);
+          row.add(toString(k.metadata().createdBy()));
           break;
         case "updatedby":
-          row.add(k.metadata != null ? k.metadata.updatedBy : null);
+          row.add(toString(k.metadata().updatedBy()));
           break;
         case "availableat":
-          row.add(k.metadata != null ? String.valueOf(k.metadata.availableAt) : null);
+          row.add(toString(k.metadata().availableAt()));
           break;
         case "expiresat":
-          row.add(k.metadata != null ? String.valueOf(k.metadata.expiresAt) : null);
+          row.add(toString(k.metadata().expiresAt()));
           break;
         case "refreshat":
-          row.add(k.metadata != null ? String.valueOf(k.metadata.refreshAt) : null);
+          row.add(toString(k.metadata().refreshAt()));
           break;
         case "createdat":
-          row.add(k.metadata != null ? String.valueOf(k.metadata.createdAt) : null);
+          row.add(toString(k.metadata().createdAt()));
           break;
         case "updatedat":
-          row.add(k.metadata != null ? String.valueOf(k.metadata.updatedAt) : null);
+          row.add(toString(k.metadata().updatedAt()));
           break;
         case "status":
-          row.add(k.metadata != null ? k.metadata.status : null);
+          row.add(toString(k.metadata().status()));
           break;
         case "version":
-          row.add(k.metadata != null ? String.valueOf(k.metadata.version) : null);
+          row.add(toString(k.metadata().version()));
           break;
         case "datasignature":
-          row.add(k.metadata != null ? k.metadata.dataSignature : null);
+          row.add(toString(k.metadata().dataSignature()));
           break;
         case "sharedkeystatus":
-          row.add(k.metadata != null ? k.metadata.sharedKeyStatus : null);
+          row.add(toString(k.metadata().sharedKeyStatus()));
           break;
         case "ispublic":
-          row.add(k.metadata != null ? String.valueOf(k.metadata.isPublic) : null);
+          row.add(toString(k.metadata().isPublic()));
           break;
         case "isencrypted":
-          row.add(k.metadata != null ? String.valueOf(k.metadata.isEncrypted) : null);
+          row.add(toString(k.metadata().isEncrypted()));
           break;
         case "ishidden":
-          row.add(k.metadata != null ? String.valueOf(k.metadata.isHidden) : null);
+          row.add(toString(k.metadata().isHidden()));
           break;
         case "namespaceaware":
-          row.add(k.metadata != null ? String.valueOf(k.metadata.namespaceAware) : null);
+          row.add(toString(k.metadata().namespaceAware()));
           break;
         case "isbinary":
-          row.add(k.metadata != null ? String.valueOf(k.metadata.isBinary) : null);
+          row.add(toString(k.metadata().isBinary()));
           break;
         case "iscached":
-          row.add(k.metadata != null ? String.valueOf(k.metadata.isCached) : null);
+          row.add(toString(k.metadata().isCached()));
           break;
         case "sharedkeyenc":
-          row.add(k.metadata != null ? k.metadata.sharedKeyEnc : null);
+          row.add(toString(k.metadata().sharedKeyEnc()));
           break;
         case "pubkeycs":
-          row.add(k.metadata != null ? k.metadata.pubKeyCS : null);
+          row.add(toString(k.metadata().pubKeyCS()));
           break;
         case "encoding":
-          row.add(k.metadata != null ? k.metadata.encoding : null);
+          row.add(toString(k.metadata().encoding()));
           break;
         default:
           throw new IllegalArgumentException(heading + " not recognised as a key or key metadata field");
@@ -335,6 +336,14 @@ public class GetAtKeysSteps {
       actual.add(map);
     }
     return actual;
+  }
+
+  private static String withoutPrefix(AtSign atSign) {
+    return atSign != null ? atSign.withoutPrefix() : null;
+  }
+
+  private static String toString(Object o) {
+    return o != null ? o.toString() : null;
   }
 
 }

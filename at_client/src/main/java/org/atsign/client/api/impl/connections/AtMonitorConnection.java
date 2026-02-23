@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.atsign.common.AtSign;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.atsign.common.Json;
 
 /**
  * A {@link AtMonitorConnection} represents a connection to an AtServer which,
@@ -24,7 +25,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 @Slf4j
 public class AtMonitorConnection extends AtSecondaryConnection implements Runnable {
-  private static final ObjectMapper mapper = new ObjectMapper();
+
+  private static final ObjectMapper mapper = Json.MAPPER;
 
   private long _lastReceivedTime = 0;
 

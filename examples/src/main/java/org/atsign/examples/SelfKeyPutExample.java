@@ -1,15 +1,16 @@
 package org.atsign.examples;
 
+import static org.atsign.client.util.KeysUtil.loadKeys;
+
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.atsign.client.api.AtClient;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
-import org.atsign.common.KeyBuilders;
+import org.atsign.common.Keys;
 import org.atsign.common.Keys.SelfKey;
-
-import static org.atsign.client.util.KeysUtil.loadKeys;
 
 public class SelfKeyPutExample {
 
@@ -21,7 +22,7 @@ public class SelfKeyPutExample {
 
     String KEY_NAME = "test";
     String VALUE = "I hate pineapple on pizza!!!";
-    int ttl = 30 * 60 * 1000;
+    long ttl = TimeUnit.SECONDS.toMillis(30);
 
 
     // 2. create AtSign object
@@ -31,8 +32,7 @@ public class SelfKeyPutExample {
     try (AtClient atClient = AtClient.withRemoteSecondary(ROOT_URL, atSign, loadKeys(atSign), VERBOSE)) {
 
       // 4. create selfkey
-      SelfKey sk = new KeyBuilders.SelfKeyBuilder(atSign).key(KEY_NAME).build();
-      sk.metadata.ttl = ttl;
+      SelfKey sk = Keys.selfKeyBuilder().sharedBy(atSign).name(KEY_NAME).ttl(ttl).build();
 
       // 5. put the key
       String response = atClient.put(sk, VALUE).get();
