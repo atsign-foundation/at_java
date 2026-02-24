@@ -54,4 +54,9 @@ public class AtKeyNames {
     return String.format("%s:%s%s", SHARED_KEY, sharedWith, sharedBy);
   }
 
+
+  public static boolean isManagementKeyName(String s) {
+    return s.matches(".+\\.__manage@.+");
+  }
+
 }

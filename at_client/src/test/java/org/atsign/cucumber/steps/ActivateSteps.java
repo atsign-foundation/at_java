@@ -1,5 +1,7 @@
 package org.atsign.cucumber.steps;
 
+import static org.atsign.client.connection.protocol.Authentication.authenticateWithPkam;
+import static org.atsign.client.connection.protocol.Data.matchDataJsonListOfStrings;
 import static org.atsign.cucumber.helpers.Helpers.getFirstValue;
 import static org.atsign.cucumber.helpers.Helpers.toCanonicalMaps;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -11,8 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-import org.atsign.client.api.impl.connections.AtSecondaryConnection;
 import org.atsign.client.cli.Activate;
+import org.atsign.client.connection.api.AtClientConnection;
+import org.atsign.client.connection.protocol.Enroll;
+import org.atsign.client.connection.protocol.Keys;
 import org.atsign.client.util.EnrollmentId;
 import org.atsign.client.util.KeysUtil;
 import org.atsign.common.AtSign;
@@ -227,22 +231,22 @@ public class ActivateSteps {
 
     public void run() {
 
-      try (AtSecondaryConnection connection = createAtSecondaryConnection(atSign, rootUrl, 0)) {
+      try (AtClientConnection connection = createConnection(rootUrl, atSign, 0)) {
 
-        authenticateWithApkam(connection, atSign, KeysUtil.loadKeys(keysFile));
+        authenticateWithPkam(connection, atSign, KeysUtil.loadKeys(keysFile));
 
         // delete keys that have been created
-        matchDataJsonListOfStrings(connection.executeCommand("scan")).stream()
+        matchDataJsonListOfStrings(connection.sendSync("scan")).stream()
             .filter(k -> !isProtectedKey(atSign, k))
-            .forEach(k -> deleteKeyNoThrow(connection, k));
+            .forEach(k -> deleteKeyNoThrow(connection, atSign, k));
 
         // remove enrollments
-        list(connection, "pending").forEach(id -> denyDeleteNoThrow(connection, id));
-        list(connection, "denied").forEach(id -> deleteNoThrow(connection, id));
-        list(connection, "approved").stream()
+        Enroll.list(connection, "pending").forEach(id -> denyDeleteNoThrow(connection, atSign, id));
+        Enroll.list(connection, "denied").forEach(id -> deleteNoThrow(connection, atSign, id));
+        Enroll.list(connection, "approved").stream()
             .filter(id -> !id.equals(onboardEnrollmentId))
-            .forEach(id -> revokeDeleteNoThrow(connection, id));
-        revokeDeleteNoThrow(connection, onboardEnrollmentId);
+            .forEach(id -> revokeDeleteNoThrow(connection, atSign, id));
+        revokeDeleteNoThrow(connection, atSign, onboardEnrollmentId);
       } catch (Exception e) {
         log.error("teardown for {} failed : {}", atSign, e.getMessage());
       }
@@ -255,47 +259,47 @@ public class ActivateSteps {
           || key.contains(("__manage@"));
     }
 
-    protected void deleteKeyNoThrow(AtSecondaryConnection connection, String key) {
+    protected void deleteKeyNoThrow(AtClientConnection connection, AtSign atSign, String key) {
       try {
-        log.debug("teardown for {} deleting key {}", connection.getAtSign(), key);
-        deleteKey(connection, key);
+        log.debug("teardown for {} deleting key {}", atSign, key);
+        Keys.deleteKey(connection, key);
       } catch (Exception e) {
         log.error("teardown for {} failed to delete key {} in onboarded server : {}",
-                  connection.getAtSign(), key, e.getMessage());
+                  atSign, key, e.getMessage());
       }
     }
 
-    private void deleteNoThrow(AtSecondaryConnection connection, EnrollmentId id) {
+    private void deleteNoThrow(AtClientConnection connection, AtSign atSign, EnrollmentId id) {
       try {
         log.debug("teardown for {} deleting enroll request {}", id);
         delete(connection, id);
       } catch (Exception e) {
         log.error("teardown for {} failed to enroll delete {} in onboarded server : {}",
-                  connection.getAtSign(), id, e.getMessage());
+                  atSign, id, e.getMessage());
       }
     }
 
-    private void denyDeleteNoThrow(AtSecondaryConnection connection, EnrollmentId id) {
+    private void denyDeleteNoThrow(AtClientConnection connection, AtSign atsign, EnrollmentId id) {
       try {
-        log.debug("teardown for {} denying enroll request {}", connection.getAtSign(), id);
-        deny(connection, id);
-        log.debug("teardown for {} deleting enroll request {}", connection.getAtSign(), id);
-        delete(connection, id);
+        log.debug("teardown for {} denying enroll request {}", atsign, id);
+        Enroll.deny(connection, id);
+        log.debug("teardown for {} deleting enroll request {}", atsign, id);
+        Enroll.delete(connection, id);
       } catch (Exception e) {
         log.error("teardown for {} failed to enroll deny and delete {} in onboarded server : {}",
-                  connection.getAtSign(), id, e.getMessage());
+                  atsign, id, e.getMessage());
       }
     }
 
-    private void revokeDeleteNoThrow(AtSecondaryConnection connection, EnrollmentId id) {
+    private void revokeDeleteNoThrow(AtClientConnection connection, AtSign atSign, EnrollmentId id) {
       try {
-        log.debug("teardown for {} revoking enroll request {}", connection.getAtSign(), id);
-        revoke(connection, id);
-        log.debug("teardown for {} deleting enroll request {}", connection.getAtSign(), id);
-        delete(connection, id);
+        log.debug("teardown for {} revoking enroll request {}", atSign, id);
+        Enroll.revoke(connection, id);
+        log.debug("teardown for {} deleting enroll request {}", atSign, id);
+        Enroll.delete(connection, id);
       } catch (Exception e) {
         log.error("teardown for {} failed to enroll revoke and delete {} in onboarded server : {}",
-                  connection.getAtSign(), id, e.getMessage());
+                  atSign, id, e.getMessage());
       }
     }
   }

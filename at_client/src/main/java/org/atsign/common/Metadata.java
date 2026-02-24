@@ -44,14 +44,13 @@ public class Metadata {
   String encoding;
   String ivNonce;
 
-  // required for successful javadoc
-
   /**
    * A builder for instantiating {@link Metadata} instances. Note: Metadata is immutable so if you
    * want create a modified instance then use the toBuilder() method, override the fields and invoke
    * build().
    */
   public static class MetadataBuilder {
+    // required for javadoc
   };
 
   public static Metadata fromJson(String json) throws JsonProcessingException {

@@ -521,7 +521,7 @@ public class AtClientImpl implements AtClient {
     if (atSign.equals(key.sharedBy())) {
       command = llookupCommandBuilder().key(key).operation(all).build();
     } else {
-      boolean bypassCache = getRequestOptions != null && getRequestOptions.getBypassCache();
+      boolean bypassCache = getRequestOptions != null && getRequestOptions.isBypassCache();
       command = plookupCommandBuilder().key(key).bypassCache(bypassCache).operation(all).build();
     }
 

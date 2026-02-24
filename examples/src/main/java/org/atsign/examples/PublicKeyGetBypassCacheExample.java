@@ -31,7 +31,7 @@ public class PublicKeyGetBypassCacheExample {
       PublicKey pk = Keys.publicKeyBuilder().sharedBy(new AtSign("@bob")).name(KEY_NAME).build();
 
       // 5. get the value associated with the key
-      String response = atClient.get(pk, (GetRequestOptions) new GetRequestOptions().bypassCache(true).build()).get();
+      String response = atClient.get(pk, GetRequestOptions.builder().bypassCache(true).build()).get();
       System.out.println(response);
 
     } catch (AtException | IOException | InterruptedException | ExecutionException e) {

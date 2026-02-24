@@ -61,17 +61,25 @@ public class EncryptionUtil {
     }
   }
 
-  public static KeyPair generateRSAKeyPair() throws NoSuchAlgorithmException {
-    KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
-    generator.initialize(2048);
-    return generator.generateKeyPair();
+  public static KeyPair generateRSAKeyPair() throws AtEncryptionException {
+    try {
+      KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+      generator.initialize(2048);
+      return generator.generateKeyPair();
+    } catch (NoSuchAlgorithmException e) {
+      throw new AtEncryptionException(e.getMessage());
+    }
   }
 
-  public static String generateAESKeyBase64() throws NoSuchAlgorithmException {
-    KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
-    keyGenerator.init(256);
-    byte[] key = keyGenerator.generateKey().getEncoded();
-    return Base64.getEncoder().encodeToString(key);
+  public static String generateAESKeyBase64() throws AtEncryptionException {
+    try {
+      KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+      keyGenerator.init(256);
+      byte[] key = keyGenerator.generateKey().getEncoded();
+      return Base64.getEncoder().encodeToString(key);
+    } catch (NoSuchAlgorithmException e) {
+      throw new AtEncryptionException(e.getMessage());
+    }
   }
 
   public static String rsaDecryptFromBase64(String cipherTextBase64, String privateKeyBase64)
@@ -89,8 +97,7 @@ public class EncryptionUtil {
     }
   }
 
-  public static String rsaEncryptToBase64(String clearText, String publicKeyBase64)
-      throws AtEncryptionException {
+  public static String rsaEncryptToBase64(String clearText, String publicKeyBase64) throws AtEncryptionException {
     try {
       PublicKey publicKey = _publicKeyFromBase64(publicKeyBase64);
       Cipher encryptCipher = Cipher.getInstance("RSA");
@@ -104,10 +111,12 @@ public class EncryptionUtil {
     }
   }
 
-  public static String signSHA256RSA(String value, String privateKeyBase64)
-      throws NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException {
-    PrivateKey privateKey = _privateKeyFromBase64(privateKeyBase64);
-    return _signSHA256RSA(value, privateKey);
+  public static String signSHA256RSA(String value, String privateKeyBase64) throws AtEncryptionException {
+    try {
+      return _signSHA256RSA(value, _privateKeyFromBase64(privateKeyBase64));
+    } catch (NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException | SignatureException e) {
+      throw new AtEncryptionException("SHA256 sign failed", e);
+    }
   }
 
   // non-public methods

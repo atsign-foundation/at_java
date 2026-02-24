@@ -3,6 +3,7 @@ package org.atsign.client.api;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.atsign.client.connection.protocol.AtExceptions;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
 import org.atsign.common.exceptions.*;
@@ -104,45 +105,7 @@ public interface Secondary extends AtEvents.AtEventListener, Closeable {
       if (!isError()) {
         return null;
       }
-      if (AtServerRuntimeException.CODE.equals(errorCode)) {
-        return new AtServerRuntimeException(errorText);
-      } else if (AtInvalidSyntaxException.CODE.equals(errorCode)) {
-        return new AtInvalidSyntaxException(errorText);
-      } else if (AtBufferOverFlowException.CODE.equals(errorCode)) {
-        return new AtBufferOverFlowException(errorText);
-      } else if (AtOutboundConnectionLimitException.CODE.equals(errorCode)) {
-        return new AtOutboundConnectionLimitException(errorText);
-      } else if (AtSecondaryNotFoundException.CODE.equals(errorCode)) {
-        return new AtSecondaryNotFoundException(errorText);
-      } else if (AtHandShakeException.CODE.equals(errorCode)) {
-        return new AtHandShakeException(errorText);
-      } else if (AtUnauthorizedException.CODE.equals(errorCode)) {
-        return new AtUnauthorizedException(errorText);
-      } else if (AtInternalServerError.CODE.equals(errorCode)) {
-        return new AtInternalServerError(errorText);
-      } else if (AtInternalServerException.CODE.equals(errorCode)) {
-        return new AtInternalServerException(errorText);
-      } else if (AtInboundConnectionLimitException.CODE.equals(errorCode)) {
-        return new AtInboundConnectionLimitException(errorText);
-      } else if (AtBlockedConnectionException.CODE.equals(errorCode)) {
-        return new AtBlockedConnectionException(errorText);
-      } else if (AtKeyNotFoundException.CODE.equals(errorCode)) {
-        return new AtKeyNotFoundException(errorText);
-      } else if (AtInvalidAtKeyException.CODE.equals(errorCode)) {
-        return new AtInvalidAtKeyException(errorText);
-      } else if (AtSecondaryConnectException.CODE.equals(errorCode)) {
-        return new AtSecondaryConnectException(errorText);
-      } else if (AtIllegalArgumentException.CODE.equals(errorCode)) {
-        return new AtIllegalArgumentException(errorText);
-      } else if (AtTimeoutException.CODE.equals(errorCode)) {
-        return new AtTimeoutException(errorText);
-      } else if (AtServerIsPausedException.CODE.equals(errorCode)) {
-        return new AtServerIsPausedException(errorText);
-      } else if (AtUnauthenticatedException.CODE.equals(errorCode)) {
-        return new AtUnauthenticatedException(errorText);
-      }
-
-      return new AtNewErrorCodeWhoDisException(errorCode, errorText);
+      return AtExceptions.toTypedException(errorCode, errorText);
     }
   }
 

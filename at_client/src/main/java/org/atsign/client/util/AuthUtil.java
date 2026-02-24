@@ -20,6 +20,7 @@ import org.atsign.common.exceptions.AtUnauthenticatedException;
 /**
  * Encapsulates Atsign Platform authentication command response workflows.
  */
+@Deprecated
 public class AuthUtil {
 
   /**

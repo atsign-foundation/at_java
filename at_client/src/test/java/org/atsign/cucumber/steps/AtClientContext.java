@@ -1,7 +1,7 @@
 package org.atsign.cucumber.steps;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.atsign.client.cli.AbstractCli.decodeJsonListOfStrings;
+import static org.atsign.client.connection.protocol.Responses.decodeJsonListOfStrings;
 import static org.atsign.client.util.Preconditions.checkNotNull;
 import static org.atsign.cucumber.helpers.Helpers.isHostPortReachable;
 import static org.awaitility.Awaitility.await;
@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.AtEvents;
 import org.atsign.client.api.AtKeys;
+import org.atsign.client.api.impl.clients.AtClients;
 import org.atsign.client.util.EnrollmentId;
 import org.atsign.client.util.KeysUtil;
 import org.atsign.common.AtException;
@@ -249,10 +250,15 @@ public class AtClientContext {
 
   @Then("exception was {exception}")
   public void assertExpectedExceptionClass(Class<AtException> expectedClass) throws AtException {
-    if (expectedException.getCause() != null) {
-      assertThat(expectedException.getCause().getClass(), typeCompatibleWith(expectedClass));
-    } else {
-      assertThat(expectedException.getClass(), typeCompatibleWith(expectedClass));
+    try {
+      if (expectedException.getCause() != null) {
+        assertThat(expectedException.getCause().getClass(), typeCompatibleWith(expectedClass));
+      } else {
+        assertThat(expectedException.getClass(), typeCompatibleWith(expectedClass));
+      }
+    } catch (Throwable e) {
+      expectedException.printStackTrace();
+      throw e;
     }
   }
 
@@ -324,7 +330,12 @@ public class AtClientContext {
     if (rootHostAndPort == null) {
       throw new IllegalArgumentException("root host and port not set");
     }
-    AtClient atClient = AtClient.withRemoteSecondary(rootHostAndPort, atSign, keys, isVerbose());
+    AtClient atClient = AtClients.builder()
+        .url(rootHostAndPort)
+        .atSign(atSign)
+        .keys(keys)
+        .isVerbose(isVerbose())
+        .build();
     AtClientEventListener listener = new AtClientEventListener(qualifiedAtSign);
     atClient.addEventListener(listener, ALL_EVENT_TYPES);
     clients.put(qualifiedAtSign, atClient);
@@ -472,7 +483,7 @@ public class AtClientContext {
 
   private List<String> scanNoThrow(AtClient client) {
     try {
-      String json = client.getSecondary().executeCommand("scan:showHidden:true .*", true).getRawDataResponse();
+      String json = client.executeCommand("scan:showHidden:true .*", true).getRawDataResponse();
       return decodeJsonListOfStrings(json);
     } catch (Exception e) {
       log.error("failed to scan : {}", e.getMessage());

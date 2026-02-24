@@ -20,7 +20,7 @@ import org.atsign.common.Keys.PublicKey;
 import org.atsign.common.Keys.SelfKey;
 import org.atsign.common.Keys.SharedKey;
 import org.atsign.common.exceptions.AtIllegalArgumentException;
-import org.atsign.common.exceptions.AtInvalidSyntaxException;
+import org.atsign.common.exceptions.AtExceptions.AtInvalidSyntaxException;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 

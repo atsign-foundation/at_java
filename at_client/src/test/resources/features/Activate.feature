@@ -44,7 +44,7 @@ Feature: AtClient API tests for onboarding and enrolling atsign
       | Namespace | Access Control |
       | ns        | rw             |
     Then AtClient with keys @srie-app1-device1.atKeys fails for @srie
-    And exception message matches "PKAM command failed: error:AT0026:enrollment_id: .+ is pending"
+    And exception message matches "AT0026:enrollment_id: .+ is pending"
 
   Scenario: After enrolling an app and device and approving an AtClient can be created and used to get and put keys
     When @srie Activate.onboard with SrieKeys._cramKey from at_demo_apkam_keys.dart in at_demo_data package
@@ -76,7 +76,7 @@ Feature: AtClient API tests for onboarding and enrolling atsign
       | ns        | rw             |
     When @srie Activate.deny for last enrollment
     Then AtClient with keys @srie-app1-device1.atKeys fails for @srie
-    And exception message matches "PKAM command failed: error:AT0025:enrollment_id: .+ is denied"
+    And exception message matches "AT0025:enrollment_id: .+ is denied"
 
   Scenario: After enrolling an app and device and approving but then revoking an AtClient cannot be created
     And @srie Activate.onboard with SrieKeys._cramKey from at_demo_apkam_keys.dart in at_demo_data package

@@ -1,28 +1,21 @@
 package org.atsign.client.cli;
 
 import static org.atsign.client.util.Preconditions.checkNotNull;
-import static org.atsign.common.VerbBuilders.*;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.concurrent.TimeUnit;
 
 import org.atsign.client.api.AtKeys;
-import org.atsign.client.api.impl.connections.AtRootConnection;
-import org.atsign.client.api.impl.connections.AtSecondaryConnection;
-import org.atsign.client.api.impl.events.SimpleAtEventBus;
-import org.atsign.client.util.AuthUtil;
+import org.atsign.client.connection.api.AtClientConnection;
+import org.atsign.client.connection.common.SimpleReconnectStrategy;
+import org.atsign.client.connection.netty.NettyAtClientConnection;
+import org.atsign.client.connection.netty.NettyAtClientConnection.NettyAtClientConnectionBuilder;
+import org.atsign.client.connection.netty.NettyAtEndpointSupplier;
+import org.atsign.client.connection.protocol.Authentication;
 import org.atsign.client.util.KeysUtil;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
-import org.atsign.common.Json;
-import org.atsign.common.exceptions.AtSecondaryNotFoundException;
-
-import com.fasterxml.jackson.core.type.TypeReference;
+import org.atsign.common.exceptions.AtClientConfigException;
 
 import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.Option;
@@ -34,31 +27,6 @@ import picocli.CommandLine.Option;
  * @param <T> used to provide fluent builder style API
  */
 public abstract class AbstractCli<T extends AbstractCli<T>> {
-
-  /**
-   * models server response string which is non-empty JSON map
-   */
-  protected static final Pattern DATA_JSON_NON_EMPTY_MAP = Pattern.compile("data:(\\{.+})");
-
-  /**
-   * models server response string which is JSON map
-   */
-  protected static final Pattern DATA_JSON_MAP = Pattern.compile("data:(\\{.*})");
-
-  /**
-   * models server response string which is non-empty JSON list
-   */
-  protected static final Pattern DATA_JSON_NO_EMPTY_LIST = Pattern.compile("data:(\\[.+])");
-
-  /**
-   * models server response string which is integer
-   */
-  protected static final Pattern DATA_INT = Pattern.compile("data:\\d+");
-
-  /**
-   * models server response string containing no whitespace
-   */
-  public static final Pattern DATA_NON_WHITESPACE = Pattern.compile("data:(\\S+)");
 
   protected String rootUrl = "root.atsign.org";
   protected AtSign atSign;
@@ -115,152 +83,45 @@ public abstract class AbstractCli<T extends AbstractCli<T>> {
     return keysFile != null ? keysFile : KeysUtil.getKeysFile(atSign);
   }
 
-  protected static void checkAtServerMatchesAtSign(AtSecondaryConnection connection, AtSign atSign) throws IOException {
-    String command = scanCommandBuilder().build();
-    if (!matchDataJsonList(connection.executeCommand(command)).contains("signing_publickey" + atSign)) {
-      // TODO: understand precisely what this means (observed in Dart SDK)
-      throw new IllegalStateException("TBC");
-    }
-  }
-
-  protected static void deleteKey(AtSecondaryConnection connection, String rawKey) {
-    try {
-      String command = deleteCommandBuilder().rawKey(rawKey).build();
-      match(connection.executeCommand(command), DATA_INT);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  protected static void authenticateWithApkam(AtSecondaryConnection connection, AtSign atSign, AtKeys keys)
-      throws AtException, IOException {
-    new AuthUtil().authenticateWithPkam(connection, atSign, keys);
-  }
-
-  protected AtSecondaryConnection createAtSecondaryConnection(AtSign atSign,
-                                                              String rootUrl,
-                                                              int retries)
-      throws Exception {
-    checkNotNull(atSign, "atsign not set");
-    checkNotNull(rootUrl, "root server endpoint not set");
-
-    String secondaryUrl = resolveSecondaryUrl(atSign, rootUrl, retries);
-    AtSecondaryConnection conn =
-        new AtSecondaryConnection(new SimpleAtEventBus(), atSign, secondaryUrl, null, false, verbose);
-    int retriesRemaining = retries;
-    Exception ex;
-    do {
-      try {
-        conn.connect();
-        return conn;
-      } catch (Exception e) {
-        ex = e;
-        Thread.sleep(2000);
-      }
-    } while (retriesRemaining-- > 0);
-    throw ex;
-  }
-
-  protected static String resolveSecondaryUrl(AtSign atSign, String rootUrl, int retries) throws Exception {
-    int retriesRemaining = retries;
-    Exception ex;
-    do {
-      try {
-        return new AtRootConnection(rootUrl).lookupAtSign(atSign);
-      } catch (AtSecondaryNotFoundException e) {
-        ex = e;
-        Thread.sleep(1000);
-      }
-    } while (retriesRemaining-- > 0);
-    throw ex;
-  }
-
-  protected static Map<String, String> decodeJsonMapOfStrings(String json) {
-    try {
-      return Json.MAPPER.readValue(json, new TypeReference<Map<String, String>>() {});
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  protected static Map<String, Object> decodeJsonMapOfObjects(String json) {
-    try {
-      return Json.MAPPER.readValue(json, new TypeReference<Map<String, Object>>() {});
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  protected static List<Object> decodeJsonList(String json) {
-    try {
-      return Json.MAPPER.readValue(json, new TypeReference<List<Object>>() {});
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  public static List<String> decodeJsonListOfStrings(String json) {
-    try {
-      return Json.MAPPER.readValue(json, new TypeReference<List<String>>() {});
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  protected static String match(String input, Pattern pattern) {
-    Matcher matcher = pattern.matcher(input);
-    if (!matcher.matches()) {
-      throw new RuntimeException("expected [" + pattern + "] but input was : " + input);
-    }
-    StringBuilder builder = new StringBuilder();
-    if (matcher.groupCount() == 0) {
-      builder.append(input);
-    } else {
-      for (int i = 1; i <= matcher.groupCount(); i++) {
-        builder.append(matcher.group(i));
-      }
-    }
-    return builder.toString();
-  }
-
-  protected static <T> T match(String input, Pattern pattern, Function<String, T> transformer) {
-    return transformer.apply(match(input, pattern));
-  }
-
-  protected static String matchDataString(String input) {
-    return match(input, DATA_NON_WHITESPACE, s -> s);
-  }
-
-  protected static int matchDataInt(String input) {
-    return match(input, DATA_INT, Integer::parseInt);
-  }
-
-  protected static List<Object> matchDataJsonList(String input) {
-    return match(input, DATA_JSON_NO_EMPTY_LIST, AbstractCli::decodeJsonList);
-  }
-
-  public static List<String> matchDataJsonListOfStrings(String input) {
-    return match(input, DATA_JSON_NO_EMPTY_LIST, AbstractCli::decodeJsonListOfStrings);
-  }
-
-  protected static Map<String, String> matchDataJsonMapOfStrings(String input, boolean allowEmpty) {
-    return match(input, allowEmpty ? DATA_JSON_MAP : DATA_JSON_NON_EMPTY_MAP, AbstractCli::decodeJsonMapOfStrings);
-  }
-
-  protected static Map<String, Object> matchDataJsonMapOfObjects(String input, boolean allowEmpty) {
-    return match(input, allowEmpty ? DATA_JSON_MAP : DATA_JSON_NON_EMPTY_MAP, AbstractCli::decodeJsonMapOfObjects);
-  }
-
-  protected static Map<String, String> matchDataJsonMapOfStrings(String input) {
-    return matchDataJsonMapOfStrings(input, false);
-  }
-
-  protected static Map<String, Object> matchDataJsonMapOfObjects(String input) {
-    return matchDataJsonMapOfObjects(input, false);
-  }
 
   protected static String ensureNotNull(String value, String defaultValue) {
     return value != null ? value : defaultValue;
+  }
+
+  protected AtClientConnection createConnection(String rootUrl, AtSign atSign, int retries) throws AtException {
+    return creatConnectionBuilder(rootUrl, atSign, retries, verbose).build();
+  }
+
+  protected AtClientConnection createAuthenticatedConnection(String rootUrl, AtSign atSign, int retries)
+      throws AtException {
+    return creatConnectionBuilder(rootUrl, atSign, retries, verbose)
+        .onReady(Authentication.pkamAuthenticator(atSign, getKeys()))
+        .build();
+  }
+
+  private static NettyAtClientConnectionBuilder creatConnectionBuilder(String rootUrl, AtSign atSign, int retries,
+                                                                       boolean verbose) {
+    NettyAtEndpointSupplier endpoint = NettyAtEndpointSupplier.builder()
+        .rootUrl(checkNotNull(rootUrl, "root server endpoint not set"))
+        .atsign(checkNotNull(atSign, "atsign not set"))
+        .build();
+    SimpleReconnectStrategy reconnect = SimpleReconnectStrategy.builder()
+        .maxReconnectRetries(retries)
+        .reconnectPauseMillis(TimeUnit.SECONDS.toMillis(2))
+        .build();
+    return NettyAtClientConnection.builder()
+        .endpoint(endpoint)
+        .reconnect(reconnect)
+        .isVerbose(verbose);
+  }
+
+  protected AtKeys getKeys() {
+    try {
+      File file = checkExists(getAtKeysFile(keysFile, atSign));
+      return KeysUtil.loadKeys(file);
+    } catch (AtClientConfigException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   static class AtSignConverter implements ITypeConverter<AtSign> {

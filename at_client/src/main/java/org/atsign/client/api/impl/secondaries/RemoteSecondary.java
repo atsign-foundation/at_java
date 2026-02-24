@@ -17,7 +17,7 @@ import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
 import org.atsign.common.exceptions.AtIllegalArgumentException;
 import org.atsign.common.exceptions.AtInvalidAtKeyException;
-import org.atsign.common.exceptions.AtInvalidSyntaxException;
+import org.atsign.common.exceptions.AtExceptions.AtInvalidSyntaxException;
 import org.atsign.common.exceptions.AtUnknownResponseException;
 
 /**

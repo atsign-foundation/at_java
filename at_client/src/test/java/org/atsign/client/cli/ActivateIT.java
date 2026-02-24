@@ -45,7 +45,6 @@ class ActivateIT {
     }
   }
 
-
   @BeforeEach
   public void setup() {
     executor = Executors.newSingleThreadExecutor();

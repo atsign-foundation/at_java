@@ -1,4 +1,4 @@
-package org.atsign.common.exceptions;
+package org.atsign.common.exceptions.AtExceptions;
 
 import org.atsign.common.AtException;
 
