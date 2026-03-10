@@ -3,7 +3,7 @@ package org.atsign.common.exceptions;
 import org.atsign.common.AtException;
 
 /**
- * Occurs if response from {@link org.atsign.client.api.Secondary} cannot be decoded
+ * Occurs if response cannot be decoded
  */
 public class AtResponseHandlingException extends AtException {
 

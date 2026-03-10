@@ -29,15 +29,15 @@ public class Enroll {
   /**
    * Performs the onboarding workflow which sets up the manage keys for an atserver.
    *
-   * @param connection A connection to an atserver command interface
-   * @param atSign The AtSign that corresponds to the connection
-   * @param keys The {@link AtKeys}
-   * @param cramSecret
-   * @param appName
-   * @param deviceName
-   * @param deleteCramKey
+   * @param connection A connection to an atserver command interface.
+   * @param atSign The AtSign that corresponds to the connection.
+   * @param keys The {@link AtKeys} for the {@link AtSign}.
+   * @param cramSecret The CRAM secret.
+   * @param appName The app name for this first enrollment.
+   * @param deviceName The device name for this first enrollment.
+   * @param deleteCramKey Whether the CRAM key should be removed from the AtServer.
    * @return a new {@link AtKeys} instance that has the enrollment id set
-   * @throws AtException
+   * @throws AtException If the enrollment fails.
    */
   public static AtKeys onboard(AtClientConnection connection,
                                AtSign atSign,

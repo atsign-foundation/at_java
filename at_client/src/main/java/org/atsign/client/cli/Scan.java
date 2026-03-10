@@ -6,6 +6,7 @@ import java.util.Scanner;
 
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.AtKeys;
+import org.atsign.client.api.impl.clients.AtClients;
 import org.atsign.client.util.KeysUtil;
 import org.atsign.client.util.StringUtil;
 import org.atsign.common.AtSign;
@@ -13,6 +14,8 @@ import org.atsign.common.Keys.AtKey;
 import org.atsign.common.Metadata;
 
 import lombok.extern.slf4j.Slf4j;
+
+import static org.atsign.common.AtSign.createAtSign;
 
 /**
  * A command-line interface for scanning keys in your secondary (must have keys to atSign in keys/)
@@ -27,13 +30,13 @@ public class Scan {
     }
 
     String rootUrl = args[0];
-    AtSign atSign = new AtSign(args[1]);
+    AtSign atSign = createAtSign(args[1]);
     String regex = args[2];
 
     // all AtClients require AtKeys, this loads them based on the AtSign from the default location
     AtKeys keys = KeysUtil.loadKeys(atSign);
 
-    try (AtClient atClient = AtClient.withRemoteSecondary(rootUrl, atSign, keys, true)) {
+    try (AtClient atClient = AtClients.builder().url(rootUrl).atSign(atSign).keys(keys).build()) {
 
       List<AtKey> response = atClient.getAtKeys(regex).get();
 

@@ -2,19 +2,18 @@ package org.atsign.examples;
 
 import static org.atsign.client.util.KeysUtil.loadKeys;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 
 import org.atsign.client.api.AtClient;
-import org.atsign.common.AtException;
+import org.atsign.client.api.impl.clients.AtClients;
 import org.atsign.common.AtSign;
 import org.atsign.common.Keys;
 import org.atsign.common.Keys.SharedKey;
+import org.atsign.common.exceptions.AtClientConfigException;
 
 public class SharedKeyDeleteExample {
 
   /// Delete a SharedKey that you shared with another atSign, the key must be on your own secondary server (belonging to the sharedBy atSign)
-  public static void main(String[] args) {
+  public static void main(String[] args) throws AtClientConfigException {
     // 1. establish constants
     String ROOT_URL = "root.atsign.org:64";
     String ATSIGN_STR_SHARED_BY = "@33thesad"; // my atSign (sharedBy)
@@ -26,17 +25,22 @@ public class SharedKeyDeleteExample {
     AtSign sharedBy = new AtSign(ATSIGN_STR_SHARED_BY);
     AtSign sharedWith = new AtSign(ATSIGN_STR_SHARED_WITH);
 
-    // 3. atClient factory method
-    try (AtClient atClient = AtClient.withRemoteSecondary(ROOT_URL, sharedBy, loadKeys(sharedBy), VERBOSE)) {
+    // 3. build an AtClient
+    AtClients.AtClientsBuilder builder = AtClients.builder()
+        .url(ROOT_URL)
+        .atSign(sharedBy)
+        .keys(loadKeys(sharedBy))
+        .isVerbose(VERBOSE);
+
+    try (AtClient atClient = builder.build()) {
 
       // 4. create SharedKey instance
       SharedKey sk = Keys.sharedKeyBuilder().sharedBy(sharedBy).sharedWith(sharedWith).name(KEY_NAME).build();
 
       // 5. delete the key
-      String response = atClient.delete(sk).get();
-      System.out.println(response);
+      atClient.delete(sk).get();
 
-    } catch (AtException | InterruptedException | ExecutionException | IOException e) {
+    } catch (Exception e) {
       System.err.println("Failed to create AtClient instance " + e);
       e.printStackTrace();
     }

@@ -1,7 +1,6 @@
 package org.atsign.cucumber.steps;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.atsign.client.connection.protocol.Responses.decodeJsonListOfStrings;
 import static org.atsign.client.util.Preconditions.checkNotNull;
 import static org.atsign.cucumber.helpers.Helpers.isHostPortReachable;
 import static org.awaitility.Awaitility.await;
@@ -10,7 +9,6 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +20,7 @@ import org.atsign.client.api.AtClient;
 import org.atsign.client.api.AtEvents;
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.impl.clients.AtClients;
+import org.atsign.client.connection.protocol.Data;
 import org.atsign.client.util.EnrollmentId;
 import org.atsign.client.util.KeysUtil;
 import org.atsign.common.AtException;
@@ -452,7 +451,7 @@ public class AtClientContext {
     log.debug("teardown for {} deleted {}", lookupQualifiedAtSign(client), keys);
     try {
       client.close();
-    } catch (IOException e) {
+    } catch (Exception e) {
       log.debug("teardown close for {} threw exception : {}", lookupQualifiedAtSign(client), e.getMessage());
     }
   }
@@ -475,7 +474,7 @@ public class AtClientContext {
 
   private void deleteKeyNoThrow(AtClient client, String key) {
     try {
-      client.executeCommand("delete:" + key, true);
+      client.getCommandExecutor().sendSync("delete:" + key);
     } catch (Exception e) {
       log.error("attempt to delete {} failed : {}", key, e.getMessage());
     }
@@ -483,8 +482,8 @@ public class AtClientContext {
 
   private List<String> scanNoThrow(AtClient client) {
     try {
-      String json = client.executeCommand("scan:showHidden:true .*", true).getRawDataResponse();
-      return decodeJsonListOfStrings(json);
+      String response = client.getCommandExecutor().sendSync("scan:showHidden:true .*");
+      return Data.matchDataJsonListOfStrings(response);
     } catch (Exception e) {
       log.error("failed to scan : {}", e.getMessage());
       return Collections.emptyList();

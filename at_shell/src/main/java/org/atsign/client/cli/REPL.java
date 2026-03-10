@@ -4,14 +4,12 @@ import static org.atsign.client.api.AtEvents.AtEventType.decryptedUpdateNotifica
 import static org.atsign.client.api.AtEvents.AtEventType.updateNotification;
 import static org.fusesource.jansi.Ansi.ansi;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.AtEvents;
 import org.atsign.client.api.AtEvents.AtEventType;
-import org.atsign.client.api.Secondary;
-import org.atsign.client.util.ArgsUtil;
+import org.atsign.client.api.impl.clients.AtClients;
 import org.atsign.client.util.KeysUtil;
 import org.atsign.common.AtException;
 import org.atsign.common.AtSign;
@@ -47,14 +45,17 @@ public class REPL {
     AtClient atClient;
     try {
       System.out.print(ansi().cursorToColumn(0).bold().fg(Ansi.Color.BLUE).a("Connecting ... ").reset());
-      atClient = AtClient.withRemoteSecondary(atSign, KeysUtil.loadKeys(atSign), ArgsUtil.createAddressFinder(rootUrl),
-                                              verbose);
-
+      atClient = AtClients.builder()
+          .url(rootUrl)
+          .atSign(atSign)
+          .keys(KeysUtil.loadKeys(atSign))
+          .isVerbose(verbose)
+          .build();
       System.out.println(ansi().fg(Ansi.Color.GREEN).a("connected. ").reset().a("Type '/help' to see help").reset());
 
       REPL repl = new REPL(atClient, seeEncryptedNotifications);
       repl.repl();
-    } catch (IOException | AtException e) {
+    } catch (Exception e) {
       System.out.println(ansi().fg(Ansi.Color.RED).a("connection failed: " + e).reset());
       e.printStackTrace();
       System.exit(1);
@@ -86,7 +87,6 @@ public class REPL {
       String command = cliScanner.nextLine() + "\n";
       if (!command.trim().isEmpty()) {
         command = command.trim();
-        Secondary.Response response;
         if ("help".equals(command) || command.startsWith("_") || command.startsWith("/") || command.startsWith("\\")) {
           // simple repl for get / put /
           if (!"help".equals(command)) {
@@ -119,14 +119,11 @@ public class REPL {
               String value = command.substring(verb.length() + fullKeyName.length() + 2).trim();
               Keys.AtKey key = Keys.keyBuilder().rawKey(fullKeyName).build();
               if (key instanceof PublicKey) {
-                String data = client.put((PublicKey) key, value).get();
-                System.out.println("  => \033[31m" + data + "\033[0m");
+                client.put((PublicKey) key, value).get();
               } else if (key instanceof SelfKey) {
-                String data = client.put((SelfKey) key, value).get();
-                System.out.println("  => \033[31m" + data + "\033[0m");
+                client.put((SelfKey) key, value).get();
               } else if (key instanceof SharedKey) {
-                String data = client.put((SharedKey) key, value).get();
-                System.out.println("  => \033[31m" + data + "\033[0m");
+                client.put((SharedKey) key, value).get();
               } else if (key instanceof Keys.PrivateHiddenKey) {
                 throw new UnsupportedOperationException("PrivateHiddenKey is not implemented yet");
               } else {
@@ -143,14 +140,11 @@ public class REPL {
               String fullKeyName = parts[1];
               Keys.AtKey key = Keys.keyBuilder().rawKey(fullKeyName).build();
               if (key instanceof PublicKey) {
-                String data = client.delete((PublicKey) key).get();
-                System.out.println("  => \033[31m" + data + "\033[0m");
+                client.delete((PublicKey) key).get();
               } else if (key instanceof SelfKey) {
-                String data = client.delete((SelfKey) key).get();
-                System.out.println("  => \033[31m" + data + "\033[0m");
+                client.delete((SelfKey) key).get();
               } else if (key instanceof SharedKey) {
-                String data = client.delete((SharedKey) key).get();
-                System.out.println("  => \033[31m" + data + "\033[0m");
+                client.delete((SharedKey) key).get();
               } else if (key instanceof Keys.PrivateHiddenKey) {
                 throw new UnsupportedOperationException("PrivateHiddenKey is not implemented yet");
               } else {
@@ -165,9 +159,9 @@ public class REPL {
           }
         } else {
           try {
-            response = client.executeCommand(command, true);
-            System.out.println("  => \033[31m" + response.toString() + "\033[0m");
-          } catch (AtException | IOException e) {
+            String response = client.getCommandExecutor().sendSync(command);
+            System.out.println("  => \033[31m" + response + "\033[0m");
+          } catch (Exception e) {
             System.err.println("*** " + e);
           }
         }

@@ -3,7 +3,7 @@ package org.atsign.common.exceptions;
 import org.atsign.common.AtException;
 
 /**
- * Occurs when {@link org.atsign.client.api.Secondary} has been paused
+ * Occurs when the AtServer has been paused
  */
 public class AtServerIsPausedException extends AtException {
 

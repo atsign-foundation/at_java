@@ -1,13 +1,10 @@
 package org.atsign.common;
 
-import org.atsign.client.api.Secondary;
-import org.atsign.common.Keys.AtKey;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import org.junit.jupiter.api.Test;
-
 import static org.atsign.common.AtSign.createAtSign;
 import static org.junit.jupiter.api.Assertions.*;
+
+import org.atsign.common.Keys.AtKey;
+import org.junit.jupiter.api.Test;
 
 public class FromStringTest {
 
@@ -26,16 +23,15 @@ public class FromStringTest {
   }
 
   @Test
-  public void fromStringTest1() throws AtException, JsonProcessingException {
+  public void fromStringTest1() throws Exception {
     String KEY_NAME_STR = "public:publickey@bob";
 
-    Secondary.Response response = new Secondary.Response();
-    response.setRawDataResponse("{\"createdBy\":null,\"updatedBy\":null,"
+    String response = "{\"createdBy\":null,\"updatedBy\":null,"
         + "\"createdAt\":\"2022-07-13 21:54:28.519Z\",\"updatedAt\":\"2022-07-13 21:54:28.519Z\","
         + "\"availableAt\":\"2022-07-13 21:54:28.519Z\",\"expiresAt\":null,"
         + "\"refreshAt\":null,\"status\":\"active\",\"version\":0," + "\"ttl\":0,\"ttb\":0,\"ttr\":null,\"ccd\":null,"
         + "\"isBinary\":false,\"isEncrypted\":false,"
-        + "\"dataSignature\":null,\"sharedKeyEnc\":null,\"pubKeyCS\":null}");
+        + "\"dataSignature\":null,\"sharedKeyEnc\":null,\"pubKeyCS\":null}";
 
     AtKey atKey = fromString(KEY_NAME_STR, response);
 
@@ -61,7 +57,7 @@ public class FromStringTest {
   }
 
   @Test
-  public void fromStringTest2() throws AtException, JsonProcessingException {
+  public void fromStringTest2() throws Exception {
     String KEY_NAME_STR = "test@bob";
 
     @SuppressWarnings("SpellCheckingInspection")
@@ -72,10 +68,7 @@ public class FromStringTest {
         + "\"dataSignature\":\"oIq0kHvwQieVrhOs4dJLN61qNP73bNLLNPTRW7tAdapIZF3kSMrNVCcTAWWWyzb2Tyii51uZ7zlIYmHWuS4tIE0lMzrUeXGcfQhOrdjkrxf4qEceNR1qLa7tDjOAb8xuhf/zJ3yaen8NGswfKWwQluga/52SchFClrR99xEI93s=\","
         + "\"sharedKeyEnc\":null,\"pubKeyCS\":null}";
 
-    Secondary.Response response = new Secondary.Response();
-    response.setRawDataResponse(LLOOKUP_META_STR);
-
-    AtKey atKey = fromString(KEY_NAME_STR, response);
+    AtKey atKey = fromString(KEY_NAME_STR, LLOOKUP_META_STR);
 
     assertEquals(KEY_NAME_STR, atKey.toString());
     Metadata metadata = atKey.metadata();
@@ -101,9 +94,8 @@ public class FromStringTest {
     assertNull(metadata.pubKeyCS());
   }
 
-  public static AtKey fromString(String rawKey, Secondary.Response metadataResponse)
-      throws AtException, JsonProcessingException {
-    Metadata metadata = Metadata.fromJson(metadataResponse.getRawDataResponse());
+  public static AtKey fromString(String rawKey, String metaDataJson) throws Exception {
+    Metadata metadata = Metadata.fromJson(metaDataJson);
     return Keys.keyBuilder()
         .rawKey(rawKey)
         .metadata(metadata)

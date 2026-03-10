@@ -1,9 +1,6 @@
 package org.atsign.client.api.impl.clients;
 
 import static org.atsign.client.api.AtEvents.AtEventType.decryptedUpdateNotification;
-import static org.atsign.client.connection.protocol.Data.matchData;
-import static org.atsign.client.connection.protocol.Error.matchError;
-import static org.atsign.client.connection.protocol.Error.throwExceptionIfError;
 import static org.atsign.client.util.EncryptionUtil.aesDecryptFromBase64;
 import static org.atsign.client.util.EncryptionUtil.rsaDecryptFromBase64;
 import static org.atsign.client.util.Preconditions.checkNotNull;
@@ -20,7 +17,6 @@ import org.atsign.client.api.AtEvents.AtEventBus;
 import org.atsign.client.api.AtEvents.AtEventListener;
 import org.atsign.client.api.AtEvents.AtEventType;
 import org.atsign.client.api.AtKeys;
-import org.atsign.client.api.Secondary;
 import org.atsign.client.connection.api.AtClientConnection;
 import org.atsign.client.connection.protocol.*;
 import org.atsign.common.AtException;
@@ -59,6 +55,11 @@ public class DefaultAtClientImpl implements AtClient {
   @Override
   public AtKeys getEncryptionKeys() {
     return keys;
+  }
+
+  @Override
+  public AtClientConnection getCommandExecutor() {
+    return connection;
   }
 
   @Builder
@@ -115,13 +116,7 @@ public class DefaultAtClientImpl implements AtClient {
 
   @Override
   public CompletableFuture<String> get(SharedKey sharedKey) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return SharedKeys.get(connection, atSign, keys, sharedKey);
-      } catch (Exception e) {
-        throw new CompletionException(e);
-      }
-    });
+    return wrapAsync(() -> SharedKeys.get(connection, atSign, keys, sharedKey));
   }
 
   @Override
@@ -130,31 +125,18 @@ public class DefaultAtClientImpl implements AtClient {
   }
 
   @Override
-  public CompletableFuture<String> put(SharedKey sharedKey, String value) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        SharedKeys.put(connection, atSign, keys, sharedKey, value);
-        return null;
-      } catch (Exception e) {
-        throw new CompletionException(e);
-      }
-    });
+  public CompletableFuture<Void> put(SharedKey sharedKey, String value) {
+    return wrapAsync(() -> SharedKeys.put(connection, atSign, keys, sharedKey, value));
   }
 
   @Override
-  public CompletableFuture<String> delete(SharedKey sharedKey) {
-    return deleteKey(sharedKey);
+  public CompletableFuture<Void> delete(SharedKey sharedKey) {
+    return wrapAsync(() -> Keys.deleteKey(connection, sharedKey));
   }
 
   @Override
   public CompletableFuture<String> get(SelfKey selfKey) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return SelfKeys.get(connection, keys, selfKey);
-      } catch (Exception e) {
-        throw new CompletionException(e);
-      }
-    });
+    return wrapAsync(() -> SelfKeys.get(connection, keys, selfKey));
   }
 
   @Override
@@ -163,42 +145,23 @@ public class DefaultAtClientImpl implements AtClient {
   }
 
   @Override
-  public CompletableFuture<String> put(SelfKey selfKey, String value) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        SelfKeys.put(connection, keys, selfKey, value);
-        return null;
-      } catch (Exception e) {
-        throw new CompletionException(e);
-      }
-    });
+  public CompletableFuture<Void> put(SelfKey selfKey, String value) {
+    return wrapAsync(() -> SelfKeys.put(connection, keys, selfKey, value));
   }
 
   @Override
-  public CompletableFuture<String> delete(SelfKey selfKey) {
-    return deleteKey(selfKey);
+  public CompletableFuture<Void> delete(SelfKey selfKey) {
+    return wrapAsync(() -> Keys.deleteKey(connection, selfKey));
   }
 
   @Override
   public CompletableFuture<String> get(PublicKey publicKey) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return PublicKeys.get(connection, atSign, publicKey, null);
-      } catch (Exception e) {
-        throw new CompletionException(e);
-      }
-    });
+    return wrapAsync(() -> PublicKeys.get(connection, atSign, publicKey, null));
   }
 
   @Override
   public CompletableFuture<String> get(PublicKey publicKey, GetRequestOptions options) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return PublicKeys.get(connection, atSign, publicKey, options);
-      } catch (Exception e) {
-        throw new CompletionException(e);
-      }
-    });
+    return wrapAsync(() -> PublicKeys.get(connection, atSign, publicKey, options));
   }
 
   @Override
@@ -212,34 +175,27 @@ public class DefaultAtClientImpl implements AtClient {
   }
 
   @Override
-  public CompletableFuture<String> put(PublicKey publicKey, String value) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        PublicKeys.put(connection, keys, publicKey, value);
-        return null;
-      } catch (Exception e) {
-        throw new CompletionException(e);
-      }
-    });
+  public CompletableFuture<Void> put(PublicKey publicKey, String value) {
+    return wrapAsync(() -> PublicKeys.put(connection, keys, publicKey, value));
   }
 
   @Override
-  public CompletableFuture<String> delete(PublicKey publicKey) {
-    return deleteKey(publicKey);
+  public CompletableFuture<Void> delete(PublicKey publicKey) {
+    return wrapAsync(() -> Keys.deleteKey(connection, publicKey));
   }
 
   @Override
-  public CompletableFuture<String> put(SharedKey sharedKey, byte[] value) {
+  public CompletableFuture<Void> put(SharedKey sharedKey, byte[] value) {
     throw new UnsupportedOperationException("to be implemented");
   }
 
   @Override
-  public CompletableFuture<String> put(SelfKey selfKey, byte[] value) {
+  public CompletableFuture<Void> put(SelfKey selfKey, byte[] value) {
     throw new UnsupportedOperationException("to be implemented");
   }
 
   @Override
-  public CompletableFuture<String> put(PublicKey publicKey, byte[] value) {
+  public CompletableFuture<Void> put(PublicKey publicKey, byte[] value) {
     throw new UnsupportedOperationException("to be implemented");
   }
 
@@ -259,46 +215,7 @@ public class DefaultAtClientImpl implements AtClient {
     });
   }
 
-  @Override
-  public Response executeCommand(String command, boolean throwExceptionOnErrorResponse)
-      throws AtException, IOException {
-
-    try {
-      String s = connection.sendSync(command);
-      Response response = new Response();
-      if (throwExceptionOnErrorResponse) {
-        response.setRawDataResponse(throwExceptionIfError(matchData(s)));
-      } else {
-        if (s.startsWith("error:")) {
-          response.setRawErrorResponse(matchError(s));
-        } else {
-          response.setRawDataResponse(matchData(s));
-        }
-      }
-      return response;
-    } catch (ExecutionException | InterruptedException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  @Override
-  public Secondary getSecondary() {
-    throw new UnsupportedOperationException("not supported");
-  }
-
-  private CompletableFuture<String> deleteKey(AtKey key) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        Keys.deleteKey(connection, key);
-        return null;
-      } catch (Exception e) {
-        throw new CompletionException(e);
-      }
-    });
-  }
-
-  @Override
-  public void handleEvent(AtEventType eventType, Map<String, Object> eventData) {
+  private void handleEvent(AtEventType eventType, Map<String, Object> eventData) {
     try {
       switch (eventType) {
         case sharedKeyNotification:
@@ -342,4 +259,42 @@ public class DefaultAtClientImpl implements AtClient {
       eventBus.publishEvent(decryptedUpdateNotification, newEventData);
     }
   }
+
+  /**
+   * A runnable command which returns a value but can throw {@link AtException}s or execution
+   * exceptions
+   */
+  public interface AtCommandThatReturnsString {
+    String run() throws AtException, ExecutionException, InterruptedException;
+  }
+
+  private static CompletableFuture<String> wrapAsync(AtCommandThatReturnsString command) {
+    return CompletableFuture.supplyAsync(() -> {
+      try {
+        return command.run();
+      } catch (Exception e) {
+        throw new CompletionException(e);
+      }
+    });
+  }
+
+  /**
+   * A runnable command which does NOT return a value but can throw {@link AtException}s or execution
+   * exceptions
+   */
+  public interface AtCommandThatReturnsVoid {
+    void run() throws AtException, ExecutionException, InterruptedException;
+  }
+
+  private static CompletableFuture<Void> wrapAsync(AtCommandThatReturnsVoid command) {
+    return CompletableFuture.supplyAsync(() -> {
+      try {
+        command.run();
+        return null;
+      } catch (Exception e) {
+        throw new CompletionException(e);
+      }
+    });
+  }
+
 }
