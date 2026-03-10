@@ -1,7 +1,7 @@
 package org.atsign.cucumber.steps;
 
-import static org.atsign.client.connection.protocol.Authentication.authenticateWithPkam;
-import static org.atsign.client.connection.protocol.Data.matchDataJsonListOfStrings;
+import static org.atsign.client.impl.commands.AuthenticationCommands.authenticateWithPkam;
+import static org.atsign.client.impl.commands.DataResponses.matchDataJsonListOfStrings;
 import static org.atsign.cucumber.helpers.Helpers.getFirstValue;
 import static org.atsign.cucumber.helpers.Helpers.toCanonicalMaps;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -13,14 +13,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-import org.atsign.client.cli.Activate;
-import org.atsign.client.connection.api.AtClientConnection;
-import org.atsign.client.connection.protocol.Enroll;
-import org.atsign.client.connection.protocol.Keys;
-import org.atsign.client.util.EnrollmentId;
-import org.atsign.client.util.KeysUtil;
-import org.atsign.common.AtSign;
-import org.atsign.common.exceptions.AtClientConfigException;
+import org.atsign.client.impl.cli.Activate;
+import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.impl.commands.EnrollCommands;
+import org.atsign.client.impl.commands.KeyCommands;
+import org.atsign.client.impl.common.EnrollmentId;
+import org.atsign.client.impl.util.KeysUtils;
+import org.atsign.client.api.AtSign;
+import org.atsign.client.impl.exceptions.AtClientConfigException;
 import org.atsign.cucumber.helpers.AtDemoData;
 import org.opentest4j.TestAbortedException;
 
@@ -54,7 +54,7 @@ public class ActivateSteps {
   @Given("atsign keys for {atsign} are missing")
   public void assertMissingKeys(AtSign atsign) throws Exception {
     try {
-      KeysUtil.loadKeys(atsign);
+      KeysUtils.loadKeys(atsign);
     } catch (AtClientConfigException e) {
       if (e.getMessage().contains("loadKeys: No file")) {
         return;
@@ -231,22 +231,22 @@ public class ActivateSteps {
 
     public void run() {
 
-      try (AtClientConnection connection = createConnection(rootUrl, atSign, 0)) {
+      try (AtCommandExecutor executor = createConnection(rootUrl, atSign, 0)) {
 
-        authenticateWithPkam(connection, atSign, KeysUtil.loadKeys(keysFile));
+        authenticateWithPkam(executor, atSign, KeysUtils.loadKeys(keysFile));
 
         // delete keys that have been created
-        matchDataJsonListOfStrings(connection.sendSync("scan")).stream()
+        matchDataJsonListOfStrings(executor.sendSync("scan")).stream()
             .filter(k -> !isProtectedKey(atSign, k))
-            .forEach(k -> deleteKeyNoThrow(connection, atSign, k));
+            .forEach(k -> deleteKeyNoThrow(executor, atSign, k));
 
         // remove enrollments
-        Enroll.list(connection, "pending").forEach(id -> denyDeleteNoThrow(connection, atSign, id));
-        Enroll.list(connection, "denied").forEach(id -> deleteNoThrow(connection, atSign, id));
-        Enroll.list(connection, "approved").stream()
+        EnrollCommands.list(executor, "pending").forEach(id -> denyDeleteNoThrow(executor, atSign, id));
+        EnrollCommands.list(executor, "denied").forEach(id -> deleteNoThrow(executor, atSign, id));
+        EnrollCommands.list(executor, "approved").stream()
             .filter(id -> !id.equals(onboardEnrollmentId))
-            .forEach(id -> revokeDeleteNoThrow(connection, atSign, id));
-        revokeDeleteNoThrow(connection, atSign, onboardEnrollmentId);
+            .forEach(id -> revokeDeleteNoThrow(executor, atSign, id));
+        revokeDeleteNoThrow(executor, atSign, onboardEnrollmentId);
       } catch (Exception e) {
         log.error("teardown for {} failed : {}", atSign, e.getMessage());
       }
@@ -259,44 +259,44 @@ public class ActivateSteps {
           || key.contains(("__manage@"));
     }
 
-    protected void deleteKeyNoThrow(AtClientConnection connection, AtSign atSign, String key) {
+    protected void deleteKeyNoThrow(AtCommandExecutor executor, AtSign atSign, String key) {
       try {
         log.debug("teardown for {} deleting key {}", atSign, key);
-        Keys.deleteKey(connection, key);
+        KeyCommands.deleteKey(executor, key);
       } catch (Exception e) {
         log.error("teardown for {} failed to delete key {} in onboarded server : {}",
                   atSign, key, e.getMessage());
       }
     }
 
-    private void deleteNoThrow(AtClientConnection connection, AtSign atSign, EnrollmentId id) {
+    private void deleteNoThrow(AtCommandExecutor executor, AtSign atSign, EnrollmentId id) {
       try {
         log.debug("teardown for {} deleting enroll request {}", id);
-        delete(connection, id);
+        delete(executor, id);
       } catch (Exception e) {
         log.error("teardown for {} failed to enroll delete {} in onboarded server : {}",
                   atSign, id, e.getMessage());
       }
     }
 
-    private void denyDeleteNoThrow(AtClientConnection connection, AtSign atsign, EnrollmentId id) {
+    private void denyDeleteNoThrow(AtCommandExecutor executor, AtSign atsign, EnrollmentId id) {
       try {
         log.debug("teardown for {} denying enroll request {}", atsign, id);
-        Enroll.deny(connection, id);
+        EnrollCommands.deny(executor, id);
         log.debug("teardown for {} deleting enroll request {}", atsign, id);
-        Enroll.delete(connection, id);
+        EnrollCommands.delete(executor, id);
       } catch (Exception e) {
         log.error("teardown for {} failed to enroll deny and delete {} in onboarded server : {}",
                   atsign, id, e.getMessage());
       }
     }
 
-    private void revokeDeleteNoThrow(AtClientConnection connection, AtSign atSign, EnrollmentId id) {
+    private void revokeDeleteNoThrow(AtCommandExecutor executor, AtSign atSign, EnrollmentId id) {
       try {
         log.debug("teardown for {} revoking enroll request {}", atSign, id);
-        Enroll.revoke(connection, id);
+        EnrollCommands.revoke(executor, id);
         log.debug("teardown for {} deleting enroll request {}", atSign, id);
-        Enroll.delete(connection, id);
+        EnrollCommands.delete(executor, id);
       } catch (Exception e) {
         log.error("teardown for {} failed to enroll revoke and delete {} in onboarded server : {}",
                   atSign, id, e.getMessage());
@@ -305,15 +305,15 @@ public class ActivateSteps {
   }
 
   private File createAtKeysFile(AtSign atSign) {
-    String filename = atSign.toString() + KeysUtil.keysFileSuffix;
-    File file = new File(new File(KeysUtil.expectedKeysFilesLocation), filename);
+    String filename = atSign.toString() + KeysUtils.keysFileSuffix;
+    File file = new File(new File(KeysUtils.expectedKeysFilesLocation), filename);
     teardownCommands.add(new FileDelete(file));
     return file;
   }
 
   private File createAtKeysFile(AtSign atSign, String app, String device) {
-    String filename = atSign + "-" + app + "-" + device + KeysUtil.keysFileSuffix;
-    File file = new File(new File(KeysUtil.expectedKeysFilesLocation), filename);
+    String filename = atSign + "-" + app + "-" + device + KeysUtils.keysFileSuffix;
+    File file = new File(new File(KeysUtils.expectedKeysFilesLocation), filename);
     teardownCommands.add(new FileDelete(file));
     return file;
   }

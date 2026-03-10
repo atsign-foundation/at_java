@@ -1,7 +1,5 @@
 package org.atsign.client.api;
 
-import org.atsign.common.AtSign;
-
 /**
  * Constants and Utility methods for "well known" standard keys
  */

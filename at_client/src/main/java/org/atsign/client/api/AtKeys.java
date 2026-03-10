@@ -7,10 +7,9 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.atsign.client.util.EnrollmentId;
-
 import lombok.Builder;
 import lombok.Value;
+import org.atsign.client.impl.common.EnrollmentId;
 
 /**
  * An immutable class used to hold an {@link org.atsign.client.api.AtClient}s keys.
@@ -56,13 +55,13 @@ public class AtKeys {
    * request uses this key to encrypt the {@link #selfEncryptKey} and {@link #encryptPrivateKey}
    * in the response that it sends.
    * The process which requested the enrollment can then decrypt and store those keys.
-   * This ensures that all {@link AtKeys} got and {@link org.atsign.common.AtSign} share the same
+   * This ensures that all {@link AtKeys} got and {@link AtSign} share the same
    * {@link #selfEncryptKey} and {@link #encryptPrivateKey}
    */
   String apkamSymmetricKey;
 
   /**
-   * Encryption Key used to encrypt {@link org.atsign.common.Keys.SelfKey}s and the pkam and
+   * Encryption Key used to encrypt {@link Keys.SelfKey}s and the pkam and
    * encryption key pairs
    * when they are externalised as JSON
    */
@@ -70,16 +69,16 @@ public class AtKeys {
 
   /**
    * This is used to encrypt the symmetric keys that are used to encrypt
-   * {@link org.atsign.common.Keys.SharedKey}s
-   * where the shared with {@link org.atsign.common.AtSign} is this {@link org.atsign.common.AtSign}
+   * {@link Keys.SharedKey}s
+   * where the shared with {@link AtSign} is this {@link AtSign}
    */
 
   String encryptPublicKey;
 
   /**
    * This is used to decrypt the symmetric keys that are used to encrypt
-   * {@link org.atsign.common.Keys.SharedKey}s
-   * where the shared with {@link org.atsign.common.AtSign} is this {@link org.atsign.common.AtSign}
+   * {@link Keys.SharedKey}s
+   * where the shared with {@link AtSign} is this {@link AtSign}
    */
   String encryptPrivateKey;
 

@@ -1,14 +1,14 @@
 package org.atsign.examples;
 
-import static org.atsign.client.util.KeysUtil.loadKeys;
+import static org.atsign.client.impl.util.KeysUtils.loadKeys;
 
 
 import org.atsign.client.api.AtClient;
-import org.atsign.client.api.impl.clients.AtClients;
-import org.atsign.common.AtSign;
-import org.atsign.common.Keys;
-import org.atsign.common.Keys.SharedKey;
-import org.atsign.common.exceptions.AtClientConfigException;
+import org.atsign.client.impl.AtClients;
+import org.atsign.client.api.AtSign;
+import org.atsign.client.api.Keys;
+import org.atsign.client.api.Keys.SharedKey;
+import org.atsign.client.impl.exceptions.AtClientConfigException;
 
 public class SharedKeyDeleteExample {
 
@@ -26,7 +26,7 @@ public class SharedKeyDeleteExample {
     AtSign sharedWith = new AtSign(ATSIGN_STR_SHARED_WITH);
 
     // 3. build an AtClient
-    AtClients.AtClientsBuilder builder = AtClients.builder()
+    AtClients.AtClientBuilder builder = AtClients.builder()
         .url(ROOT_URL)
         .atSign(sharedBy)
         .keys(loadKeys(sharedBy))

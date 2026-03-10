@@ -45,6 +45,9 @@
     <config.spotless>config/java-format.xml</config.spotless>
     <config.checkstyle>config/checkstyle.xml</config.checkstyle>
 
+    <coverage.line>0.9</coverage.line>
+    <coverage.branch>0.9</coverage.branch>
+
     <!-- dependency versions -->
     <version.jackson>2.16.1</version.jackson>
     <version.bouncycastle>1.78.1</version.bouncycastle>
@@ -360,6 +363,33 @@
               <goals>
                 <goal>report</goal>
               </goals>
+            </execution>
+            <execution>
+              <id>check</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+
+              <configuration>
+                <rules>
+                  <rule>
+                    <element>BUNDLE</element>
+                    <limits>
+                      <limit>
+                        <counter>LINE</counter>
+                        <value>COVEREDRATIO</value>
+                        <minimum>${coverage.line}</minimum>
+                      </limit>
+                      <limit>
+                        <counter>BRANCH</counter>
+                        <value>COVEREDRATIO</value>
+                        <minimum>${coverage.branch}</minimum>
+                      </limit>
+                    </limits>
+                  </rule>
+                </rules>
+              </configuration>
             </execution>
           </executions>
         </plugin>

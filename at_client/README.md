@@ -70,7 +70,7 @@ The SDK currently depends on the following
 ## Example Usage
 
 The command line classes under
-[src/main/java/org/atsign/client/cli](src/main/java/org/atsign/client/cli)
+[src/main/java/org/atsign/client/cli](src/main/java/org/atsign/client/impl/cli)
 serve as simple examples of how to instantiate an AtClient instance and invoke its
 interface.
 
@@ -135,11 +135,11 @@ mvn exec:java -Dexec.mainClass=org.atsign.client.cli.Delete \
 
 ### Register
 
-The utility **org.atsign.client.cli.Register** can be used to perform
+The utility **org.atsign.client.cli.register.Register** can be used to perform
 registration operations.
 
 ```shell
-mvn exec:java -Dexec.mainClass=org.atsign.client.cli.Register -Dexec.args="--help"
+mvn exec:java -Dexec.mainClass=org.atsign.client.cli.register.Register -Dexec.args="--help"
 ```
 
 When using the SUPER_API Key to register an atsign, the following sequence of

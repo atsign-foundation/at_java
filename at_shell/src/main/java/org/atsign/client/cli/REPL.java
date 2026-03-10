@@ -9,16 +9,16 @@ import java.util.*;
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.AtEvents;
 import org.atsign.client.api.AtEvents.AtEventType;
-import org.atsign.client.api.impl.clients.AtClients;
-import org.atsign.client.util.KeysUtil;
-import org.atsign.common.AtException;
-import org.atsign.common.AtSign;
-import org.atsign.common.Keys;
-import org.atsign.common.Keys.PublicKey;
-import org.atsign.common.Keys.SelfKey;
-import org.atsign.common.Keys.SharedKey;
-import org.atsign.common.exceptions.AtIllegalArgumentException;
-import org.atsign.common.exceptions.AtExceptions.AtInvalidSyntaxException;
+import org.atsign.client.impl.AtClients;
+import org.atsign.client.impl.util.KeysUtils;
+import org.atsign.client.impl.exceptions.AtException;
+import org.atsign.client.api.AtSign;
+import org.atsign.client.api.Keys;
+import org.atsign.client.api.Keys.PublicKey;
+import org.atsign.client.api.Keys.SelfKey;
+import org.atsign.client.api.Keys.SharedKey;
+import org.atsign.client.impl.exceptions.AtIllegalArgumentException;
+import org.atsign.client.impl.exceptions.AtInvalidSyntaxException;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 
@@ -48,7 +48,7 @@ public class REPL {
       atClient = AtClients.builder()
           .url(rootUrl)
           .atSign(atSign)
-          .keys(KeysUtil.loadKeys(atSign))
+          .keys(KeysUtils.loadKeys(atSign))
           .isVerbose(verbose)
           .build();
       System.out.println(ansi().fg(Ansi.Color.GREEN).a("connected. ").reset().a("Type '/help' to see help").reset());

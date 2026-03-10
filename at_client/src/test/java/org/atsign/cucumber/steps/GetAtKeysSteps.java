@@ -10,8 +10,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.atsign.client.api.AtClient;
-import org.atsign.common.AtSign;
-import org.atsign.common.Keys;
+import org.atsign.client.api.AtSign;
+import org.atsign.client.api.Keys;
 
 import io.cucumber.datatable.DataTable;
 import io.cucumber.datatable.DataTableFormatter;

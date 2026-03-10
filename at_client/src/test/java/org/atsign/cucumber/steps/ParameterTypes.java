@@ -5,8 +5,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.atsign.common.AtException;
-import org.atsign.common.AtSign;
+import org.atsign.client.impl.exceptions.AtException;
+import org.atsign.client.api.AtSign;
 
 import io.cucumber.java.ParameterType;
 
@@ -33,7 +33,7 @@ public class ParameterTypes {
 
   @ParameterType("(AtException|AtKeyNotFoundException|AtUnauthorizedException|AtUnauthenticatedException)")
   public Class<AtException> exception(String className) throws ClassNotFoundException {
-    return (Class<AtException>) Class.forName("org.atsign.common.exceptions." + className);
+    return (Class<AtException>) Class.forName("org.atsign.client.impl.exceptions." + className);
   }
 
   @ParameterType("\\w+")

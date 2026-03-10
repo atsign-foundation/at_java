@@ -1,0 +1,227 @@
+package org.atsign.client.impl.commands;
+
+import static org.atsign.client.api.AtKeyNames.toSharedByMeKeyName;
+import static org.atsign.client.impl.commands.DataResponses.*;
+import static org.atsign.client.impl.commands.ErrorResponses.throwExceptionIfError;
+import static org.atsign.client.impl.commands.CommandBuilders.LookupOperation.all;
+import static org.atsign.client.impl.common.Preconditions.checkNotNull;
+import static org.atsign.client.impl.common.Preconditions.checkTrue;
+import static org.atsign.client.impl.util.EncryptionUtils.*;
+
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
+import org.atsign.client.api.*;
+import org.atsign.client.api.Keys.SharedKey;
+import org.atsign.client.impl.exceptions.AtException;
+import org.atsign.client.impl.exceptions.AtKeyNotFoundException;
+import org.atsign.client.impl.util.EncryptionUtils;
+
+/**
+ * Atsign protocol utility code that relates to "shared keys"
+ *
+ */
+
+public class SharedKeyCommands {
+
+  public static String get(AtCommandExecutor executor, AtSign atSign, AtKeys keys, SharedKey key)
+      throws AtException {
+    if (key.sharedBy().equals(atSign)) {
+      return getSharedByMe(executor, keys, key);
+    } else if (key.sharedWith().equals(atSign)) {
+      return getSharedByOther(executor, keys, key);
+    } else {
+      throw new IllegalArgumentException("the client atsign is neither the sharedBy or sharedWith");
+    }
+  }
+
+  public static void put(AtCommandExecutor executor, AtSign atSign, AtKeys keys, SharedKey key, String value)
+      throws AtException {
+    checkTrue(key.sharedBy().equals(atSign), "sharedBy does not match this client's atsign");
+    try {
+
+      // get or create key for sharedBy - sharedWith
+      String aesKey = getEncryptKeySharedByMe(executor, keys, key);
+      if (aesKey == null) {
+        aesKey = createEncryptKey(executor, keys, key);
+      }
+
+      // encrypt the value
+      String iv = EncryptionUtils.generateRandomIvBase64(16);
+      key.updateMissingMetadata(Metadata.builder().ivNonce(iv).build());
+      String encrypted = aesEncryptToBase64(value, aesKey, iv);
+
+      // send an update command
+      String updateCommand = CommandBuilders.updateCommandBuilder().key(key).value(encrypted).build();
+      String updateResponse = executor.sendSync(updateCommand);
+
+      // verify the response
+      matchDataInt(throwExceptionIfError(updateResponse));
+
+    } catch (ExecutionException | InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static String getSharedByMe(AtCommandExecutor executor, AtKeys keys, SharedKey key) throws AtException {
+    try {
+
+      // send local lookup command and decode
+      String llookupCommand = CommandBuilders.llookupCommandBuilder().key(key).operation(all).build();
+      LookupResponse llookupResponse = matchLookupResponse(throwExceptionIfError(executor.sendSync(llookupCommand)));
+
+      // get my encrypt key for sharedBy sharedWith
+      String aesKey = checkNotNull(getEncryptKeySharedByMe(executor, keys, key), key + " not found");
+
+      // return decrypted value
+      return aesDecryptFromBase64(llookupResponse.data, aesKey, llookupResponse.metaData.ivNonce());
+
+    } catch (ExecutionException | InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static String getSharedByOther(AtCommandExecutor executor, AtKeys keys, SharedKey key) throws AtException {
+    try {
+
+      // send lookup command and decode
+      String lookupCommand = CommandBuilders.lookupCommandBuilder().key(key).operation(all).build();
+      LookupResponse lookupResponse = matchLookupResponse(throwExceptionIfError(executor.sendSync(lookupCommand)));
+
+      // get my encrypt key for sharedBy sharedWith
+      String shareEncryptionKey = getEncryptKeySharedByOther(executor, keys, key);
+
+      // return decrypted value
+      return aesDecryptFromBase64(lookupResponse.data, shareEncryptionKey, lookupResponse.metaData.ivNonce());
+
+    } catch (ExecutionException | InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static String getEncryptKeySharedByMe(AtCommandExecutor executor, AtKeys keys, SharedKey key)
+      throws AtException {
+    try {
+
+      String keyName = AtKeyNames.toSharedByMeKeyName(key.sharedWith());
+      String aesKey = keys.get(keyName);
+      if (aesKey != null) {
+        return aesKey;
+      }
+
+      // send local lookup command for sharedKey
+      String llookupCommand = CommandBuilders.llookupCommandBuilder()
+          .keyName(toSharedByMeKeyName(key.sharedWith()))
+          .sharedBy(key.sharedBy())
+          .build();
+      String llookupResponse = executor.sendSync(llookupCommand);
+
+      try {
+        // decrypt the key
+        String encrypted = DataResponses.matchDataStringNoWhitespace(throwExceptionIfError(llookupResponse));
+        aesKey = rsaDecryptFromBase64(encrypted, keys.getEncryptPrivateKey());
+
+        // store in keys
+        keys.put(keyName, aesKey);
+
+        return aesKey;
+      } catch (AtKeyNotFoundException e) {
+        return null;
+      }
+    } catch (ExecutionException | InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static String getEncryptKeySharedByOther(AtCommandExecutor executor, AtKeys keys, SharedKey key)
+      throws AtException {
+    try {
+
+      // check in Keys cache
+      String keyName = AtKeyNames.toSharedWithMeKeyName(key.sharedBy(), key.sharedWith());
+      String aesKey = keys.get(keyName);
+      if (aesKey != null) {
+        return aesKey;
+      }
+
+      // otherwise send lookup
+      String lookupCommand = CommandBuilders.lookupCommandBuilder()
+          .keyName(AtKeyNames.SHARED_KEY)
+          .sharedBy(key.sharedBy())
+          .build();
+      String lookupResponse = executor.sendSync(lookupCommand);
+
+      // decrypt with my private key
+      String encrypted = matchDataStringNoWhitespace(throwExceptionIfError(lookupResponse));
+      aesKey = rsaDecryptFromBase64(encrypted, keys.getEncryptPrivateKey());
+
+      // store in keys
+      keys.put(keyName, aesKey);
+
+      return aesKey;
+
+    } catch (ExecutionException | InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static String createEncryptKey(AtCommandExecutor executor, AtKeys keys, SharedKey key) throws AtException {
+    try {
+
+      // generate a new encrypt key
+      String aesKey = EncryptionUtils.generateAESKeyBase64();
+
+      // compose an update command to store this key encrypted with this (sharedBy) atsign's public key
+      String encryptedForMe = rsaEncryptToBase64(aesKey, keys.getEncryptPublicKey());
+      String updateForUsCommand = CommandBuilders.updateCommandBuilder()
+          .keyName(toSharedByMeKeyName(key.sharedWith()))
+          .sharedBy(key.sharedBy())
+          .value(encryptedForMe)
+          .build();
+
+      // get the other (sharedWith) atsign's public key
+      String otherPublicKey = getEncryptKey(executor, key.sharedWith());
+
+      // compose an update command to store this key encrypted with the other (sharedWith) atsign's public key
+      String encryptedForOther = rsaEncryptToBase64(aesKey, otherPublicKey);
+      String updateForOtherCommand = CommandBuilders.updateCommandBuilder()
+          .keyName(AtKeyNames.SHARED_KEY)
+          .sharedBy(key.sharedBy())
+          .sharedWith(key.sharedWith())
+          .ttr(TimeUnit.HOURS.toMillis(24))
+          .value(encryptedForOther)
+          .build();
+
+      // send the update commands
+      executor.sendSync(updateForUsCommand);
+      executor.sendSync(updateForOtherCommand);
+
+      keys.put(AtKeyNames.toSharedByMeKeyName(key.sharedWith()), aesKey);
+
+      // return the new
+      return aesKey;
+
+    } catch (ExecutionException | InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static String getEncryptKey(AtCommandExecutor executor, AtSign sharedBy) throws AtException {
+    try {
+
+      // send plookup for atsign's public encryption key
+      String plookupCommand = CommandBuilders.plookupCommandBuilder()
+          .keyName(AtKeyNames.PUBLIC_ENCRYPT)
+          .sharedBy(sharedBy)
+          .build();
+      String plookupResponse = executor.sendSync(plookupCommand);
+
+      // return key
+      return matchDataStringNoWhitespace(throwExceptionIfError(plookupResponse));
+
+    } catch (ExecutionException | InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+}

@@ -2,14 +2,14 @@ package org.atsign.examples;
 
 
 import org.atsign.client.api.AtClient;
-import org.atsign.client.api.impl.clients.AtClients;
-import org.atsign.common.AtSign;
-import org.atsign.common.Keys;
-import org.atsign.common.Keys.PublicKey;
-import org.atsign.common.exceptions.AtClientConfigException;
-import org.atsign.common.options.GetRequestOptions;
+import org.atsign.client.impl.AtClients;
+import org.atsign.client.api.AtSign;
+import org.atsign.client.api.Keys;
+import org.atsign.client.api.Keys.PublicKey;
+import org.atsign.client.impl.exceptions.AtClientConfigException;
+import org.atsign.client.api.AtClient.GetRequestOptions;
 
-import static org.atsign.client.util.KeysUtil.loadKeys;
+import static org.atsign.client.impl.util.KeysUtils.loadKeys;
 
 public class PublicKeyGetBypassCacheExample {
   public static void main(String[] args) throws AtClientConfigException {
@@ -24,7 +24,7 @@ public class PublicKeyGetBypassCacheExample {
     AtSign atSign = new AtSign(ATSIGN_STR);
 
     // 3. build an AtClient
-    AtClients.AtClientsBuilder builder = AtClients.builder()
+    AtClients.AtClientBuilder builder = AtClients.builder()
         .url(ROOT_URL)
         .atSign(atSign)
         .keys(loadKeys(atSign))

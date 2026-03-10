@@ -1,7 +1,7 @@
 package org.atsign.cucumber.helpers;
 
 
-import static org.atsign.client.util.Preconditions.checkFile;
+import static org.atsign.client.impl.common.Preconditions.checkFile;
 
 import java.io.File;
 import java.io.IOException;
