@@ -6,7 +6,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
 /**
- * A Netty encoder which ensures that commands are terminated by a newline
+ * A Netty encoder which ensures that commands are terminated by a newline. As per the
+ * At Protocol specification.
  */
 public class NettyAtCommandEncoder extends MessageToByteEncoder<CharSequence> {
 

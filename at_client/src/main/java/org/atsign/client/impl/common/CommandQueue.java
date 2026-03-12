@@ -13,10 +13,11 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
- * A queue of {@link CommandElement} elements. This is used to hold pending commands, those
- * commands which have been sent but no response has been received (or event commands
- * where there will be a stream of responses). It is also used to hold queued commands
- * in the event that the pending {@link CommandQueue} is full.
+ * A queue of {@link CommandElement} elements.
+ * This is intended to be used by {@link org.atsign.client.api.AtCommandExecutor}
+ * implementations to hold pending commands, those commands which have been sent but no response has
+ * been received (or event commands where there will be a stream of responses). It is also used to
+ * hold queued commands in the event that the pending {@link CommandQueue} is full.
  */
 public class CommandQueue implements Iterable<CommandElement> {
 

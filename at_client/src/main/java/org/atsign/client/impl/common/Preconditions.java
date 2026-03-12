@@ -6,7 +6,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Basic precondition helpers (we could use something like guava but we want to limit dependencies)
+ * Basic precondition helpers.
  */
 public class Preconditions {
 

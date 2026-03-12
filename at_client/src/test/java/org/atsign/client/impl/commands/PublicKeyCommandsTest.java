@@ -8,29 +8,31 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.concurrent.ExecutionException;
 
-import org.atsign.client.api.AtKeys;
+import org.atsign.client.api.AtClient.GetRequestOptions;
 import org.atsign.client.api.AtCommandExecutor;
-import org.atsign.client.impl.util.EncryptionUtils;
+import org.atsign.client.api.AtKeys;
+import org.atsign.client.api.AtSign;
 import org.atsign.client.api.Keys;
 import org.atsign.client.impl.exceptions.AtKeyNotFoundException;
 import org.atsign.client.impl.exceptions.AtServerRuntimeException;
-import org.atsign.client.api.AtClient.GetRequestOptions;
+import org.atsign.client.impl.util.EncryptionUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class PublicKeyCommandsTest {
 
   private Keys.PublicKey key;
-
   private AtKeys keys;
+  private AtSign atSign;
 
   @BeforeEach
   public void setup() throws Exception {
     keys = AtKeys.builder()
         .encryptKeyPair(EncryptionUtils.generateRSAKeyPair())
         .build();
+    atSign = createAtSign("gary");
     key = Keys.publicKeyBuilder()
-        .sharedBy(createAtSign("gary"))
+        .sharedBy(atSign)
         .name("test")
         .build();
   }
@@ -135,7 +137,7 @@ class PublicKeyCommandsTest {
         .stub("update:dataSignature:.+:isEncrypted:false:public:test@gary hello world", "data:123")
         .build();
 
-    PublicKeyCommands.put(executor, keys, key, "hello world");
+    PublicKeyCommands.put(executor, createAtSign("gary"), keys, key, "hello world");
   }
 
   @Test
@@ -148,7 +150,8 @@ class PublicKeyCommandsTest {
         .encryptKeyPair(EncryptionUtils.generateRSAKeyPair())
         .build();
 
-    assertThrows(AtServerRuntimeException.class, () -> PublicKeyCommands.put(executor, keys, key, "hello world"));
+    assertThrows(AtServerRuntimeException.class,
+                 () -> PublicKeyCommands.put(executor, createAtSign("gary"), keys, key, "hello world"));
   }
 
   @Test
@@ -161,7 +164,8 @@ class PublicKeyCommandsTest {
         .encryptKeyPair(EncryptionUtils.generateRSAKeyPair())
         .build();
 
-    assertThrows(RuntimeException.class, () -> PublicKeyCommands.put(executor, keys, key, "hello world"));
+    assertThrows(RuntimeException.class,
+                 () -> PublicKeyCommands.put(executor, createAtSign("gary"), keys, key, "hello world"));
   }
 
   private static String createMockLookupResponse(String key, String value) {

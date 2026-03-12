@@ -19,6 +19,7 @@ import java.util.concurrent.Executors;
  */
 @Slf4j
 public class SimpleAtEventBus implements AtEventBus {
+
   private final ExecutorService executor = Executors.newCachedThreadPool();
 
   final Map<AtEventListener, Set<AtEventType>> eventListeners = new HashMap<>();

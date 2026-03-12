@@ -18,13 +18,12 @@ import org.atsign.client.impl.common.TypedString;
 import org.atsign.client.api.Keys.AtKey;
 import org.atsign.client.api.Metadata.MetadataBuilder;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 
 import lombok.Builder;
 
 /**
  *
- * Builders for composing Atsign protocol command strings.
+ * Builders for composing At Protocol command strings.
  *
  */
 public class CommandBuilders {
@@ -32,7 +31,7 @@ public class CommandBuilders {
   private static final Metadata EMPTY_METADATA = Metadata.builder().build();
 
   /**
-   * A builder to compose an Atsign protocol command with the <b>from</b> verb. The <b>from</b> verb
+   * A builder to compose an At Protocol command with the <b>from</b> verb. The <b>from</b> verb
    * is used to tell the Atsign server whom you claim to be and initiates the authentication workflow.
    *
    * @param atSign The {@link AtSign} you claim to be
@@ -46,7 +45,7 @@ public class CommandBuilders {
   }
 
   /**
-   * A builder to compose an Atsign protocol command with the <b>cram</b> verb. The <b>cram</b> verb
+   * A builder to compose an At Protocol command with the <b>cram</b> verb. The <b>cram</b> verb
    * is used to boostrap authenticate one's own self as an owner of the Atsign server. It is intended
    * to be used once until a set of PKAM keys are cut on the owner's mobile device and from then on we
    * use the pkam verb.
@@ -62,7 +61,7 @@ public class CommandBuilders {
   }
 
   /**
-   * A builder to compose an Atsign protocol command with the <b>pol</b> verb. The <b>pol</b> verb
+   * A builder to compose an At Protocol command with the <b>pol</b> verb. The <b>pol</b> verb
    * is part of the pkam process to authenticate oneself while connecting to someone else's atServer.
    * The term 'pol' means 'proof of life' as it provides a near realtime assurance that the requestor
    * is who it claims to be.
@@ -75,7 +74,7 @@ public class CommandBuilders {
   }
 
   /**
-   * A builder to compose an Atsign protocol command with the <b>pkam</b> verb. The <b>pkam</b> verb
+   * A builder to compose an At Protocol command with the <b>pkam</b> verb. The <b>pkam</b> verb
    * follows the <b>from</b> verb. As an owner of the atServer, you should be able to take the
    * challenge thrown by the <b>from</b> verb and encrypt using the private key of the RSA key pair
    * with what the server has been bound with. Upon receiving the cram verb along with the digest, the
@@ -109,7 +108,7 @@ public class CommandBuilders {
   }
 
   /**
-   * A builder to compose an Atsign protocol command with the <b>update</b> verb. The <b>update</b>
+   * A builder to compose an At Protocol command with the <b>update</b> verb. The <b>update</b>
    * is used to insert key/value pairs into a Key Store. An update command can only be sent by the
    * {@link AtSign} that "owns" the key value and can only be sent to their own Atsign server.
    *
@@ -147,7 +146,7 @@ public class CommandBuilders {
    * @param value the value of the key / value. This overrides the metadata param if this is also set.
    * @param key a {@link AtKey} instance from which keyName, sharedBy, sharedWith and metadata will be
    *        taken from.
-   * @param rawKey the Atsign protocol key with cached and public qualifications
+   * @param rawKey the At Protocol key with cached and public qualifications
    * @return A correctly formed <b>update</b> verb command.
    * @throws IllegalArgumentException If mandatory fields are not set or if field values conflict.
    */
@@ -207,7 +206,7 @@ public class CommandBuilders {
   };
 
   /**
-   * A builder to compose an Atsign protocol command with the <b>llookup</b> verb. The <b>llookup</b>
+   * A builder to compose an At Protocol command with the <b>llookup</b> verb. The <b>llookup</b>
    * verb is used to look up key values "owned" / shared by the {@link AtSign} that is sending the
    * command.
    *
@@ -257,7 +256,7 @@ public class CommandBuilders {
   }
 
   /**
-   * A builder to compose an Atsign protocol command with the <b>lookup</b> verb. The <b>lookup</b>
+   * A builder to compose an At Protocol command with the <b>lookup</b> verb. The <b>lookup</b>
    * verb is used to look up key values shared by other {@link AtSign}s with the {@link AtSign} that
    * is sending the command.
    *
@@ -294,7 +293,7 @@ public class CommandBuilders {
   }
 
   /**
-   * A builder to compose an Atsign protocol command with the <b>plookup</b> verb. The <b>plookup</b>
+   * A builder to compose an At Protocol command with the <b>plookup</b> verb. The <b>plookup</b>
    * verb is used to look up a public key value shared by an {@link AtSign} other than the one that
    * is sending the command.
    *
@@ -336,7 +335,7 @@ public class CommandBuilders {
   }
 
   /**
-   * A builder to compose an Atsign protocol command with the <b>delete</b> verb. The <b>delete</b>
+   * A builder to compose an At Protocol command with the <b>delete</b> verb. The <b>delete</b>
    * verb is used to remove key/value pairs into a Key Store. An <b>delete</b> command can only be
    * sent by the {@link AtSign} that "owns" the key value and can only be sent to their own Atsign
    * server.
@@ -384,7 +383,7 @@ public class CommandBuilders {
   }
 
   /**
-   * A builder to compose an Atsign protocol command with the <b>scan</b> verb. The <b>scan</b> verb
+   * A builder to compose an At Protocol command with the <b>scan</b> verb. The <b>scan</b> verb
    * is used to list the keys in an {@link AtSign}'s Atsign server.
    *
    * @param regex If set only show keys that match this regular expression pattern.
@@ -409,7 +408,7 @@ public class CommandBuilders {
   }
 
   /**
-   * A builder to compose an Atsign protocol command with the <b>notify:messageType:text</b> verb.
+   * A builder to compose an At Protocol command with the <b>notify:messageType:text</b> verb.
    * The <b>notify:messageType:text</b> verb is used to send an arbitrary message to another
    * {@link AtSign}.
    *
@@ -433,7 +432,7 @@ public class CommandBuilders {
   }
 
   /**
-   * A builder to compose an Atsign protocol command with the
+   * A builder to compose an At Protocol command with the
    * <b>notify:(update|delete):messageType:key</b> verb.
    * The <b>notify:(update|delete):messageType:key</b> verb is used to send key change notifications
    * to other
@@ -473,7 +472,7 @@ public class CommandBuilders {
   }
 
   /**
-   * A builder to compose an Atsign protocol command with the <b>notify:status</b> verb.
+   * A builder to compose an At Protocol command with the <b>notify:status</b> verb.
    * The <b>notify:status</b> verb is query the status of a previously sent notification.
    *
    * @param notificationId The unique id of a notification. This will have been the response for to a
@@ -516,7 +515,7 @@ public class CommandBuilders {
   }
 
   /**
-   * A builder to compose an Atsign protocol command with the <b>enroll</b> verb.
+   * A builder to compose an At Protocol command with the <b>enroll</b> verb.
    * The <b>enroll</b> verb is used to submit an APKAM enrollment.
    *
    * @param operation The specific enroll operation to perform see {@link EnrollOperation}.
@@ -608,7 +607,7 @@ public class CommandBuilders {
 
     return new StringBuilder("enroll:")
         .append(operation)
-        .append(params != null ? encodeAsJson(params) : "")
+        .append(params != null ? JsonUtils.writeValueAsString(params) : "")
         .toString();
   }
 
@@ -620,7 +619,7 @@ public class CommandBuilders {
   };
 
   /**
-   * A builder to compose an Atsign protocol command with the <b>keys</b> verb.
+   * A builder to compose an At Protocol command with the <b>keys</b> verb.
    * The <b>keys</b> verb is specifically used to update security keys in the Atsign server.
    *
    * @param operation put, get or delete.
@@ -641,7 +640,7 @@ public class CommandBuilders {
   }
 
   /**
-   * A builder to compose an Atsign protocol command with the <b>otp</b> verb.
+   * A builder to compose an At Protocol command with the <b>otp</b> verb.
    * The <b>otp</b> verb is used to request a one time password for the enrollment workflow.
    *
    * @return A correctly formed <b>otp</b> verb command.
@@ -666,14 +665,6 @@ public class CommandBuilders {
       }
     }
     return map;
-  }
-
-  protected static String encodeAsJson(Object o) {
-    try {
-      return JsonUtils.MAPPER.writeValueAsString(o);
-    } catch (JsonProcessingException e) {
-      throw new IllegalArgumentException("json encoding exception", e);
-    }
   }
 
   private static boolean isTrue(Boolean bool) {

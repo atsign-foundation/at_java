@@ -5,7 +5,6 @@ import static org.atsign.client.impl.commands.DataResponses.*;
 import static org.atsign.client.impl.commands.ErrorResponses.throwExceptionIfError;
 import static org.atsign.client.impl.commands.CommandBuilders.LookupOperation.all;
 import static org.atsign.client.impl.common.Preconditions.checkNotNull;
-import static org.atsign.client.impl.common.Preconditions.checkTrue;
 import static org.atsign.client.impl.util.EncryptionUtils.*;
 
 import java.util.concurrent.ExecutionException;
@@ -18,14 +17,26 @@ import org.atsign.client.impl.exceptions.AtKeyNotFoundException;
 import org.atsign.client.impl.util.EncryptionUtils;
 
 /**
- * Atsign protocol utility code that relates to "shared keys"
+ * At Protocol utility code that relates to "shared keys".
  *
  */
 
 public class SharedKeyCommands {
 
+  /**
+   * Get the String value associated with a shared key. The value will be encrypted with a specific
+   * key for the sharedBy-sharedWith relationship.
+   *
+   * @param executor The {@link AtCommandExecutor} to use.
+   * @param atSign The AtSign that corresponds to the executor.
+   * @param key The {@link Keys.SharedKey}
+   * @return The associated value.
+   * @throws AtException If any of the commands fail or the key does not exist.
+   */
+
   public static String get(AtCommandExecutor executor, AtSign atSign, AtKeys keys, SharedKey key)
       throws AtException {
+    checkAtSignCanGet(atSign, key);
     if (key.sharedBy().equals(atSign)) {
       return getSharedByMe(executor, keys, key);
     } else if (key.sharedWith().equals(atSign)) {
@@ -35,9 +46,20 @@ public class SharedKeyCommands {
     }
   }
 
+  /**
+   * Set a String value to be associated with a shared key. The value will be decrypted with a
+   * specific
+   * key for the sharedBy-sharedWith relationship.
+   *
+   * @param executor The {@link AtCommandExecutor} to use.
+   * @param atSign The AtSign that corresponds to the executor.
+   * @param key The {@link Keys.SharedKey}
+   * @param value The associated value.
+   * @throws AtException If any of the commands fail or the key does not exist.
+   */
   public static void put(AtCommandExecutor executor, AtSign atSign, AtKeys keys, SharedKey key, String value)
       throws AtException {
-    checkTrue(key.sharedBy().equals(atSign), "sharedBy does not match this client's atsign");
+    checkAtSignCanPut(atSign, key);
     try {
 
       // get or create key for sharedBy - sharedWith
@@ -63,7 +85,7 @@ public class SharedKeyCommands {
     }
   }
 
-  public static String getSharedByMe(AtCommandExecutor executor, AtKeys keys, SharedKey key) throws AtException {
+  private static String getSharedByMe(AtCommandExecutor executor, AtKeys keys, SharedKey key) throws AtException {
     try {
 
       // send local lookup command and decode
@@ -81,7 +103,7 @@ public class SharedKeyCommands {
     }
   }
 
-  public static String getSharedByOther(AtCommandExecutor executor, AtKeys keys, SharedKey key) throws AtException {
+  private static String getSharedByOther(AtCommandExecutor executor, AtKeys keys, SharedKey key) throws AtException {
     try {
 
       // send lookup command and decode
@@ -99,6 +121,17 @@ public class SharedKeyCommands {
     }
   }
 
+  /**
+   * Get the specific encryption key which needs to be used for a sharedBy - sharedWith relationship
+   * where the AtSign that the {@link AtCommandExecutor} has authenticated with is the sharedBy
+   * AtSign. This will automatically decrypt the value with the AtKeys Private Encryption Key.
+   *
+   * @param executor The {@link AtCommandExecutor} to use.
+   * @param keys The {@link AtKeys} for the {@link AtSign} that is the sharedBy in the relationship.
+   * @param key The {@link Keys.SharedKey}
+   * @return The symmetric encryption key (in base64).
+   * @throws AtException If any of the commands fail or the key does not exist.
+   */
   public static String getEncryptKeySharedByMe(AtCommandExecutor executor, AtKeys keys, SharedKey key)
       throws AtException {
     try {
@@ -133,6 +166,17 @@ public class SharedKeyCommands {
     }
   }
 
+  /**
+   * Get the specific encryption key which needs to be used for a sharedBy - sharedWith relationship
+   * where the AtSign that the {@link AtCommandExecutor} has authenticated with is the sharedWith
+   * AtSign. This will automatically decrypt the value with the AtKeys Private Encryption Key.
+   *
+   * @param executor The {@link AtCommandExecutor} to use.
+   * @param keys The {@link AtKeys} for the {@link AtSign} that is the sharedWith in the relationship.
+   * @param key The {@link Keys.SharedKey}
+   * @return The symmetric encryption key (in base64).
+   * @throws AtException If any of the commands fail or the key does not exist.
+   */
   public static String getEncryptKeySharedByOther(AtCommandExecutor executor, AtKeys keys, SharedKey key)
       throws AtException {
     try {
@@ -165,7 +209,7 @@ public class SharedKeyCommands {
     }
   }
 
-  public static String createEncryptKey(AtCommandExecutor executor, AtKeys keys, SharedKey key) throws AtException {
+  private static String createEncryptKey(AtCommandExecutor executor, AtKeys keys, SharedKey key) throws AtException {
     try {
 
       // generate a new encrypt key
@@ -206,7 +250,7 @@ public class SharedKeyCommands {
     }
   }
 
-  public static String getEncryptKey(AtCommandExecutor executor, AtSign sharedBy) throws AtException {
+  private static String getEncryptKey(AtCommandExecutor executor, AtSign sharedBy) throws AtException {
     try {
 
       // send plookup for atsign's public encryption key
@@ -223,5 +267,18 @@ public class SharedKeyCommands {
       throw new RuntimeException(e);
     }
   }
+
+  private static void checkAtSignCanGet(AtSign atSign, SharedKey key) {
+    if (!key.sharedBy().equals(atSign) && !key.sharedWith().equals(atSign)) {
+      throw new IllegalArgumentException(atSign + " is neither the sharedBy or sharedWith of " + key);
+    }
+  }
+
+  private static void checkAtSignCanPut(AtSign atSign, SharedKey key) {
+    if (!key.sharedBy().equals(atSign)) {
+      throw new IllegalArgumentException(atSign + " is not the sharedBy of " + key);
+    }
+  }
+
 
 }

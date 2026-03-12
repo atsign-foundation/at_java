@@ -2,7 +2,6 @@ package org.atsign.client.api;
 
 import java.time.OffsetDateTime;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 
 import lombok.Builder;
 import lombok.Value;
@@ -55,13 +54,13 @@ public class Metadata {
     // required for javadoc
   };
 
-  public static Metadata fromJson(String json) throws JsonProcessingException {
-    return JsonUtils.MAPPER.readValue(json, Metadata.class);
+  public static Metadata fromJson(String json) {
+    return JsonUtils.readValue(json, Metadata.class);
   }
 
   /**
    *
-   * @return the encoded metadata fields as recognized by an at server in an update command.
+   * @return the encoded metadata fields as recognized by an At Server in an update command.
    */
   @Override
   public String toString() {

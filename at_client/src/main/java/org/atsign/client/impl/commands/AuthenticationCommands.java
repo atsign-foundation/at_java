@@ -20,7 +20,7 @@ import org.atsign.client.impl.exceptions.AtEncryptionException;
 import org.atsign.client.impl.exceptions.AtUnauthenticatedException;
 
 /**
- * Utility methods for handling authentication within the AtSign protocol
+ * Utility methods for handling authentication within the At Protocol
  */
 public class AuthenticationCommands {
 
@@ -69,7 +69,7 @@ public class AuthenticationCommands {
    *
    * @param executor The executor with which to send the commands.
    * @param atSign The asign to authenticate.
-   * @param cramSecret The cramSecret that was assigned during at server provisioning.
+   * @param cramSecret The cramSecret that was assigned during At Server provisioning.
    * @throws AtException If authentication fails.
    */
   public static void authenticateWithCram(AtCommandExecutor executor, AtSign atSign, String cramSecret)

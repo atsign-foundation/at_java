@@ -1,7 +1,7 @@
 package org.atsign.client.impl.util;
 
 /**
- * Utility class with static methods for common String operations
+ * Utility class with static methods for common String operations.
  */
 public class StringUtils {
 

@@ -30,7 +30,7 @@ import lombok.Builder;
  * </pre>
  *
  * <b>NOTE:</b> If the url is prefixed with proxy (e.g. proxy:host:port) then the builder
- * will automatically attempt to connect to an at server at host:port.
+ * will automatically attempt to connect to an At Server at host:port.
  * <b>NOTE:</b> If atSign and keys are provided then the builder
  * will automatically configure the {@link AtCommandExecutor} to authenticate with PKAM.
  * <b>NOTE:</b> If reconnect is not set then the builder will default to a

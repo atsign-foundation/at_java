@@ -22,18 +22,34 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
  */
 public class EncryptionUtils {
 
+  /**
+   * The signing algo "label"
+   */
   public static final String SIGNING_ALGO_RSA = "rsa2048";
+
+  /**
+   * The hashing algo "label"
+   */
   public static final String HASHING_ALGO_SHA256 = "sha256";
 
   static {
     Security.addProvider(new BouncyCastleProvider());
   }
 
-  public static String aesEncryptToBase64(String clearText, String keyBase64, String ivNonce)
+  /**
+   * Encrypts a String with the AES Cipher and encodes as Base 64.
+   *
+   * @param input The String to encrypt
+   * @param key The AES symmetric key to use.
+   * @param iv An initialization vector to use.
+   * @return The Base64 encoded encrypted String.
+   * @throws AtEncryptionException If something fails.
+   */
+  public static String aesEncryptToBase64(String input, String key, String iv)
       throws AtEncryptionException {
     try {
-      Cipher cipher = createAesCipher(Cipher.ENCRYPT_MODE, keyBase64, ivNonce);
-      byte[] encrypted = cipher.doFinal(clearText.getBytes());
+      Cipher cipher = createAesCipher(Cipher.ENCRYPT_MODE, key, iv);
+      byte[] encrypted = cipher.doFinal(input.getBytes());
       return Base64.getEncoder().encodeToString(encrypted);
     } catch (NoSuchAlgorithmException | NoSuchProviderException | BadPaddingException | IllegalBlockSizeException
         | NoSuchPaddingException | InvalidKeyException | InvalidAlgorithmParameterException e) {
@@ -42,18 +58,18 @@ public class EncryptionUtils {
   }
 
   /**
-   * Decrypts the text using AES {@link Cipher}
+   * Decrypts a Base64 encoded String with the AES Cipher.
    *
-   * @param text base64 encoded text to decrypt
-   * @param key base64 encoded AES key to use
-   * @param iv base64 encoded initialization vector to use
-   * @return decrypted text
-   * @throws AtDecryptionException with underlying cause
+   * @param input The Base64 encoded String to decrypt.
+   * @param key The AES symmetric key to use.
+   * @param iv An initialization vector that was used.
+   * @return The decrypted String.
+   * @throws AtDecryptionException If something fails.
    */
-  public static String aesDecryptFromBase64(String text, String key, String iv) throws AtDecryptionException {
+  public static String aesDecryptFromBase64(String input, String key, String iv) throws AtDecryptionException {
     try {
       Cipher cipher = createAesCipher(Cipher.DECRYPT_MODE, key, iv);
-      byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(text));
+      byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(input));
       return new String(decrypted);
     } catch (NoSuchAlgorithmException | NoSuchProviderException | NoSuchPaddingException | InvalidKeyException
         | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
@@ -61,6 +77,12 @@ public class EncryptionUtils {
     }
   }
 
+  /**
+   * Generate a new RSA Key Pair.
+   *
+   * @return A new RSA {@link KeyPair}.
+   * @throws AtEncryptionException If something fails.
+   */
   public static KeyPair generateRSAKeyPair() throws AtEncryptionException {
     try {
       KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
@@ -71,6 +93,12 @@ public class EncryptionUtils {
     }
   }
 
+  /**
+   * Generate a new AES symmetric key.
+   *
+   * @return A new Base 64 encoded AES symmetric key.
+   * @throws AtEncryptionException If something fails.
+   */
   public static String generateAESKeyBase64() throws AtEncryptionException {
     try {
       KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
@@ -82,13 +110,20 @@ public class EncryptionUtils {
     }
   }
 
-  public static String rsaDecryptFromBase64(String cipherTextBase64, String privateKeyBase64)
-      throws AtDecryptionException {
+  /**
+   * Decrypts a Base64 encoded String with the RSA Cipher.
+   *
+   * @param input The Base64 encoded String to decrypt.
+   * @param key The private RSA key to use.
+   * @return The decrypted String.
+   * @throws AtDecryptionException If something fails.
+   */
+  public static String rsaDecryptFromBase64(String input, String key) throws AtDecryptionException {
     try {
-      PrivateKey privateKey = _privateKeyFromBase64(privateKeyBase64);
+      PrivateKey privateKey = toPrivateKey(key);
       Cipher decryptCipher = Cipher.getInstance("RSA");
       decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
-      byte[] decoded = Base64.getDecoder().decode(cipherTextBase64.getBytes(StandardCharsets.UTF_8));
+      byte[] decoded = Base64.getDecoder().decode(input.getBytes(StandardCharsets.UTF_8));
       byte[] decryptedMessageBytes = decryptCipher.doFinal(decoded);
       return new String(decryptedMessageBytes, StandardCharsets.UTF_8);
     } catch (NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidKeyException
@@ -97,12 +132,20 @@ public class EncryptionUtils {
     }
   }
 
-  public static String rsaEncryptToBase64(String clearText, String publicKeyBase64) throws AtEncryptionException {
+  /**
+   * Encrypts a String with the RSA Cipher and encodes as Base 64.
+   *
+   * @param input The String to encrypt
+   * @param key The RSA public key to use.
+   * @return The Base64 encoded encrypted String.
+   * @throws AtEncryptionException If something fails.
+   */
+  public static String rsaEncryptToBase64(String input, String key) throws AtEncryptionException {
     try {
-      PublicKey publicKey = _publicKeyFromBase64(publicKeyBase64);
+      PublicKey publicKey = toPublicKey(key);
       Cipher encryptCipher = Cipher.getInstance("RSA");
       encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
-      byte[] clearTextBytes = clearText.getBytes(StandardCharsets.UTF_8);
+      byte[] clearTextBytes = input.getBytes(StandardCharsets.UTF_8);
       byte[] encryptedMessageBytes = encryptCipher.doFinal(clearTextBytes);
       return Base64.getEncoder().encodeToString(encryptedMessageBytes);
     } catch (NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidKeyException
@@ -111,48 +154,57 @@ public class EncryptionUtils {
     }
   }
 
-  public static String signSHA256RSA(String value, String privateKeyBase64) throws AtEncryptionException {
+  /**
+   * Creates signature and encodes as Base 64.
+   *
+   * @param input The String to encrypt
+   * @param key The RSA private key to use.
+   * @return The Base64 encoded signature.
+   * @throws AtEncryptionException If something fails.
+   */
+  public static String signSHA256RSA(String input, String key) throws AtEncryptionException {
     try {
-      return _signSHA256RSA(value, _privateKeyFromBase64(privateKeyBase64));
+      PrivateKey pk = toPrivateKey(key);
+      Signature privateSignature = Signature.getInstance("SHA256withRSA");
+      privateSignature.initSign(pk);
+      privateSignature.update(input.getBytes(StandardCharsets.UTF_8));
+      byte[] signedBytes = privateSignature.sign();
+      return Base64.getEncoder().encodeToString(signedBytes);
     } catch (NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException | SignatureException e) {
       throw new AtEncryptionException("SHA256 sign failed", e);
     }
   }
 
-  // non-public methods
-  public static String _signSHA256RSA(String input, PrivateKey pk)
-      throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-    Signature privateSignature = Signature.getInstance("SHA256withRSA");
-    privateSignature.initSign(pk);
-    privateSignature.update(input.getBytes(StandardCharsets.UTF_8));
-    byte[] signedBytes = privateSignature.sign();
-    return Base64.getEncoder().encodeToString(signedBytes);
-  }
-
-  public static PublicKey _publicKeyFromBase64(String s) throws NoSuchAlgorithmException, InvalidKeySpecException {
+  private static PublicKey toPublicKey(String s) throws NoSuchAlgorithmException, InvalidKeySpecException {
     byte[] keyBytes = Base64.getDecoder().decode(s.getBytes(StandardCharsets.UTF_8));
     EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
     KeyFactory rsaKeyFactory = KeyFactory.getInstance("RSA");
     return rsaKeyFactory.generatePublic(keySpec);
   }
 
-  public static PrivateKey _privateKeyFromBase64(String s) throws NoSuchAlgorithmException, InvalidKeySpecException {
+  private static PrivateKey toPrivateKey(String s) throws NoSuchAlgorithmException, InvalidKeySpecException {
     byte[] keyBytes = Base64.getDecoder().decode(s.getBytes(StandardCharsets.UTF_8));
     PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
     KeyFactory rsaKeyFactory = KeyFactory.getInstance("RSA");
     return rsaKeyFactory.generatePrivate(keySpec);
   }
 
-  public static SecretKey _aesKeyFromBase64(String s) {
+  private static SecretKey toSecretKey(String s) {
     byte[] keyBytes = Base64.getDecoder().decode(s.getBytes());
     return new SecretKeySpec(keyBytes, "AES");
   }
 
-  public static IvParameterSpec _ivFromBase64(String s) {
+  private static IvParameterSpec toIvParameterSpec(String s) {
     byte[] ivBytes = Base64.getDecoder().decode(s.getBytes());
     return new IvParameterSpec(ivBytes);
   }
 
+  /**
+   * Creates random initialization vector.
+   *
+   * @param length of vector required.
+   * @return The Base 64 encoded vector.
+   */
   public static String generateRandomIvBase64(int length) {
     byte[] iv = new byte[length];
     SecureRandom secureRandom = new SecureRandom();
@@ -162,8 +214,8 @@ public class EncryptionUtils {
 
   private static Cipher createAesCipher(int mode, String keyBase64, String ivNonce) throws NoSuchAlgorithmException,
       NoSuchProviderException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException {
-    SecretKey key = _aesKeyFromBase64(keyBase64);
-    IvParameterSpec iv = _ivFromBase64(ivNonce);
+    SecretKey key = toSecretKey(keyBase64);
+    IvParameterSpec iv = toIvParameterSpec(ivNonce);
     Cipher cipher = Cipher.getInstance("AES/SIC/PKCS7Padding", "BC");
     cipher.init(mode, key, iv);
     return cipher;

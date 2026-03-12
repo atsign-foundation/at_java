@@ -9,7 +9,8 @@ import io.netty.handler.codec.TooLongFrameException;
 import io.netty.util.CharsetUtil;
 
 /**
- *
+ * A decoder that will split AT Server and Directory Server responses into discrete
+ * Strings.
  */
 public final class NettyAtResponseDecoder extends ByteToMessageDecoder {
 

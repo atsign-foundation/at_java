@@ -38,7 +38,6 @@ class NettyAtCommandExecutorIT {
     assertThat(provider.get().matches("\\S+:\\d+"), is(true));
   }
 
-
   @Test
   void testScan() throws Exception {
     NettyAtEndpointSupplier provider = NettyAtEndpointSupplier.builder()

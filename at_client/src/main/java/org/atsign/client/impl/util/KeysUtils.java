@@ -1,9 +1,9 @@
 package org.atsign.client.impl.util;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.atsign.client.impl.common.EnrollmentId.createEnrollmentId;
 import static org.atsign.client.impl.util.EncryptionUtils.aesDecryptFromBase64;
 import static org.atsign.client.impl.util.EncryptionUtils.aesEncryptToBase64;
-import static org.atsign.client.impl.common.EnrollmentId.createEnrollmentId;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,27 +12,24 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.TreeMap;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import lombok.extern.slf4j.Slf4j;
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtSign;
 import org.atsign.client.impl.common.EnrollmentId;
 import org.atsign.client.impl.common.TypedString;
 import org.atsign.client.impl.exceptions.AtClientConfigException;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.atsign.client.impl.exceptions.AtDecryptionException;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
+import lombok.extern.slf4j.Slf4j;
+
 /**
- * Utility class for loading a saving {@link AtKeys} from the file system
+ * Utility class for loading a saving {@link AtKeys} from the file system.
  */
 @Slf4j
 public class KeysUtils {
 
   static private final String EMPTY_IV = Base64.getEncoder().encodeToString(new byte[16]);
-
-  private static final ObjectMapper MAPPER = JsonUtils.MAPPER;
 
   private static final TypeReference<Map<String, String>> STRING_MAP_TYPE = new TypeReference<>() {};
 
@@ -65,10 +62,24 @@ public class KeysUtils {
   private static final String APKAM_SYMMETRIC_KEY = "apkamSymmetricKey";
   private static final String ENROLLMENT_ID = "enrollmentId";
 
+  /**
+   * Persists {@link AtKeys} to the default file for the {@link AtSign}.
+   *
+   * @param atSign The {@link AtSign} which these keys relate to.
+   * @param keys The {@link AtKeys} to persist.
+   * @throws Exception If anything fails.
+   */
   public static void saveKeys(AtSign atSign, AtKeys keys) throws Exception {
     saveKeys(keys, getKeysFile(atSign));
   }
 
+  /**
+   * Persists {@link AtKeys} to a file.
+   *
+   * @param keys The {@link AtKeys} to persist.
+   * @param file The file to write / overwrite.
+   * @throws IOException If anything fails.
+   */
   public static void saveKeys(AtKeys keys, File file) throws IOException {
     if (file.getParentFile() != null && !file.getParentFile().exists()) {
       Files.createDirectories(file.getParentFile().toPath());
@@ -78,10 +89,25 @@ public class KeysUtils {
     Files.write(file.toPath(), getAsJson(keys).getBytes(UTF_8));
   }
 
+  /**
+   * Instantiates a {@link AtKeys} loaded with the contents of the default
+   * keys file for the {@link AtSign}.
+   *
+   * @param atSign The {@link AtSign} which these keys relate to.
+   * @return A populated {@link AtKeys} instance.
+   * @throws AtClientConfigException If anything fails or the keys file does not exist.
+   */
   public static AtKeys loadKeys(AtSign atSign) throws AtClientConfigException {
     return loadKeys(getKeysFileFallbackToLegacyLocation(atSign));
   }
 
+  /**
+   * Instantiates a {@link AtKeys} loaded with the contents of a keys file.
+   *
+   * @param file The file to read.
+   * @return A populated {@link AtKeys} instance.
+   * @throws AtClientConfigException If anything fails or the keys file does not exist.
+   */
   public static AtKeys loadKeys(File file) throws AtClientConfigException {
     try {
       return createAtKeysFromJson(Files.readString(file.toPath()));
@@ -107,12 +133,26 @@ public class KeysUtils {
     return file;
   }
 
+  /**
+   * The default file for an {@link AtSign}. This will default the file location (directory)
+   * and filename.
+   *
+   * @param atSign The {@link AtSign} which these keys relate to.
+   * @return The file.
+   */
   public static File getKeysFile(AtSign atSign) {
     return getKeysFile(atSign, expectedKeysFilesLocation);
   }
 
-  public static File getKeysFile(AtSign atSign, String folderToLookIn) {
-    return new File(folderToLookIn, atSign + keysFileSuffix);
+  /**
+   * The default file for an {@link AtSign}. This will default the filename.
+   *
+   * @param atSign The {@link AtSign} which these keys relate to.
+   * @param dir The directory for the file.
+   * @return The file.
+   */
+  public static File getKeysFile(AtSign atSign, String dir) {
+    return new File(dir, atSign + keysFileSuffix);
   }
 
   private static String getFirstNonEmpty(String... candidates) {
@@ -139,7 +179,7 @@ public class KeysUtils {
 
       map.put(VERSION_KEY, VERSION_1);
 
-      return MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(map);
+      return JsonUtils.writeValueAsString(map, true);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -147,14 +187,14 @@ public class KeysUtils {
 
   private static AtKeys createAtKeysFromJson(String json) throws AtClientConfigException {
     try {
-      Map<String, String> map = MAPPER.readValue(json, STRING_MAP_TYPE);
+      Map<String, String> map = JsonUtils.readValue(json, STRING_MAP_TYPE);
       String version = map.getOrDefault(VERSION_KEY, VERSION_1);
       if (version.equals(VERSION_1)) {
         return createAtKeysVersion1(map);
       } else {
         throw new AtClientConfigException("unsupported version of AtKeys json : " + version);
       }
-    } catch (JsonProcessingException | AtDecryptionException e) {
+    } catch (AtDecryptionException e) {
       throw new AtClientConfigException("failed to create AtKeys from json", e);
     }
   }

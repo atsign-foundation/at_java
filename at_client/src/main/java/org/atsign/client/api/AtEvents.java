@@ -4,29 +4,29 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Parent interface for related interfaces
+ * Parent interface for event related interfaces and enum.
  */
 public interface AtEvents {
 
   /**
-   * Represents something that will receive events
+   * Listener interface for events.
    */
   interface AtEventListener {
     void handleEvent(AtEventType eventType, Map<String, Object> eventData);
   }
 
   /**
-   * Represents something that can dispatch events to registered {@link AtEventListener}
+   * Represents something that can dispatch events to registered {@link AtEventListener} instances.
    */
   interface AtEventBus {
     /**
-     * @param listener to handle various events which originate from Secondaries
-     * @param eventTypes the set of EventTypes that the listener is interested in
+     * @param listener The handler / callback which will receive events.
+     * @param eventTypes The set of EventTypes that the listener is interested in.
      */
     void addEventListener(AtEventListener listener, Set<AtEventType> eventTypes);
 
     /**
-     * @param listener the listener to remove
+     * @param listener The listener to remove.
      */
     void removeEventListener(AtEventListener listener);
 

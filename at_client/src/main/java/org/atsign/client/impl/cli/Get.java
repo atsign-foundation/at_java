@@ -43,7 +43,7 @@ public class Get {
 
       String response = atClient.get(key).get();
 
-      log.info("get response : {}", response);
+      System.out.printf("get response : %s", response);
     }
   }
 }

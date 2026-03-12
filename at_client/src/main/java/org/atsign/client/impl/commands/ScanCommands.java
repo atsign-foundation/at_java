@@ -9,12 +9,20 @@ import org.atsign.client.api.AtCommandExecutor;
 import org.atsign.client.impl.exceptions.AtException;
 
 /**
- * Atsign protocol utility code that relates querying the keys in an atserver.
+ * At Protocol utility code that relates querying the keys in an atserver.
  *
  */
 
 public class ScanCommands {
 
+  /**
+   * Sends the scan command and decodes the JSON response.
+   *
+   * @param executor The {@link AtCommandExecutor} to use.
+   * @param showHidden scan command argument which controls whether hidden keys are returned.
+   * @param regex scan command argument which will filter the keys that are returned.
+   * @throws AtException If any of the commands fail or the key does not exist.
+   */
   public static List<String> scan(AtCommandExecutor executor, boolean showHidden, String regex) throws AtException {
     try {
 

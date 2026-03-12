@@ -4,7 +4,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 /**
- * An "element" / holder for commands
+ * An "element" / holder for At Protocol commands.
+ * This is intended to be used by {@link org.atsign.client.api.AtCommandExecutor} implementations.
+ * This holder maintains the association to a {@link CompletableFuture} and the {@link Consumer}
+ * (if the command generates a stream of events). It also holds context information such as a
+ * timestamp and whether the command was sent from an onReady {@link Consumer}.
  */
 public class CommandElement {
 

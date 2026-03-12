@@ -7,7 +7,7 @@ import java.util.concurrent.ThreadFactory;
 /**
  * Wraps a thread factory (or the default netty thread factory) with one that sets thread locals.
  * This way we can detect when a command is invoked as part of OnReady and prevent
- * netty event thread from sending a command and then blocking on itself
+ * netty event thread from sending a command and then blocking on itself.
  */
 class NettyAtThreadFactory implements ThreadFactory {
 

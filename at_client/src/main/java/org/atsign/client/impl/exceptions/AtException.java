@@ -3,7 +3,8 @@ package org.atsign.client.impl.exceptions;
 /**
  * Base class for all Atsign Platform {@link Exception}s
  */
-public abstract class AtException extends Exception {
+public class AtException extends Exception {
+
   public AtException(String message) {
     super(message);
   }

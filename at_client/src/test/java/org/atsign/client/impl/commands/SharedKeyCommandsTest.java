@@ -57,7 +57,7 @@ class SharedKeyCommandsTest {
 
     RuntimeException ex =
         assertThrows(RuntimeException.class, () -> SharedKeyCommands.get(executor, createAtSign("alice"), keys, key));
-    assertThat(ex.getMessage(), containsString("the client atsign is neither the sharedBy or sharedWith"));
+    assertThat(ex.getMessage(), containsString("@alice is neither the sharedBy or sharedWith of @colin:test@gary"));
   }
 
   @Test

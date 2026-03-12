@@ -1,7 +1,7 @@
 package org.atsign.client.api;
 
 /**
- * Constants and Utility methods for "well known" standard keys
+ * Constants and utility methods for "well known" keys.
  */
 public class AtKeyNames {
 

@@ -119,7 +119,6 @@ public class AtClientImpl implements AtClient {
 
   @Override
   public CompletableFuture<String> get(SharedKey sharedKey) {
-    checkAtSignCanGet(atSign, sharedKey);
     return wrapAsync(() -> SharedKeyCommands.get(executor, atSign, keys, sharedKey));
   }
 
@@ -130,20 +129,17 @@ public class AtClientImpl implements AtClient {
 
   @Override
   public CompletableFuture<Void> put(SharedKey sharedKey, String value) {
-    checkAtSignCanPut(atSign, sharedKey);
     return wrapAsync(() -> SharedKeyCommands.put(executor, atSign, keys, sharedKey, value));
   }
 
   @Override
   public CompletableFuture<Void> delete(SharedKey sharedKey) {
-    checkAtSignCanPut(atSign, sharedKey);
     return wrapAsync(() -> KeyCommands.deleteKey(executor, sharedKey));
   }
 
   @Override
   public CompletableFuture<String> get(SelfKey selfKey) {
-    checkAtSignCanGet(atSign, selfKey);
-    return wrapAsync(() -> SelfKeyCommands.get(executor, keys, selfKey));
+    return wrapAsync(() -> SelfKeyCommands.get(executor, atSign, keys, selfKey));
   }
 
   @Override
@@ -153,13 +149,11 @@ public class AtClientImpl implements AtClient {
 
   @Override
   public CompletableFuture<Void> put(SelfKey selfKey, String value) {
-    checkAtSignCanPut(atSign, selfKey);
-    return wrapAsync(() -> SelfKeyCommands.put(executor, keys, selfKey, value));
+    return wrapAsync(() -> SelfKeyCommands.put(executor, atSign, keys, selfKey, value));
   }
 
   @Override
   public CompletableFuture<Void> delete(SelfKey selfKey) {
-    checkAtSignCanPut(atSign, selfKey);
     return wrapAsync(() -> KeyCommands.deleteKey(executor, selfKey));
   }
 
@@ -185,13 +179,11 @@ public class AtClientImpl implements AtClient {
 
   @Override
   public CompletableFuture<Void> put(PublicKey publicKey, String value) {
-    checkAtSignCanPut(atSign, publicKey);
-    return wrapAsync(() -> PublicKeyCommands.put(executor, keys, publicKey, value));
+    return wrapAsync(() -> PublicKeyCommands.put(executor, atSign, keys, publicKey, value));
   }
 
   @Override
   public CompletableFuture<Void> delete(PublicKey publicKey) {
-    checkAtSignCanPut(atSign, publicKey);
     return wrapAsync(() -> KeyCommands.deleteKey(executor, publicKey));
   }
 
@@ -307,36 +299,4 @@ public class AtClientImpl implements AtClient {
       }
     });
   }
-
-  public static void checkAtSignCanPut(AtSign atSign, PublicKey key) {
-    if (!key.sharedBy().equals(atSign)) {
-      throw new IllegalArgumentException(atSign + " is not the sharedBy of " + key);
-    }
-  }
-
-  public static void checkAtSignCanGet(AtSign atSign, SelfKey key) {
-    if (!key.sharedBy().equals(atSign)) {
-      throw new IllegalArgumentException(atSign + " is not the sharedBy of " + key);
-    }
-  }
-
-  public static void checkAtSignCanPut(AtSign atSign, SelfKey key) {
-    if (!key.sharedBy().equals(atSign)) {
-      throw new IllegalArgumentException(atSign + " is not the sharedBy of " + key);
-    }
-  }
-
-  public static void checkAtSignCanGet(AtSign atSign, SharedKey key) {
-    if (!key.sharedBy().equals(atSign) && !key.sharedWith().equals(atSign)) {
-      throw new IllegalArgumentException(atSign + " is neither the sharedBy or sharedWith of " + key);
-    }
-  }
-
-  public static void checkAtSignCanPut(AtSign atSign, SharedKey key) {
-    if (!key.sharedBy().equals(atSign)) {
-      throw new IllegalArgumentException(atSign + " is not the sharedBy of " + key);
-    }
-  }
-
-
 }

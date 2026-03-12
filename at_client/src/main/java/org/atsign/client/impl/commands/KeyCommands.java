@@ -1,29 +1,37 @@
 package org.atsign.client.impl.commands;
 
-import static org.atsign.client.impl.commands.DataResponses.*;
-import static org.atsign.client.impl.commands.ErrorResponses.throwExceptionIfError;
 import static org.atsign.client.impl.commands.CommandBuilders.LookupOperation.meta;
+import static org.atsign.client.impl.commands.DataResponses.matchDataJsonListOfStrings;
+import static org.atsign.client.impl.commands.DataResponses.matchMetadata;
+import static org.atsign.client.impl.commands.ErrorResponses.throwExceptionIfError;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import org.atsign.client.api.AtKeyNames;
 import org.atsign.client.api.AtCommandExecutor;
-import org.atsign.client.impl.exceptions.AtException;
+import org.atsign.client.api.AtKeyNames;
 import org.atsign.client.api.Keys.AtKey;
 import org.atsign.client.api.Metadata;
+import org.atsign.client.impl.exceptions.AtException;
 
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Atsign Protocol utility code that relates to keys (the records) that are managed by an
- * atserver.
+ * At Protocol utility code that relates to keys (the records) that can be stored in an
+ * At Server.
  *
  */
 @Slf4j
 public class KeyCommands {
 
+  /**
+   * Sends the delete command and verifies the response.
+   *
+   * @param executor The {@link AtCommandExecutor} to use.
+   * @param rawKey The key to delete.
+   * @throws AtException If any of the commands fail.
+   */
   public static void deleteKey(AtCommandExecutor executor, String rawKey) throws AtException {
     try {
 
@@ -39,10 +47,27 @@ public class KeyCommands {
     }
   }
 
+  /**
+   * Sends the delete command and verifies the response for an {@link AtKey}
+   *
+   * @param executor The {@link AtCommandExecutor} to use.
+   * @param key The key to delete.
+   * @throws AtException If any of the commands fail.
+   */
   public static void deleteKey(AtCommandExecutor executor, AtKey key) throws AtException {
     deleteKey(executor, key.rawKey());
   }
 
+  /**
+   * Sends the scan command to list the matching keys. And optionally then does a lookup
+   * to obtain the metadata for each key.
+   *
+   * @param executor The {@link AtCommandExecutor} to use.
+   * @param regex A regular expression to match the key names.
+   * @param fetchMetadata If true then utility will lookup the metadata for each key.
+   * @return A list of {@link AtKey} subclasses that correspond to the scan results.
+   * @throws AtException If any of the commands fail.
+   */
   public static List<AtKey> getKeys(AtCommandExecutor executor, String regex, boolean fetchMetadata)
       throws AtException {
 

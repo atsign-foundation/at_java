@@ -10,27 +10,47 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
-import lombok.extern.slf4j.Slf4j;
+import org.atsign.client.api.AtCommandExecutor;
 import org.atsign.client.api.AtEvents;
 import org.atsign.client.api.AtKeys;
-import org.atsign.client.api.AtCommandExecutor;
-import org.atsign.client.impl.exceptions.AtException;
 import org.atsign.client.api.AtSign;
+import org.atsign.client.impl.exceptions.AtException;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * Utility methods for managing notifications within the AtSign protocol
+ * Utility methods for managing notifications within the At Protocol.
  */
 public class Notifications {
 
   /**
-   * models server response string which is non-empty JSON map
+   * Models server response string which is non-empty JSON map
    */
-  protected static final Pattern NOTIFICATION_JSON_NON_EMPTY_MAP = Pattern.compile("notification:\\s*(\\{.+})");
+  private static final Pattern NOTIFICATION_JSON_NON_EMPTY_MAP = Pattern.compile("notification:\\s*(\\{.+})");
 
+  /**
+   * Creates a {@link Consumer} that can be passed to {@link AtCommandExecutor#onReady(Consumer)} to
+   * request notifications. <b>NOTE</b> monitoring is contingent on authentication to this will
+   * authenticate
+   * with pkam prior to sending the monitor command.
+   *
+   * @param atSign The {@link AtSign} to authenticate.
+   * @param keys The {@link AtKeys} to authenticate with.
+   * @param consumer A consumer that will be invoked with each notification.
+   */
   public static Consumer<AtCommandExecutor> monitor(AtSign atSign, AtKeys keys, Consumer<String> consumer) {
     return throwOnReadyException(executor -> monitor(executor, atSign, keys, consumer));
   }
 
+  /**
+   * Sends the commands to perform PKAM authentication followed by monitor command.
+   *
+   * @param executor The {@link AtCommandExecutor} to use.
+   * @param atSign The {@link AtSign} to authenticate.
+   * @param keys The {@link AtKeys} to authenticate with.
+   * @param consumer A consumer that will be invoked with each notification.
+   * @throws AtException If any of the commands fail.
+   */
   public static void monitor(AtCommandExecutor executor, AtSign atSign, AtKeys keys, Consumer<String> consumer)
       throws AtException {
     try {
@@ -46,8 +66,14 @@ public class Notifications {
     }
   }
 
-  public static Map<String, Object> matchNotification(String s) {
-    return Responses.match(s, NOTIFICATION_JSON_NON_EMPTY_MAP, Responses::decodeJsonMapOfObjects);
+  /**
+   * Use this to verify a "notification:{...}" response.
+   *
+   * @param input The At Server response to verify.
+   * @return The decoded map of fields from the notification JSON.
+   */
+  public static Map<String, Object> matchNotification(String input) {
+    return Responses.match(input, NOTIFICATION_JSON_NON_EMPTY_MAP, Responses::decodeJsonMapOfObjects);
   }
 
   /**

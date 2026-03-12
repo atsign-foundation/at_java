@@ -22,7 +22,7 @@ public interface AtClient extends AtEvents.AtEventBus, AutoCloseable {
 
   /**
    * The methods in this interface are from the perspective of this {@link AtSign}.
-   * For example when executing {@link #put(SelfKey, String)} the {@link SelfKey#sharedBy()}
+   * For example when executing put the sharedBy {@link AtSign}
    * should be the {@link AtSign} of the {@link AtClient}.
    *
    * @return the {@link AtSign} which this {@link AtClient} is representing.
@@ -40,7 +40,7 @@ public interface AtClient extends AtEvents.AtEventBus, AutoCloseable {
   /**
    * Used to get a String associated with a shared key from the perspective of the
    * {@link AtClient}'s {@link AtSign}.The {@link AtClient} {@link AtSign} should be the
-   * {@link SharedKey#sharedBy()} or the {@link SharedKey#sharedWith()} for the key.
+   * sharedBy or the sharedWith for the key.
    *
    * @param sharedKey A {@link SharedKey}
    * @return A {@link CompletableFuture} for the String value associated with this key.
@@ -50,7 +50,7 @@ public interface AtClient extends AtEvents.AtEventBus, AutoCloseable {
   /**
    * Used to get a byte array associated with a shared key from the perspective of the
    * {@link AtClient}'s {@link AtSign}.The {@link AtClient} {@link AtSign} should be the
-   * {@link SharedKey#sharedBy()} or the {@link SharedKey#sharedWith()} for the key.
+   * sharedBy or the sharedWith for the key.
    *
    * @param sharedKey A {@link SharedKey}
    * @return A {@link CompletableFuture} for the byte array value associated with this key.
@@ -59,8 +59,8 @@ public interface AtClient extends AtEvents.AtEventBus, AutoCloseable {
 
   /**
    * Used to associate a String with a shared key.
-   * The {@link AtClient} {@link AtSign} should be the {@link SharedKey#sharedBy()} or the
-   * {@link SharedKey#sharedWith()} for the key.
+   * The {@link AtClient} {@link AtSign} should be the sharedBy or the
+   * sharedWith for the key.
    *
    * @param sharedKey A {@link SharedKey}.
    * @param value The string value (this cannot be null).
@@ -70,7 +70,7 @@ public interface AtClient extends AtEvents.AtEventBus, AutoCloseable {
 
   /**
    * Used to delete a shared key.
-   * The {@link AtClient} {@link AtSign} should be the {@link SharedKey#sharedBy()} for the key.
+   * The {@link AtClient} {@link AtSign} should be the sharedBy for the key.
    *
    * @param sharedKey A {@link SharedKey}.
    * @return A {@link CompletableFuture} for this operation.
@@ -80,7 +80,7 @@ public interface AtClient extends AtEvents.AtEventBus, AutoCloseable {
   /**
    * Used to get a String associated with a self key from the perspective of the
    * {@link AtClient}'s {@link AtSign}.The {@link AtClient} {@link AtSign} should be the
-   * {@link SelfKey#sharedBy()} for the key.
+   * sharedBy for the key.
    *
    * @param selfKey A {@link SelfKey}
    * @return A {@link CompletableFuture} for the String value associated with this key.
@@ -90,7 +90,7 @@ public interface AtClient extends AtEvents.AtEventBus, AutoCloseable {
   /**
    * Used to get a byte array associated with a self key from the perspective of the
    * {@link AtClient}'s {@link AtSign}.The {@link AtClient} {@link AtSign} should be the
-   * {@link SelfKey#sharedBy()} for the key.
+   * sharedBy for the key.
    *
    * @param selfKey A {@link SelfKey}
    * @return A {@link CompletableFuture} for the byte array value associated with this key.
@@ -100,7 +100,7 @@ public interface AtClient extends AtEvents.AtEventBus, AutoCloseable {
   /**
    * Used to associate a String with a self key from the perspective of the
    * {@link AtClient}'s {@link AtSign}.The {@link AtClient} {@link AtSign} should be the
-   * {@link SelfKey#sharedBy()} for the key.
+   * sharedBy for the key.
    *
    * @param selfKey A {@link SelfKey}.
    * @param value The string value to be associated with the {@link SelfKey} (this cannot be null).
@@ -110,7 +110,7 @@ public interface AtClient extends AtEvents.AtEventBus, AutoCloseable {
 
   /**
    * Used to delete a self key.
-   * The {@link AtClient} {@link AtSign} should be the {@link SelfKey#sharedBy()} for the key.
+   * The {@link AtClient} {@link AtSign} should be the sharedBy for the key.
    *
    * @param selfKey A {@link SelfKey}.
    * @return A {@link CompletableFuture} for this operation.
@@ -155,7 +155,7 @@ public interface AtClient extends AtEvents.AtEventBus, AutoCloseable {
   /**
    * Used to associate a String with a public key from the perspective of the
    * {@link AtClient}'s {@link AtSign}.The {@link AtClient} {@link AtSign} should be the
-   * {@link PublicKey#sharedBy()} for the key.
+   * sharedBy for the key.
    *
    * @param publicKey A {@link PublicKey}.
    * @param value The string value associated with the {@link PublicKey} (this cannot be null).
@@ -165,7 +165,7 @@ public interface AtClient extends AtEvents.AtEventBus, AutoCloseable {
 
   /**
    * Used to delete a public key.
-   * The {@link AtClient} {@link AtSign} should be the {@link PublicKey#sharedBy()} for the key.
+   * The {@link AtClient} {@link AtSign} should be the sharedBy for the key.
    *
    * @param publicKey A {@link PublicKey}.
    * @return A {@link CompletableFuture} for this operation.
@@ -175,7 +175,7 @@ public interface AtClient extends AtEvents.AtEventBus, AutoCloseable {
   /**
    * Used to associate a byte array with a shared key from the perspective of the
    * {@link AtClient}'s {@link AtSign}.The {@link AtClient} {@link AtSign} should be the
-   * {@link SharedKey#sharedBy()} for the key.
+   * sharedBy for the key.
    *
    * @param sharedKey A {@link SharedKey}.
    * @param value The byte array to associated with the {@link SharedKey}
@@ -186,7 +186,7 @@ public interface AtClient extends AtEvents.AtEventBus, AutoCloseable {
   /**
    * Used to associate a byte array with a self key from the perspective of the
    * {@link AtClient}'s {@link AtSign}.The {@link AtClient} {@link AtSign} should be the
-   * {@link SelfKey#sharedBy()} for the key.
+   * sharedBy for the key.
    *
    * @param selfKey A {@link SelfKey}.
    * @param value The byte array to associated with the {@link SelfKey}
@@ -197,7 +197,7 @@ public interface AtClient extends AtEvents.AtEventBus, AutoCloseable {
   /**
    * Used to associate a byte array with a public key from the perspective of the
    * {@link AtClient}'s {@link AtSign}.The {@link AtClient} {@link AtSign} should be the
-   * {@link PublicKey#sharedBy()} for the key.
+   * sharedBy for the key.
    *
    * @param publicKey A {@link PublicKey}.
    * @param value The byte array to associated with the {@link PublicKey}
@@ -241,7 +241,7 @@ public interface AtClient extends AtEvents.AtEventBus, AutoCloseable {
   /**
    * Used to check if this {@link AtClient} has sent a monitor command.
    *
-   * @return
+   * @return true is monitor has been set (and not stopped).
    */
   boolean isMonitorRunning();
 

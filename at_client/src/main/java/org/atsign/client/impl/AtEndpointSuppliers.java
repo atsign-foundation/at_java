@@ -52,11 +52,11 @@ public class AtEndpointSuppliers {
       return () -> proxyMatcher.group(1);
     }
 
-    Matcher directoryServerMatcher = PATTERN_ROOT_URL.matcher(url);
-    if (directoryServerMatcher.matches()) {
+    Matcher rootMatcher = PATTERN_ROOT_URL.matcher(url);
+    if (rootMatcher.matches()) {
       checkNotNull(atSign, "atSign must be set to resolve at server endpoint from " + url);
-      String hostname = directoryServerMatcher.group(1);
-      String port = directoryServerMatcher.group(2);
+      String hostname = rootMatcher.group(1);
+      String port = rootMatcher.group(2);
       return NettyAtEndpointSupplier.builder()
           .rootUrl(hostname + ":" + (port != null ? port : ROOT_SERVER_PORT))
           .atsign(atSign)

@@ -1,53 +1,70 @@
 package org.atsign.client.impl.commands;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import org.atsign.client.impl.util.JsonUtils;
-
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.atsign.client.impl.util.JsonUtils;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+
 /**
- * Atsign protocol utility code that relates to processing responses from an atserver
+ * At Protocol utility code that relates to processing responses from an At Server.
  *
  */
 
 public class Responses {
 
+  /**
+   * Decodes a JSON string that represents a Map of Strings.
+   *
+   * @param json A JSON Object string.
+   * @return The map of Strings.
+   */
   public static Map<String, String> decodeJsonMapOfStrings(String json) {
-    try {
-      return JsonUtils.MAPPER.readValue(json, new TypeReference<>() {});
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    return JsonUtils.readValue(json, new TypeReference<>() {});
   }
 
+  /**
+   * Decodes a JSON string that represents a Map of Objects.
+   *
+   * @param json A JSON Object string.
+   * @return The Map of Objects.
+   */
   public static Map<String, Object> decodeJsonMapOfObjects(String json) {
-    try {
-      return JsonUtils.MAPPER.readValue(json, new TypeReference<>() {});
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    return JsonUtils.readValue(json, new TypeReference<>() {});
   }
 
+  /**
+   * Decodes a JSON string that represents a List of Objects.
+   *
+   * @param json A JSON list string.
+   * @return The List of Objects.
+   */
   public static List<Object> decodeJsonList(String json) {
-    try {
-      return JsonUtils.MAPPER.readValue(json, new TypeReference<>() {});
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    return JsonUtils.readValue(json, new TypeReference<>() {});
   }
 
+  /**
+   * Decodes a JSON string that represents a List of Strings.
+   *
+   * @param json A JSON list string.
+   * @return The List of Objects.
+   */
   public static List<String> decodeJsonListOfStrings(String json) {
-    try {
-      return JsonUtils.MAPPER.readValue(json, new TypeReference<>() {});
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    return JsonUtils.readValue(json, new TypeReference<>() {});
   }
 
+  /**
+   * Verifies that the input matches a regular expression and returns the matched groups in the
+   * pattern.
+   *
+   * @param input The At Server response.
+   * @param pattern The expected regex for a successful command.
+   * @return The concatenation of any groups in the pattern, or the whole input if no groups.
+   */
   public static String match(String input, Pattern pattern) {
     Matcher matcher = pattern.matcher(input);
     if (!matcher.matches()) {
@@ -64,6 +81,15 @@ public class Responses {
     return builder.toString();
   }
 
+  /**
+   * Verifies that the input matches a regular expression and returns the matched groups in the
+   * pattern with a transformation applied.
+   *
+   * @param input The At Server response.
+   * @param pattern The expected regex for a successful command.
+   * @return The transformed concatenation of any groups in the pattern, or the whole input if no
+   *         groups.
+   */
   public static <T> T match(String input, Pattern pattern, Function<String, T> transformer) {
     return transformer.apply(match(input, pattern));
   }

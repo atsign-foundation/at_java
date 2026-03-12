@@ -1,11 +1,11 @@
 package org.atsign.client.impl.commands;
 
+import static org.atsign.client.impl.commands.CommandBuilders.EnrollParameters.ENCRYPTED_APKAM_SYMMETRIC_KEY;
 import static org.atsign.client.impl.commands.DataResponses.*;
 import static org.atsign.client.impl.commands.ErrorResponses.throwExceptionIfError;
-import static org.atsign.client.impl.util.EncryptionUtils.*;
 import static org.atsign.client.impl.common.EnrollmentId.createEnrollmentId;
 import static org.atsign.client.impl.common.Preconditions.checkNotNull;
-import static org.atsign.client.impl.commands.CommandBuilders.EnrollParameters.ENCRYPTED_APKAM_SYMMETRIC_KEY;
+import static org.atsign.client.impl.util.EncryptionUtils.*;
 
 import java.util.List;
 import java.util.Map;
@@ -13,30 +13,34 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import org.atsign.client.api.AtCommandExecutor;
 import org.atsign.client.api.AtKeyNames;
 import org.atsign.client.api.AtKeys;
-import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.AtSign;
 import org.atsign.client.impl.common.EnrollmentId;
 import org.atsign.client.impl.exceptions.AtException;
-import org.atsign.client.api.AtSign;
 
 /**
- * Atsign Protocol utilitiy code that relates to onboarding and enrolling atsigns.
+ * At Protocol composite commands for activating an AtServer, enrolling the first set of keys
+ * and enrolling subsequent sets of keys.
  */
 public class EnrollCommands {
 
   /**
-   * Performs the onboarding workflow which sets up the manage keys for an atserver.
+   * Performs the onboarding commands which activate an At Server and
+   * enroll the first set of keys. This initial enrollment automatically completes and creates the
+   * app/device keys that can approve subsequent enrollments.
    *
-   * @param executor A executor to an atserver command interface.
+   * @param executor The {@link AtCommandExecutor} to use.
    * @param atSign The AtSign that corresponds to the executor.
-   * @param keys The {@link AtKeys} for the {@link AtSign}.
+   * @param keys The {@link AtKeys} for the {@link AtSign}, these should already be populated.
    * @param cramSecret The CRAM secret.
    * @param appName The app name for this first enrollment.
    * @param deviceName The device name for this first enrollment.
    * @param deleteCramKey Whether the CRAM key should be removed from the AtServer.
-   * @return a new {@link AtKeys} instance that has the enrollment id set
-   * @throws AtException If the enrollment fails.
+   * @return A new copy of the {@link AtKeys} that has the enrollment id set. These need to be
+   *         persisted by the caller.
+   * @throws AtException If any of the commands fail.
    */
   public static AtKeys onboard(AtCommandExecutor executor,
                                AtSign atSign,
@@ -98,10 +102,23 @@ public class EnrollCommands {
     return keys;
   }
 
+  /**
+   * Deletes the key which holds the CRAM secret prior to onboarding an At Server.
+   *
+   * @param executor The {@link AtCommandExecutor} to use.
+   * @throws AtException If the command fails.
+   */
   public static void deleteCramSecret(AtCommandExecutor executor) throws AtException {
     KeyCommands.deleteKey(executor, AtKeyNames.PRIVATE_AT_SECRET);
   }
 
+  /**
+   * Can be used to obtain a one time password for enrollment.
+   *
+   * @param executor The {@link AtCommandExecutor} to use.
+   * @return a unique one time password.
+   * @throws AtException If the command fails.
+   */
   public static String otp(AtCommandExecutor executor) throws AtException {
     try {
 
@@ -117,6 +134,25 @@ public class EnrollCommands {
     }
   }
 
+  /**
+   * Performs the enrollment request commands for a new application / device set of keys.
+   * <b>NOTE</b> The result of this command will be a pending request that must be approved
+   * ({@link #approve(AtCommandExecutor, AtKeys, EnrollmentId)}) using keys that have access
+   * to the manage namespace (the original keys from onboard) and then completed
+   * ({@link #complete(AtCommandExecutor, AtSign, AtKeys)}).
+   *
+   * @param executor An executor to an atserver command interface.
+   * @param atSign The AtSign that corresponds to the executor.
+   * @param keys The {@link AtKeys} for the {@link AtSign}, this should have the APKAM keys populated.
+   *        The rest of the fields will be set once enrollment is complated.
+   * @param otp A one time password.
+   * @param appName The app name for this enrollment.
+   * @param deviceName The device name for this enrollment.
+   * @param namespaces A map of namespace names and access control e.g. r,rw.
+   * @return A new copy of the {@link AtKeys} that has the public encrypt key and enrollment id set.
+   *         These need to be persisted by the caller.
+   * @throws AtException If any of the commands fail.
+   */
   public static AtKeys enroll(AtCommandExecutor executor,
                               AtSign atSign,
                               AtKeys keys,
@@ -158,6 +194,20 @@ public class EnrollCommands {
         .build();
   }
 
+  /**
+   * Performs the enrollment completion commands for a new application / device set of keys.
+   * <b>NOTE</b> This command would only be expected to succeed if the enrollment request
+   * has been approved.
+   *
+   * @param executor An executor to an atserver command interface.
+   * @param atSign The AtSign that corresponds to the executor.
+   * @param keys The {@link AtKeys} for the {@link AtSign}, this should have the APKAM keys populated.
+   *        The rest of the fields will be set once enrollment is completed.
+   * @return A new copy of the {@link AtKeys} that has the private encrypt key and self encrypt key
+   *         set.
+   *         These need to be persisted by the caller.
+   * @throws AtException If any of the commands fail.
+   */
   public static AtKeys complete(AtCommandExecutor executor, AtSign atSign, AtKeys keys) throws AtException {
 
     // attempt to authenticate with PKAM, this will succeed once the enroll request is approved
@@ -175,6 +225,13 @@ public class EnrollCommands {
 
   }
 
+  /**
+   * Performs the commands to response processing to provide a list of {@link EnrollmentId}.
+   *
+   * @param executor An executor to an atserver command interface.
+   * @param status A filter for the request statuses.
+   * @throws AtException If any of the commands fail.
+   */
   public static List<EnrollmentId> list(AtCommandExecutor executor, String status) throws AtException {
     try {
 
@@ -196,6 +253,15 @@ public class EnrollCommands {
     }
   }
 
+  /**
+   * Performs the enrollment approve commands for a new application / device set of keys.
+   *
+   * @param executor An executor to an atserver command interface.
+   * @param keys The {@link AtKeys} for the {@link AtSign} that have the authority to manage
+   *        enrollment requests. Typically the first set of keys from the onboard.
+   * @param enrollmentId The {@link EnrollmentId} to approve.
+   * @throws AtException If any of the commands fail.
+   */
   public static void approve(AtCommandExecutor executor, AtKeys keys, EnrollmentId enrollmentId) throws AtException {
     try {
 
@@ -237,18 +303,48 @@ public class EnrollCommands {
 
   }
 
+  /**
+   * Performs the enrollment revoke commands for a pending application / device set of keys.
+   *
+   * @param executor An executor to an atserver command interface.
+   * @param enrollmentId The {@link EnrollmentId} to deny.
+   * @throws AtException If any of the commands fail.
+   */
   public static void deny(AtCommandExecutor executor, EnrollmentId enrollmentId) throws Exception {
     singleArgEnrollAction(executor, "deny", enrollmentId, "denied");
   }
 
+  /**
+   * Performs the enrollment revoke commands for a previously approved application / device set of
+   * keys.
+   *
+   * @param executor An executor to an atserver command interface.
+   * @param enrollmentId The {@link EnrollmentId} to revoke.
+   * @throws AtException If any of the commands fail.
+   */
   public static void revoke(AtCommandExecutor executor, EnrollmentId enrollmentId) throws Exception {
     singleArgEnrollAction(executor, "revoke", enrollmentId, "revoked");
   }
 
+  /**
+   * Performs the enrollment revoke commands for a previously revoked application / device set of
+   * keys.
+   *
+   * @param executor An executor to an atserver command interface.
+   * @param enrollmentId The {@link EnrollmentId} to unrevoke.
+   * @throws AtException If any of the commands fail.
+   */
   public static void unrevoke(AtCommandExecutor executor, EnrollmentId enrollmentId) throws Exception {
     singleArgEnrollAction(executor, "unrevoke", enrollmentId, "approved");
   }
 
+  /**
+   * Performs the enrollment revoke commands for an application / device set of keys.
+   *
+   * @param executor An executor to an atserver command interface.
+   * @param enrollmentId The {@link EnrollmentId} to delete.
+   * @throws AtException If any of the commands fail.
+   */
   public static void delete(AtCommandExecutor executor, EnrollmentId enrollmentId) throws Exception {
     singleArgEnrollAction(executor, "delete", enrollmentId, "deleted");
   }

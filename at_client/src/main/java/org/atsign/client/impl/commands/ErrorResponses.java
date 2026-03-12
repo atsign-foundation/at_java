@@ -9,24 +9,32 @@ import java.util.regex.Pattern;
 import org.atsign.client.impl.exceptions.AtException;
 
 /**
- * Utility methods for handling error responses in the AtSign protocol
+ * Utility methods for handling error responses in the At Protocol.
  */
 public class ErrorResponses {
 
   /**
-   * models server data response
+   * Models server data response
    */
-  public static final Pattern ERROR = Pattern.compile("error:(.+)");
+  private static final Pattern ERROR = Pattern.compile("error:(.+)");
 
-  public static String matchError(String input) {
-    return Responses.match(input, ERROR);
+  private static final Pattern ERROR_WITH_CODE = Pattern.compile("error:(AT\\d+)([^:]*):\\s*(.+)");
+
+  /**
+   * Use this to verify a "error:xxxx" response.
+   *
+   * @param response A response string from an AtSign command interface
+   * @return the response with the "error:" prefix removed
+   */
+  public static String matchError(String response) {
+    return Responses.match(response, ERROR);
   }
 
   /**
    * Utility method that can be used to wrap a response and throw a typed
    * {@link AtException} is the response represents an error.
    *
-   * @param response a response string from an AtSign command interface
+   * @param response A response string from an AtSign command interface
    * @return the response parameter if the response is NOT an error
    * @throws AtException a typed exception if the response is an error
    */
@@ -38,11 +46,15 @@ public class ErrorResponses {
     return response;
   }
 
-  public static AtException getAtExceptionIfError(String response) throws AtException {
+  private static AtException getAtExceptionIfError(String response) throws AtException {
     checkNotNull(response);
-    Matcher matcher = Pattern.compile("error:(AT\\d+)([^:]*):\\s*(.+)").matcher(response);
+    Matcher matcher = ERROR_WITH_CODE.matcher(response);
     if (matcher.matches()) {
       return toTypedException(matcher.group(1), matcher.group(3));
+    }
+    matcher = ERROR.matcher(response);
+    if (matcher.matches()) {
+      return new AtException(matcher.group(1));
     }
     return null;
   }

@@ -119,7 +119,7 @@ class MetadataTest {
 
   @Test
   void testFromJsonInvalidJsonThrowsException() {
-    assertThrows(JsonProcessingException.class, () -> Metadata.fromJson("not-json"));
+    assertThrows(RuntimeException.class, () -> Metadata.fromJson("not-json"));
   }
 
   @Test

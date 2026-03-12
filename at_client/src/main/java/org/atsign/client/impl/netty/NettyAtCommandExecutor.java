@@ -43,7 +43,7 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.Builder;
 
 /**
- * An implementation that uses Netty
+ * An implementation of {@link AtCommandExecutor} that uses Netty.
  */
 public class NettyAtCommandExecutor implements AtCommandExecutor {
 

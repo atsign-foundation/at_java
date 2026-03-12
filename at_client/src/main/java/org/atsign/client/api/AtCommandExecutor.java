@@ -5,14 +5,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 /**
- * A core interface that represents something that is connected to an at server
- * command interface.
+ * Represents something that is capable of sending At Protocol commands,
+ * and receiving responses, to and from At Server command interface.
  * {@link AtCommandExecutor}s are closeable resources and should be treated accordingly.
  */
 public interface AtCommandExecutor extends AutoCloseable {
 
   /**
-   * Asynchronously executes an Atsign Protocol command that is expected to return a response.
+   * Asynchronously executes an At Protocol command that is expected to return a response.
    *
    * @param command the command to execute
    * @param future the future which will be completed with the response
@@ -20,7 +20,7 @@ public interface AtCommandExecutor extends AutoCloseable {
   void send(String command, CompletableFuture<String> future);
 
   /**
-   * Asynchronously executes an Atsign Protocol command that is expected to return a response.
+   * Asynchronously executes an At Protocol command that is expected to return a response.
    *
    * @param command the command to execute
    * @return the future which will be completed with the response
@@ -32,7 +32,7 @@ public interface AtCommandExecutor extends AutoCloseable {
   }
 
   /**
-   * Synchronously executes an Atsign Protocol command that is expected to return a response.
+   * Synchronously executes an At Protocol command that is expected to return a response.
    * This method will return once the command has been sent to the AtSign server and the response
    * has been received.
    *
@@ -42,7 +42,7 @@ public interface AtCommandExecutor extends AutoCloseable {
   String sendSync(String command) throws ExecutionException, InterruptedException;
 
   /**
-   * Asynchronously executes an Atsign Protocol command that is expected to return a stream of events.
+   * Asynchronously executes an At Protocol command that is expected to return a stream of events.
    *
    * @param command the command to execute
    * @param consumer the consumer which the connection will invoke with each event
@@ -51,7 +51,7 @@ public interface AtCommandExecutor extends AutoCloseable {
   void send(String command, Consumer<String> consumer, CompletableFuture<Void> future);
 
   /**
-   * Asynchronously executes an Atsign Protocol command that is expected to return a stream of events.
+   * Asynchronously executes an At Protocol command that is expected to return a stream of events.
    *
    * @param command the command to execute
    * @param consumer the consumer which the connection will invoke with each event
@@ -64,7 +64,7 @@ public interface AtCommandExecutor extends AutoCloseable {
   }
 
   /**
-   * Synchronously executes an Atsign Protocol command that is expected to return a stream of events.
+   * Synchronously executes an At Protocol command that is expected to return a stream of events.
    * This method will return once the command has been sent to the AtSign server and some form of
    * acknowledgement has been received.
    *
