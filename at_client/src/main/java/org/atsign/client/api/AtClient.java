@@ -9,8 +9,8 @@ import lombok.Builder;
 import lombok.Value;
 
 /**
- * A core interface which enables users to interact with an AtServer as
- * a map-like interface (rather than having sending AtProtocol commands).
+ * Represents something which enables users to interact with an AtServer as
+ * a map-like interface.
  * Users are able to invoke put, get and delete operations for the different key
  * types ({@link PublicKey}, {@link SelfKey} and {@link SharedKey}).
  * Users can also subscribe to notifications, an {@link AtClient} is an

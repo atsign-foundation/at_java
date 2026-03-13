@@ -1,5 +1,6 @@
 package org.atsign.client.impl.util;
 
+import static org.atsign.client.api.AtSign.createAtSign;
 import static org.atsign.client.impl.util.EncryptionUtils.generateAESKeyBase64;
 import static org.atsign.client.impl.util.EncryptionUtils.generateRSAKeyPair;
 import static org.junit.jupiter.api.Assertions.*;
@@ -16,7 +17,7 @@ import org.junit.jupiter.api.Test;
 
 public class KeysUtilsTest {
 
-  AtSign testAtSign = new AtSign("@testSaveKeysFile");
+  AtSign testAtSign = createAtSign("@testSaveKeysFile");
 
   @AfterEach
   public void tearDown() throws IOException {

@@ -37,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <pre>
  * AtClientImplBuilder builder = AtClientImpl.builder()
- *     .atSign(createAtSign("colin"))
+ *     .atSign(...)
  *     .keys(...)
  *     .executor(...)
  *     .eventBus(...);
@@ -71,14 +71,34 @@ public class AtClientImpl implements AtClient {
 
   @Builder
   public AtClientImpl(AtSign atSign, AtKeys keys, AtCommandExecutor executor, AtEventBus eventBus) {
-    checkNotNull(keys.getEncryptPrivateKey(), "AtKeys have not been fully enrolled");
-    this.atSign = atSign;
-    this.keys = keys;
-    this.executor = executor;
-    this.eventBus = eventBus;
+    this.atSign = checkNotNull(atSign, "atSign not set");
+    this.keys = checkNotNull(keys, "keys not set");
+    this.executor = checkNotNull(executor, "executor not set");
+    this.eventBus = checkNotNull(eventBus, "eventBus not set");
     this.eventBus.addEventListener(this::handleEvent, EnumSet.allOf(AtEventType.class));
     this.eventBusBridge = new Notifications.EventBusBridge(eventBus, atSign);
+    checkNotNull(keys.getEncryptPrivateKey(), "keys have not been fully enrolled");
   }
+
+  /**
+   * A builder for instantiating {@link AtCommandExecutor} implementations that are included in
+   * this library. Example usage:
+   *
+   * <pre>
+   *
+   * AtClientImpl.builder()
+   *   .atSign(...)  // the AtSign that this client will authenticate as
+   *   .keys(...)    // the AtKeys that this client will use
+   *   .executor()   // the AtCommandExecutor this client will use
+   *   .eventBus()   // the AtEventBus this client will publish to
+   *   .build();
+   * }
+   * </pre>
+   */
+  public static class AtClientImplBuilder {
+    // required for javadoc
+  }
+
 
   @Override
   public void close() throws Exception {

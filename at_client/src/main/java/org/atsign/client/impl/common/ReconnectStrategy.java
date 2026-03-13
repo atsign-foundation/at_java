@@ -1,4 +1,6 @@
-package org.atsign.client.impl;
+package org.atsign.client.impl.common;
+
+import org.atsign.client.impl.AtEndpointSupplier;
 
 /**
  * A strategy for controlling re-connection behavior for

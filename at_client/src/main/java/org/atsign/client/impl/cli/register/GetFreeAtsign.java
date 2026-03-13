@@ -13,7 +13,7 @@ class GetFreeAtsign extends RegisterApiTask<RegisterApiResult<Map<String, String
       result.data.put("atSign",
                       registerUtil.getFreeAtsign(params.get("registrarUrl"), params.get("apiKey")));
       result.apiCallStatus = ApiCallStatus.success;
-      System.out.println("\tFetched new atsign: " + "@" + result.data.get("atSign"));
+      System.out.println("\tFetched createAtSign: " + "@" + result.data.get("atSign"));
     } catch (AtRegistrarException e) {
       result.atException = e;
     } catch (Exception e) {

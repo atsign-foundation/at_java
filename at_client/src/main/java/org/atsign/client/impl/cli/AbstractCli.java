@@ -1,24 +1,25 @@
 package org.atsign.client.impl.cli;
 
-import static org.atsign.client.impl.common.Preconditions.checkNotNull;
-
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import org.atsign.client.api.AtCommandExecutor;
-import org.atsign.client.impl.exceptions.AtException;
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtSign;
+import org.atsign.client.impl.AtEndpointSupplier;
+import org.atsign.client.impl.AtEndpointSuppliers;
 import org.atsign.client.impl.commands.AuthenticationCommands;
 import org.atsign.client.impl.common.SimpleReconnectStrategy;
 import org.atsign.client.impl.exceptions.AtClientConfigException;
+import org.atsign.client.impl.exceptions.AtException;
 import org.atsign.client.impl.netty.NettyAtCommandExecutor;
 import org.atsign.client.impl.netty.NettyAtCommandExecutor.NettyAtCommandExecutorBuilder;
-import org.atsign.client.impl.netty.NettyAtEndpointSupplier;
 import org.atsign.client.impl.util.KeysUtils;
 
 import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.Option;
+
+import static org.atsign.client.api.AtSign.createAtSign;
 
 /**
  * Base class for Command Line Interface utilities. Holds common fields such as root server
@@ -31,7 +32,7 @@ public abstract class AbstractCli<T extends AbstractCli<T>> {
   protected String rootUrl = "root.atsign.org";
   protected AtSign atSign;
   protected File keysFile;
-  protected int connectionRetries = 1;
+  protected int connectionRetries = 2;
   private boolean verbose = false;
 
   protected abstract T self();
@@ -101,10 +102,7 @@ public abstract class AbstractCli<T extends AbstractCli<T>> {
 
   private static NettyAtCommandExecutorBuilder createCommandExecutorBuilder(String rootUrl, AtSign atSign, int retries,
                                                                             boolean verbose) {
-    NettyAtEndpointSupplier endpoint = NettyAtEndpointSupplier.builder()
-        .rootUrl(checkNotNull(rootUrl, "root server endpoint not set"))
-        .atsign(checkNotNull(atSign, "atsign not set"))
-        .build();
+    AtEndpointSupplier endpoint = AtEndpointSuppliers.builder().url(rootUrl).atSign(atSign).build();
     SimpleReconnectStrategy reconnect = SimpleReconnectStrategy.builder()
         .maxReconnectRetries(retries)
         .reconnectPauseMillis(TimeUnit.SECONDS.toMillis(2))
@@ -127,7 +125,7 @@ public abstract class AbstractCli<T extends AbstractCli<T>> {
   static class AtSignConverter implements ITypeConverter<AtSign> {
     @Override
     public AtSign convert(String s) {
-      return new AtSign(s);
+      return createAtSign(s);
     }
   }
 }

@@ -12,11 +12,13 @@ import lombok.Value;
 import org.atsign.client.impl.common.EnrollmentId;
 
 /**
- * An immutable class used to hold an {@link org.atsign.client.api.AtClient}s keys.
+ * An immutable class used to hold an {@link org.atsign.client.api.AtClient}s keys. These
+ * are use for authentication and encryption.
  * <p>
  * Examples:
  *
  * <pre>
+ *
  * AtKeys keys = AtKeys.builder()
  *     .selfEncryptKey(generateAESKeyBase64())
  *     .apkamKeyPair(generateRSAKeyPair())
@@ -128,8 +130,26 @@ public class AtKeys {
     return Collections.unmodifiableMap(cache);
   }
 
+
   /**
-   * Builder utility.
+   * A builder for instantiating {@link AtKeys}.
+   *
+   * <pre>
+   *
+   * AtKeys keys = AtKeys.builder()
+   *     .selfEncryptKey(EncryptionUtil.generateAESKeyBase64())
+   *     .apkamKeyPair(EncryptionUtil.generateRSAKeyPair())
+   *     .apkamSymmetricKey(EncryptionUtil.generateAESKeyBase64())
+   *     .build();
+   * </pre>
+   *
+   * <b>NOTE</b> {@link AtKeys} are immutable, so use the toBuilder() method
+   * to create a modified instance.
+   *
+   * <pre>
+   *
+   * AtKeys newKeys = keys.toBuilder().enrollmentId(enrollmentId).build();
+   * </pre>
    */
   public static class AtKeysBuilder {
 

@@ -96,4 +96,9 @@ public class CommandElement {
   public static boolean isErrorResponse(String s) {
     return s.startsWith("error:");
   }
+
+  public static boolean isPrompt(String s) {
+    return s.startsWith("@") && s.endsWith("@");
+  }
+
 }

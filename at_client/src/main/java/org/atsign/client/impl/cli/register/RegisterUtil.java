@@ -2,6 +2,7 @@ package org.atsign.client.impl.cli.register;
 
 import static java.util.AbstractMap.SimpleEntry;
 import static java.util.stream.Collectors.toMap;
+import static org.atsign.client.api.AtSign.createAtSign;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -85,7 +86,7 @@ public class RegisterUtil {
       throws AtException, IOException {
     Map<String, String> paramsMap = new HashMap<>();
     if (!atsign.isEmpty()) {
-      paramsMap.put("atSign", new AtSign(atsign).withoutPrefix());
+      paramsMap.put("atSign", createAtSign(atsign).withoutPrefix());
     }
     if (!activationKey.isEmpty()) {
       paramsMap.put("ActivationKey", activationKey);
@@ -160,10 +161,11 @@ public class RegisterUtil {
    *        will return list of already existing atsigns. If the user already has existing atsigns
    *        user will have to select a listed atsign old/new and place a second call to the same API
    *        endpoint with confirmation set to true with previously received OTP. The second follow-up
-   *        call is automated by this client using new atsign for user simplicity
+   *        call is automated by this client using createAtSign for user simplicity
    * @return Case 1("verified") - the API has registered the atsign to provided email and CRAM key
    *         present in HTTP_RESPONSE Body. Case 2("follow-up"): User already has existing atsigns and
-   *         new atsign registered successfully. To receive the CRAM key, follow-up by calling the API
+   *         createAtSign registered successfully. To receive the CRAM key, follow-up by calling the
+   *         API
    *         with one of the existing listed atsigns, with confirmation set to true. Case 3("retry"):
    *         Incorrect OTP send request again with correct OTP.
    * @throws IOException thrown if anything goes wrong while using the HttpsURLConnection.

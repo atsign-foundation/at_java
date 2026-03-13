@@ -1,7 +1,6 @@
 package org.atsign.client.impl.common;
 
 import lombok.Builder;
-import org.atsign.client.impl.ReconnectStrategy;
 
 import java.util.concurrent.TimeUnit;
 

@@ -9,7 +9,7 @@ import org.atsign.client.impl.common.TypedString;
  */
 public class AtSign extends TypedString {
 
-  public AtSign(String s) {
+  private AtSign(String s) {
     super(formatAtSign(s));
   }
 
@@ -18,10 +18,10 @@ public class AtSign extends TypedString {
   }
 
   /**
-   * Factory method
+   * A factory method for instantiating {@link AtSign} instances.
    *
    * @param s the string representation of the Atsign (can be with our without @ prefix)
-   * @return null is s is null or blank, otherwise the corresponding {@link AtSign} for s
+   * @return null if param is null or blank, otherwise the corresponding {@link AtSign} for the param
    */
   public static AtSign createAtSign(String s) {
     return s != null && !s.isBlank() ? new AtSign(s) : null;

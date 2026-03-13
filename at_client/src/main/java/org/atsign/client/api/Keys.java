@@ -178,6 +178,28 @@ public abstract class Keys {
   }
 
   /**
+   * A builder for instantiating {@link Keys.PublicKey} instances.
+   *
+   * <pre>
+
+   * Keys.PublicKey key = Keys.publicKeyBuilder()
+   *     .sharedBy(...)   // the AtSign which is sharing the key
+   *     .name(...)       // the key name
+   *     .namespace(...)
+   *     .ttl(...)
+   *     .ttb(...)
+   *     .ttr(...)
+   *     .ccd(...)
+   *     .isCached(...)
+   *     .isBinary(...)
+   *     .metadata(...)
+   *     .build();
+   * </pre>
+   */
+  public static class PublicKeyBuilder {
+  }
+
+  /**
    * Models a "self key" in the Atsign Platform specification.
    */
   public static class SelfKey extends AtKey {
@@ -206,6 +228,29 @@ public abstract class Keys {
     checkNotNull(sharedBy, "sharedBy is not set");
     checkNotNull(name, "name is not set");
     return new SelfKey(sharedBy, sharedWith, toName(name, namespace), metadata);
+  }
+
+  /**
+   * A builder for instantiating {@link Keys.SelfKey} instances.
+   *
+   * <pre>
+
+   * Keys.SelfKey key = Keys.selfKeyBuilder()
+   *     .sharedBy(...)   // the AtSign which is sharing the key
+   *     .sharedWith(...)
+   *     .name(...)       // the key name
+   *     .namespace(...)
+   *     .ttl(...)
+   *     .ttb(...)
+   *     .ttr(...)
+   *     .ccd(...)
+   *     .isHidden(...)
+   *     .isBinary(...)
+   *     .metadata(...)
+   *     .build();
+   * </pre>
+   */
+  public static class SelfKeyBuilder {
   }
 
   /**
@@ -249,6 +294,31 @@ public abstract class Keys {
   }
 
   /**
+   * A builder for instantiating {@link Keys.SharedKey} instances.
+   *
+   * <pre>
+
+   * Keys.SharedKey key = Keys.sharedKeyBuilder()
+   *     .sharedBy(...)   // the AtSign which is sharing the key
+   *     .sharedWith(...) // the AtSign which the key is being shared with
+   *     .name(...)       // the key name
+   *     .namespace(...)
+   *     .ttl(...)
+   *     .ttb(...)
+   *     .ttr(...)
+   *     .ccd(...)
+   *     .isCached(...)
+   *     .isHidden(...)
+   *     .isBinary(...)
+   *     .metadata(...)
+   *     .rawKey(...)     // the raw key i.e. @sharedWith:name@sharedBy
+   *     .build();
+   * </pre>
+   */
+  public static class SharedKeyBuilder {
+  }
+
+  /**
    * Represents a "private hidden key" in the Atsign Platform
    */
   public static class PrivateHiddenKey extends AtKey {
@@ -274,6 +344,26 @@ public abstract class Keys {
       }
     }
     throw new IllegalArgumentException(rawKey + " does NOT match any raw key parser");
+  }
+
+  /**
+   * A builder for instantiating typed {@link AtKey} instances from raw key names.
+   * e.g. @sharedWith:name@sharedBy or public:name@sharedBy. This builder will
+   * decode everything based on the raw key name.
+   *
+   * <pre>
+   *
+   * Keys.AtKey key = Keys.keyBuilder().rawKey(...).build();
+   * </pre>
+   *
+   * Metadata can also be provided.
+   *
+   * <pre>
+   *
+   * Keys.AtKey key = Keys.keyBuilder().rawKey(...).metadata(...).build();
+   * </pre>
+   */
+  public static class KeyBuilder {
   }
 
   private interface RawKeyParser<T extends AtKey> extends Predicate<String> {

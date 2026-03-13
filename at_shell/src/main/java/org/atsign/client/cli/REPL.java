@@ -2,6 +2,7 @@ package org.atsign.client.cli;
 
 import static org.atsign.client.api.AtEvents.AtEventType.decryptedUpdateNotification;
 import static org.atsign.client.api.AtEvents.AtEventType.updateNotification;
+import static org.atsign.client.api.AtSign.createAtSign;
 import static org.fusesource.jansi.Ansi.ansi;
 
 import java.util.*;
@@ -38,7 +39,7 @@ public class REPL {
     }
 
     String rootUrl = args[0];
-    AtSign atSign = new AtSign(args[1]);
+    AtSign atSign = createAtSign(args[1]);
     boolean seeEncryptedNotifications = args.length > 2 ? Boolean.parseBoolean(args[2]) : false;
     boolean verbose = args.length > 3 ? Boolean.parseBoolean(args[3]) : false;
 

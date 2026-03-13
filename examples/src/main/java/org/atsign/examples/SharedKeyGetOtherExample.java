@@ -1,6 +1,6 @@
 package org.atsign.examples;
 
-import static org.atsign.client.impl.util.KeysUtils.loadKeys;
+import static org.atsign.client.api.AtSign.createAtSign;
 
 
 import org.atsign.client.api.AtClient;
@@ -14,24 +14,16 @@ public class SharedKeyGetOtherExample {
   /// Get the SharedKey sharedBy another person and sharedWith you
   public static void main(String[] args) throws AtClientConfigException {
     // 1. establish constants
-    String ROOT_URL = "root.atsign.org:64";
     String ATSIGN_STR_SHARED_BY = "@33thesad"; // their atSign (key is sharedBy this atSign)
     String ATSIGN_STR_SHARED_WITH = "@farinataanxious"; // your atSign (key is sharedWith you)
-    boolean VERBOSE = true;
     String KEY_NAME = "test";
 
     // 2. create AtSign objects
-    AtSign sharedBy = new AtSign(ATSIGN_STR_SHARED_BY);
-    AtSign sharedWith = new AtSign(ATSIGN_STR_SHARED_WITH); // your atSign
+    AtSign sharedBy = createAtSign(ATSIGN_STR_SHARED_BY);
+    AtSign sharedWith = createAtSign(ATSIGN_STR_SHARED_WITH); // your atSign
 
     // 3. build an AtClient
-    AtClients.AtClientBuilder builder = AtClients.builder()
-        .url(ROOT_URL)
-        .atSign(sharedWith)
-        .keys(loadKeys(sharedWith))
-        .isVerbose(VERBOSE);
-
-    try (AtClient atClient = builder.build()) {
+    try (AtClient atClient = AtClients.builder().atSign(sharedWith).build()) {
 
       // 4. create SharedKey instance
       // key is sharedBy the other person and sharedWith you.

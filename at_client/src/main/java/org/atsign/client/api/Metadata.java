@@ -47,8 +47,7 @@ public class Metadata {
   /**
    * A builder for instantiating {@link Metadata} instances. Note: Metadata is immutable so if you
    * want to create a modified instance then use the toBuilder() method, override the fields and
-   * invoke
-   * build().
+   * invoke build().
    */
   public static class MetadataBuilder {
     // required for javadoc

@@ -18,7 +18,7 @@ class NettyAtThreadFactory implements ThreadFactory {
   private final ThreadFactory delegate;
 
   public NettyAtThreadFactory(ThreadFactory delegate) {
-    this.delegate = delegate != null ? delegate : new DefaultThreadFactory("netty");
+    this.delegate = delegate != null ? delegate : new DefaultThreadFactory("netty", true);
   }
 
   @Override

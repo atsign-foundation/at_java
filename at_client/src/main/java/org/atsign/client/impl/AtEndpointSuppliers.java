@@ -2,6 +2,7 @@ package org.atsign.client.impl;
 
 import static org.atsign.client.impl.common.Preconditions.checkNotNull;
 
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,19 +40,22 @@ public class AtEndpointSuppliers {
   private static final Pattern PATTERN_PROXY_URL = Pattern.compile("proxy:(.+)");
 
   private static final Pattern PATTERN_ROOT_URL = Pattern.compile("([^:]+)(?::(\\d+))?");
+
+  public static final String DEFAULT_ROOT_URL = "root.atsign.org:64";
+
   public static final int ROOT_SERVER_PORT = 64;
 
-  @Builder
+  @Builder(builderClassName = "AtEndpointSuppliersBuilder")
   public static AtEndpointSupplier createEndpointSupplier(String url, AtSign atSign) {
-    checkNotNull(url, "url not set");
+
+    url = url != null ? url : DEFAULT_ROOT_URL;
 
     Matcher proxyMatcher = PATTERN_PROXY_URL.matcher(url);
     if (proxyMatcher.matches()) {
-      checkNotNull(atSign, "atSign must be set for a proxy url");
-      checkNotNull(atSign, "keys must be set for a proxy url");
       return () -> proxyMatcher.group(1);
     }
 
+    checkNotNull(atSign, "atSign not set");
     Matcher rootMatcher = PATTERN_ROOT_URL.matcher(url);
     if (rootMatcher.matches()) {
       checkNotNull(atSign, "atSign must be set to resolve at server endpoint from " + url);
@@ -60,10 +64,35 @@ public class AtEndpointSuppliers {
       return NettyAtEndpointSupplier.builder()
           .rootUrl(hostname + ":" + (port != null ? port : ROOT_SERVER_PORT))
           .atsign(atSign)
+          .timeoutMillis(TimeUnit.SECONDS.toMillis(5))
+          .awaitReadyMillis(TimeUnit.SECONDS.toMillis(5))
+          .reconnect(SimpleReconnectStrategy.builder().maxReconnectRetries(3).build())
           .build();
     }
 
     throw new IllegalArgumentException("url is invalid");
   }
 
+  /**
+   * A builder for instantiating {@link AtEndpointSupplier} implementations that are included in
+   * this library.
+   *
+   * <pre>
+   *
+   * AtEndpointSuppliers.builder()
+   *   .url(...)     // the url for the root server or a proxy (optional)
+   *   .atSign(...)  // the AtSign that this supplier will resolve if using root server
+   *   .build();
+   * }
+   * </pre>
+   *
+   * If <b>url</b> is not set then the builder will default to {@link #DEFAULT_ROOT_URL}.
+   */
+  public static class AtEndpointSuppliersBuilder {
+    // required for javadoc
+  }
+
+  public static boolean isProxyUrl(String s) {
+    return s != null && PATTERN_PROXY_URL.matcher(s).matches();
+  }
 }

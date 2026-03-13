@@ -12,6 +12,7 @@ import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtSign;
 import org.atsign.client.impl.AtCommandExecutors.AtCommandExecutorBuilder;
 import org.atsign.client.impl.commands.ScanCommands;
+import org.atsign.client.impl.common.ReconnectStrategy;
 import org.atsign.client.impl.util.KeysUtils;
 import org.atsign.cucumber.helpers.Helpers;
 import org.atsign.virtualenv.VirtualEnv;
@@ -76,7 +77,7 @@ class AtCommandExecutorsIT {
         .url("proxy:vip.ve.atsign.zone:25026")
         .reconnect(ReconnectStrategy.NONE);
     Exception ex = assertThrows(Exception.class, () -> builder.build());
-    assertThat(ex.getMessage(), containsString("atSign must be set for a proxy url"));
+    assertThat(ex.getMessage(), containsString("atSign not set"));
   }
 
 }

@@ -1,5 +1,6 @@
 package org.atsign.client.api;
 
+import static org.atsign.client.api.AtSign.createAtSign;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
@@ -10,16 +11,16 @@ class AtSignTest {
 
   @Test
   void testStaticCreateMethod() {
-    assertThat(AtSign.createAtSign("@fred"), equalTo(new AtSign("@fred")));
-    assertThat(AtSign.createAtSign("fred"), equalTo(new AtSign("@fred")));
-    assertThat(AtSign.createAtSign(null), nullValue());
-    assertThat(AtSign.createAtSign(""), nullValue());
+    assertThat(createAtSign("@fred"), equalTo(createAtSign("@fred")));
+    assertThat(createAtSign("fred"), equalTo(createAtSign("@fred")));
+    assertThat(createAtSign(null), nullValue());
+    assertThat(createAtSign(""), nullValue());
   }
 
   @Test
   void testWithoutPrefixReturnsExpectedResult() {
-    assertThat(new AtSign("fred").withoutPrefix(), equalTo("fred"));
-    assertThat(new AtSign("@fred").withoutPrefix(), equalTo("fred"));
+    assertThat(createAtSign("fred").withoutPrefix(), equalTo("fred"));
+    assertThat(createAtSign("@fred").withoutPrefix(), equalTo("fred"));
   }
 
   @Test

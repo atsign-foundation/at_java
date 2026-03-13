@@ -20,4 +20,5 @@ class EncryptionUtilsTest {
     String decrypted = EncryptionUtils.aesDecryptFromBase64(encrypted, key, iv);
     assertThat(decrypted, equalTo(text));
   }
+
 }

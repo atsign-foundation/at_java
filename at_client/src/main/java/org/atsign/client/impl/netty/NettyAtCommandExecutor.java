@@ -2,6 +2,7 @@ package org.atsign.client.impl.netty;
 
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.atsign.client.impl.common.CommandElement.isPrompt;
 import static org.atsign.client.impl.common.Preconditions.checkNotNull;
 
 import java.io.IOException;
@@ -18,7 +19,7 @@ import javax.net.ssl.SSLException;
 
 import org.atsign.client.api.AtCommandExecutor;
 import org.atsign.client.impl.AtEndpointSupplier;
-import org.atsign.client.impl.ReconnectStrategy;
+import org.atsign.client.impl.common.ReconnectStrategy;
 import org.atsign.client.impl.common.CommandElement;
 import org.atsign.client.impl.common.CommandQueue;
 import org.atsign.client.impl.common.Preconditions;
@@ -178,11 +179,41 @@ public class NettyAtCommandExecutor implements AtCommandExecutor {
   }
 
   /**
-   * A builder for instantiating {@link NettyAtCommandExecutor} instances.
+   * A builder for instantiating {@link AtCommandExecutor} implementations that are included in
+   * this library. Example usage:
+   *
+   * <pre>
+   *
+   * NettyAtCommandExecutor.builder()
+   *   .endpoint(...)          // an endpoint supplier
+   *   .maxFrameLength(...)    // maximum message size supported (optional)
+   *   .sslContext(..)         // (optional)
+   *   .reconnect(...)         // a ReconnectStrategy (optional)
+   *   .onReady(...)           // commands to run when first prompt is received
+   *   .threadFactory(...)     // (optional)
+   *   .timeoutMillis()        // timeout after which commands will complete exceptionally (optional)
+   *   .heartbeatMillis(...)   // frequency for noop command (optional)
+   *   .queueLimit(...)        // max number of commands to queue (default 0 i.e. no queuing)
+   *   .awaitReadyMillis(...)  // how long to wait for executor to become ready during build() (optional)
+   *   .isVerbose(...)         // defaults to false
+   *   .build();
+   * }
+   * </pre>
+   *
+   * If <b>maxFrameLength</b> is not set then the builder defaults to
+   * {@link #DEFAULT_MAX_FRAME_LENGTH}.
+   * If <b>reconnect</b> is not set then the builder will default to a {@link ReconnectStrategy#NONE}
+   * which will never retry to connect or reconnect after disconnect.
+   * If <b>timeoutMillis</b> is not set then builder will default to
+   * {@link #DEFAULT_COMMAND_TIMEOUT_MILLIS}.
+   * If <b>heartbeatMillis</b> is not set then builder will default to
+   * {@link #DEFAULT_HEARTBEAT_MILLIS}.
+   * If <b>awaitReadyMillis</b> is not set then the builder will default to
+   * {@link #DEFAULT_AWAIT_READY_MILLIS}.
    */
   public static class NettyAtCommandExecutorBuilder {
     // required for javadoc
-  };
+  }
 
   @Override
   public void send(String command, CompletableFuture<String> future) {
@@ -324,7 +355,7 @@ public class NettyAtCommandExecutor implements AtCommandExecutor {
       AtTimeoutException ex = new AtTimeoutException(message);
       expired.forEach(x -> x.completeExceptionally(ex));
       if (commands == pending && sendNext()) {
-        log.info("sent queued command");
+        log.debug("sent queued command");
       }
     }
   }
@@ -373,7 +404,7 @@ public class NettyAtCommandExecutor implements AtCommandExecutor {
     } else if ((isReady() || threadFactory.isCurrentThreadOnReadyThread()) && pending.offer(command)) {
       writeAndFlushCommand(command);
     } else if (queue.offer(command)) {
-      log.info("{} command{} queued ({})", queue.size(), queue.size() > 1 ? "s" : "", getPendingStatus());
+      log.debug("{} command{} queued ({})", queue.size(), queue.size() > 1 ? "s" : "", getPendingStatus());
     } else {
       command.completeExceptionally(new AtTimeoutException(
           queue.getQueueCapacity() > 0 ? "queue is full" : "queue not enabled"));
@@ -448,7 +479,7 @@ public class NettyAtCommandExecutor implements AtCommandExecutor {
       status.set(Status.Ready);
       checkForTimeouts();
       if (sendNext()) {
-        log.info("sent queued command");
+        log.debug("sent queued command");
       }
       threadFactory.clearCurrentThreadOnReadyThread();
     };
@@ -460,14 +491,15 @@ public class NettyAtCommandExecutor implements AtCommandExecutor {
     } else {
       log.debug("RCVD: {}", msg);
     }
+
     CommandElement command = pending.pop(msg);
     if (command != null) {
       command.complete(msg);
     } else {
-      log.error("no pending command : {}", msg);
+      log.warn("no pending command : {}", msg);
     }
     if (sendNext()) {
-      log.info("sent queued command");
+      log.debug("sent queued command");
     }
   }
 
@@ -478,7 +510,7 @@ public class NettyAtCommandExecutor implements AtCommandExecutor {
       lastReadMillis = clock.millis();
       if (isPrompt(msg)) {
         onPrompt();
-      } else {
+      } else if (!isHeartbeat(msg)) {
         onResponse(msg);
       }
     }
@@ -496,7 +528,7 @@ public class NettyAtCommandExecutor implements AtCommandExecutor {
       } else {
         completeIsOnReadyExceptionally(pending, "connection closed");
         if (isForceReconnect.get()) {
-          log.info("connection force disconnected");
+          log.debug("connection force disconnected");
         } else {
           log.warn("connection unexpectedly unconnected");
           reconnectStrategy.onDisconnect(new IOException("connection closed"));
@@ -543,28 +575,26 @@ public class NettyAtCommandExecutor implements AtCommandExecutor {
   private void awaitStatus(Status status, long timeoutMillis) throws InterruptedException {
     long startMillis = clock.millis();
     while (clock.millis() < (startMillis + timeoutMillis)) {
-      // TODO: fix this
-      Thread.sleep(50);
+      Thread.sleep(100);
       if (this.status.get() == status) {
         break;
       }
     }
   }
 
-  public static boolean isPrompt(String s) {
-    return s.startsWith("@") && s.endsWith("@");
+  private static boolean isHeartbeat(String s) {
+    return "data:ok".equals(s);
   }
 
-  public static <T> T defaultIfNull(T o, T defaultValue) {
+  private static <T> T defaultIfNull(T o, T defaultValue) {
     return o != null ? o : defaultValue;
   }
 
-  public static long defaultIfUnset(Long l, long defaultValue) {
+  private static long defaultIfUnset(Long l, long defaultValue) {
     return l != null ? l : defaultValue;
   }
 
-  public static int defaultIfUnset(Integer i, int defaultValue) {
+  private static int defaultIfUnset(Integer i, int defaultValue) {
     return i != null ? i : defaultValue;
   }
-
 }

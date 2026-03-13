@@ -10,7 +10,7 @@ public class StringUtils {
   }
 
   public static boolean isNumeric(String s) {
-    return s.matches("\\d+");
+    return s != null && s.matches("-?\\d+");
   }
 
 }

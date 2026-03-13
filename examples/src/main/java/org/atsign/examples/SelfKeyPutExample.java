@@ -1,6 +1,6 @@
 package org.atsign.examples;
 
-import static org.atsign.client.impl.util.KeysUtils.loadKeys;
+import static org.atsign.client.api.AtSign.createAtSign;
 
 import java.util.concurrent.TimeUnit;
 
@@ -15,26 +15,16 @@ public class SelfKeyPutExample {
 
   public static void main(String[] args) throws AtClientConfigException {
     // 1. establish constants
-    String ROOT_URL = "root.atsign.org:64";
     String ATSIGN_STR = "@33thesad";
-    boolean VERBOSE = true;
-
     String KEY_NAME = "test";
     String VALUE = "I hate pineapple on pizza!!!";
     long ttl = TimeUnit.SECONDS.toMillis(30);
 
-
     // 2. create AtSign object
-    AtSign atSign = new AtSign(ATSIGN_STR);
+    AtSign atSign = createAtSign(ATSIGN_STR);
 
     // 3. build an AtClient
-    AtClients.AtClientBuilder builder = AtClients.builder()
-        .url(ROOT_URL)
-        .atSign(atSign)
-        .keys(loadKeys(atSign))
-        .isVerbose(VERBOSE);
-
-    try (AtClient atClient = builder.build()) {
+    try (AtClient atClient = AtClients.builder().atSign(atSign).build()) {
 
       // 4. create selfkey
       SelfKey sk = Keys.selfKeyBuilder().sharedBy(atSign).name(KEY_NAME).ttl(ttl).build();

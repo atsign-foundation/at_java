@@ -294,8 +294,8 @@ public class CommandBuildersTest {
 
     // with shared key
     SharedKey sk1 = Keys.sharedKeyBuilder()
-        .sharedBy(new AtSign("@bob"))
-        .sharedWith(new AtSign("@alice"))
+        .sharedBy(createAtSign("@bob"))
+        .sharedWith(createAtSign("@alice"))
         .name("test")
         .ttl(TimeUnit.MINUTES.toMillis(10))
         .isBinary(true)
@@ -308,7 +308,7 @@ public class CommandBuildersTest {
 
     // with public key
     PublicKey pk1 = Keys.publicKeyBuilder()
-        .sharedBy(new AtSign("@bob"))
+        .sharedBy(createAtSign("@bob"))
         .name("test")
         .isCached(true)
         .build();
@@ -320,7 +320,7 @@ public class CommandBuildersTest {
 
     // with self key
     SelfKey sk2 = Keys.selfKeyBuilder()
-        .sharedBy(new AtSign("@bob"))
+        .sharedBy(createAtSign("@bob"))
         .name("test")
         .ttl(TimeUnit.MINUTES.toMillis(10))
         .build();
@@ -351,7 +351,7 @@ public class CommandBuildersTest {
   @Test
   public void testUpdateBuilderGeneratesExpectedOutputForPublicKeyWithNamespace() {
     PublicKey key = Keys.publicKeyBuilder()
-        .sharedBy(new AtSign("@alice"))
+        .sharedBy(createAtSign("@alice"))
         .name("test")
         .namespace("testns")
         .build();
@@ -366,7 +366,7 @@ public class CommandBuildersTest {
   @Test
   public void testUpdateBuilderGeneratesExpectedOutputForSelfKeyWithNamespace() {
     SelfKey key = Keys.selfKeyBuilder()
-        .sharedBy(new AtSign("@alice"))
+        .sharedBy(createAtSign("@alice"))
         .name("test")
         .namespace("testns")
         .build();
@@ -381,8 +381,8 @@ public class CommandBuildersTest {
   @Test
   public void testUpdateBuilderGeneratesExpectedOutputForSharedKeyWithNamespace() {
     SharedKey key = Keys.sharedKeyBuilder()
-        .sharedBy(new AtSign("@alice"))
-        .sharedWith(new AtSign("@bob"))
+        .sharedBy(createAtSign("@alice"))
+        .sharedWith(createAtSign("@bob"))
         .name("test")
         .namespace("testns")
         .build();
@@ -484,7 +484,7 @@ public class CommandBuildersTest {
     assertThat(ex.getMessage(), containsString("both rawKey and key fields are set"));
 
     // with public key
-    PublicKey pk = Keys.publicKeyBuilder().sharedBy(new AtSign("@bob")).name("publickey").build();
+    PublicKey pk = Keys.publicKeyBuilder().sharedBy(createAtSign("@bob")).name("publickey").build();
     command = CommandBuilders.llookupCommandBuilder()
         .key(pk)
         .operation(LookupOperation.meta)
@@ -498,8 +498,8 @@ public class CommandBuildersTest {
 
     // with shared key
     SharedKey sk = Keys.sharedKeyBuilder()
-        .sharedBy(new AtSign("@bob"))
-        .sharedWith(new AtSign("@alice"))
+        .sharedBy(createAtSign("@bob"))
+        .sharedWith(createAtSign("@alice"))
         .name("sharedkey")
         .build();
     command = CommandBuilders.llookupCommandBuilder()
@@ -509,7 +509,7 @@ public class CommandBuildersTest {
     assertEquals("llookup:@alice:sharedkey@bob", command);
 
     // with self key
-    SelfKey selfKey1 = Keys.selfKeyBuilder().sharedBy(new AtSign("@bob")).name("test").build();
+    SelfKey selfKey1 = Keys.selfKeyBuilder().sharedBy(createAtSign("@bob")).name("test").build();
     command = CommandBuilders.llookupCommandBuilder()
         .key(selfKey1)
         .operation(LookupOperation.all)
@@ -517,7 +517,7 @@ public class CommandBuildersTest {
     assertEquals("llookup:all:test@bob", command);
 
     // with self key (shared with self)
-    AtSign as = new AtSign("@bob");
+    AtSign as = createAtSign("@bob");
     SelfKey selfKey2 = Keys.selfKeyBuilder().sharedBy(as).sharedWith(as).name("test").build();
     command = CommandBuilders.llookupCommandBuilder()
         .key(selfKey2)
@@ -527,7 +527,7 @@ public class CommandBuildersTest {
 
     // with cached public key
     PublicKey pk2 = Keys.publicKeyBuilder()
-        .sharedBy(new AtSign("@bob"))
+        .sharedBy(createAtSign("@bob"))
         .name("publickey")
         .isCached(true)
         .build();
@@ -539,8 +539,8 @@ public class CommandBuildersTest {
 
     // with cached shared key
     SharedKey sk2 = Keys.sharedKeyBuilder()
-        .sharedBy(new AtSign("@bob"))
-        .sharedWith(new AtSign("@alice"))
+        .sharedBy(createAtSign("@bob"))
+        .sharedWith(createAtSign("@alice"))
         .name("sharedkey")
         .isCached(true)
         .build();
@@ -557,7 +557,7 @@ public class CommandBuildersTest {
 
   @Test
   public void testLlookupBuilderGeneratesExpectedOutputForPublicKeyWithNamespace() {
-    PublicKey key = Keys.publicKeyBuilder().sharedBy(new AtSign("@alice"))
+    PublicKey key = Keys.publicKeyBuilder().sharedBy(createAtSign("@alice"))
         .name("test")
         .namespace("testns")
         .build();
@@ -571,7 +571,7 @@ public class CommandBuildersTest {
   @Test
   public void testLlookupBuilderGeneratesExpectedOutputForSelfKeyWithNamespace() {
     SelfKey key = Keys.selfKeyBuilder()
-        .sharedBy(new AtSign("@alice"))
+        .sharedBy(createAtSign("@alice"))
         .name("test")
         .namespace("testns")
         .build();
@@ -584,8 +584,8 @@ public class CommandBuildersTest {
 
   @Test
   public void testLlookupBuilderGeneratesExpectedOutputForSharedKeyWithNamespace() {
-    SharedKey key = Keys.sharedKeyBuilder().sharedBy(new AtSign("@alice"))
-        .sharedWith(new AtSign("@bob"))
+    SharedKey key = Keys.sharedKeyBuilder().sharedBy(createAtSign("@alice"))
+        .sharedWith(createAtSign("@bob"))
         .name("test")
         .namespace("testns")
         .build();
@@ -639,8 +639,8 @@ public class CommandBuildersTest {
     assertThat(ex.getMessage(), containsString("sharedBy not set"));
 
     // with shared key
-    SharedKey sk = Keys.sharedKeyBuilder().sharedBy(new AtSign("@sharedby"))
-        .sharedWith(new AtSign("@sharedwith"))
+    SharedKey sk = Keys.sharedKeyBuilder().sharedBy(createAtSign("@sharedby"))
+        .sharedWith(createAtSign("@sharedwith"))
         .name("test")
         .build();
     command = CommandBuilders.lookupCommandBuilder()
@@ -652,8 +652,8 @@ public class CommandBuildersTest {
 
   @Test
   public void testLookupVerbBuilderForSharedKeyWithNamespace() {
-    SharedKey key = Keys.sharedKeyBuilder().sharedBy(new AtSign("@alice"))
-        .sharedWith(new AtSign("@bob"))
+    SharedKey key = Keys.sharedKeyBuilder().sharedBy(createAtSign("@alice"))
+        .sharedWith(createAtSign("@bob"))
         .name("test")
         .namespace("testns")
         .build();
@@ -709,7 +709,7 @@ public class CommandBuildersTest {
     assertThat(ex.getMessage(), containsString("sharedBy not set"));
 
     // with
-    PublicKey pk = Keys.publicKeyBuilder().sharedBy(new AtSign("@bob")).name("publickey").build();
+    PublicKey pk = Keys.publicKeyBuilder().sharedBy(createAtSign("@bob")).name("publickey").build();
     command = CommandBuilders.plookupCommandBuilder()
         .key(pk)
         .operation(LookupOperation.all)
@@ -729,7 +729,7 @@ public class CommandBuildersTest {
   @Test
   public void testPlookupVerbBuilderForPublicKeyWithNamespace() {
     PublicKey key = Keys.publicKeyBuilder()
-        .sharedBy(new AtSign("@alice"))
+        .sharedBy(createAtSign("@alice"))
         .name("test")
         .namespace("testns")
         .build();
@@ -812,22 +812,22 @@ public class CommandBuildersTest {
     assertThat(ex.getMessage(), containsString("sharedBy not set"));
 
     // with self key
-    SelfKey selfKey = Keys.selfKeyBuilder().sharedBy(new AtSign("@alice")).name("test").build();
+    SelfKey selfKey = Keys.selfKeyBuilder().sharedBy(createAtSign("@alice")).name("test").build();
     command = CommandBuilders.deleteCommandBuilder()
         .key(selfKey)
         .build();
     assertEquals("delete:test@alice", command);
 
     // with public key
-    PublicKey pk = Keys.publicKeyBuilder().sharedBy(new AtSign("@bob")).name("publickey").build();
+    PublicKey pk = Keys.publicKeyBuilder().sharedBy(createAtSign("@bob")).name("publickey").build();
     command = CommandBuilders.deleteCommandBuilder()
         .key(pk)
         .build();
 
     // with shared key
     SharedKey sk = Keys.sharedKeyBuilder()
-        .sharedBy(new AtSign("@alice"))
-        .sharedWith(new AtSign("@bob"))
+        .sharedBy(createAtSign("@alice"))
+        .sharedWith(createAtSign("@bob"))
         .name("test")
         .build();
     command = CommandBuilders.deleteCommandBuilder()
@@ -839,7 +839,7 @@ public class CommandBuildersTest {
   @Test
   public void testDeleteVerbBuilderForPublicKeyWithNamespace() {
     PublicKey key = Keys.publicKeyBuilder()
-        .sharedBy(new AtSign("@alice"))
+        .sharedBy(createAtSign("@alice"))
         .name("test")
         .namespace("testns")
         .build();
@@ -852,7 +852,7 @@ public class CommandBuildersTest {
   @Test
   public void testDeleteVerbBuilderForSelfKeyWithNamespace() {
     SelfKey key = Keys.selfKeyBuilder()
-        .sharedBy(new AtSign("@alice"))
+        .sharedBy(createAtSign("@alice"))
         .name("test")
         .namespace("testns")
         .build();
@@ -865,7 +865,7 @@ public class CommandBuildersTest {
   @Test
   public void testDeleteVerbBuilderForSharedKeyWithNamespace() {
     SharedKey key = Keys.sharedKeyBuilder()
-        .sharedBy(new AtSign("@alice")).sharedWith(new AtSign("@bob"))
+        .sharedBy(createAtSign("@alice")).sharedWith(createAtSign("@bob"))
         .name("test")
         .namespace("testns")
         .build();

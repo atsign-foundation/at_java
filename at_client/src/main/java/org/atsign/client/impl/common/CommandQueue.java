@@ -1,7 +1,7 @@
 package org.atsign.client.impl.common;
 
 import static org.atsign.client.impl.common.CommandElement.isConsumerCommand;
-import static org.atsign.client.impl.netty.NettyAtCommandExecutor.isPrompt;
+import static org.atsign.client.impl.common.CommandElement.isPrompt;
 
 import java.util.Collection;
 import java.util.Deque;

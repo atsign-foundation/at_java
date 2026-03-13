@@ -1,9 +1,10 @@
 package org.atsign.client.impl.cli.register;
 
-import org.atsign.client.api.AtSign;
 import org.atsign.client.impl.exceptions.AtRegistrarException;
 
 import java.util.Map;
+
+import static org.atsign.client.api.AtSign.createAtSign;
 
 class ActivateAtsignWithSuperApiKey extends RegisterApiTask<RegisterApiResult<Map<String, String>>> {
   @Override
@@ -12,7 +13,8 @@ class ActivateAtsignWithSuperApiKey extends RegisterApiTask<RegisterApiResult<Ma
       result.data.put(
                       "cram", registerUtil
                           .activateAtsignWithSuperApiKey(params.get("registrarUrl"), params.get("apiKey"),
-                                                         new AtSign(params.get("atSign")), params.get("ActivationKey"))
+                                                         createAtSign(params.get("atSign")),
+                                                         params.get("ActivationKey"))
                           .split(":")[1]);
       result.apiCallStatus = ApiCallStatus.success;
       System.out.println("Your cram secret: " + result.data.get("cram"));
