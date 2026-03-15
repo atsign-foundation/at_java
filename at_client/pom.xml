@@ -17,6 +17,11 @@
   <properties>
     <config.spotless>../config/java-format.xml</config.spotless>
     <config.checkstyle>../config/checkstyle.xml</config.checkstyle>
+
+    <!-- lower for now because cli and register code has no tests -->
+    <coverage.line>0.77</coverage.line>
+    <coverage.branch>0.7</coverage.branch>
+
   </properties>
 
   <build>
@@ -86,6 +91,11 @@
       </plugin>
 
       <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+      </plugin>
+
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <configuration>
@@ -121,6 +131,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-all</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>info.picocli</groupId>
       <artifactId>picocli</artifactId>
     </dependency>
@@ -134,6 +149,12 @@
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
       <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk18on</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>

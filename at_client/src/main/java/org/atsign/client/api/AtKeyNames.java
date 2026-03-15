@@ -1,9 +1,7 @@
 package org.atsign.client.api;
 
-import org.atsign.common.AtSign;
-
 /**
- * Constants and Utility methods for "well known" standard keys
+ * Constants and utility methods for "well known" keys.
  */
 public class AtKeyNames {
 
@@ -52,6 +50,11 @@ public class AtKeyNames {
    */
   public static String toSharedWithMeKeyName(AtSign sharedBy, AtSign sharedWith) {
     return String.format("%s:%s%s", SHARED_KEY, sharedWith, sharedBy);
+  }
+
+
+  public static boolean isManagementKeyName(String s) {
+    return s.matches(".+\\.__manage@.+");
   }
 
 }

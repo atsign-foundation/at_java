@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.AtEvents;
-import org.atsign.common.AtSign;
+import org.atsign.client.api.AtSign;
 
 import io.cucumber.datatable.DataTable;
 import io.cucumber.datatable.DataTableFormatter;

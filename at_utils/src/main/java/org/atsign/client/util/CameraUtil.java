@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.atsign.common.AtException;
-import org.atsign.common.exceptions.AtClientConfigException;
+import org.atsign.client.impl.exceptions.AtException;
+import org.atsign.client.impl.exceptions.AtClientConfigException;
 
 import com.github.sarxos.webcam.Webcam;
 

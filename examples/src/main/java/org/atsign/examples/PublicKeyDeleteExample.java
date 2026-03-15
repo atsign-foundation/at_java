@@ -1,40 +1,35 @@
 package org.atsign.examples;
 
-import static org.atsign.client.util.KeysUtil.loadKeys;
-
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
+import static org.atsign.client.api.AtSign.createAtSign;
 
 import org.atsign.client.api.AtClient;
-import org.atsign.common.AtException;
-import org.atsign.common.AtSign;
-import org.atsign.common.Keys;
-import org.atsign.common.Keys.PublicKey;
+import org.atsign.client.api.AtSign;
+import org.atsign.client.api.Keys;
+import org.atsign.client.api.Keys.PublicKey;
+import org.atsign.client.impl.AtClients;
+import org.atsign.client.impl.exceptions.AtClientConfigException;
 
 public class PublicKeyDeleteExample {
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws AtClientConfigException {
     // 1. establish constants
-    String ROOT_URL = "root.atsign.org:64";
     String ATSIGN_STR = "@33thesad";
-    boolean VERBOSE = true;
 
     String KEY_NAME = "test";
 
     // 2. create AtSign instance
-    AtSign atSign = new AtSign(ATSIGN_STR);
+    AtSign atSign = createAtSign(ATSIGN_STR);
 
-    // 3. create AtClient instance using factory methods
-    try (AtClient atClient = AtClient.withRemoteSecondary(ROOT_URL, atSign, loadKeys(atSign), VERBOSE)) {
+    // 3. build an AtClient
+    try (AtClient atClient = AtClients.builder().atSign(atSign).build()) {
 
       // 4. create public key
       PublicKey pk = Keys.publicKeyBuilder().sharedBy(atSign).name(KEY_NAME).build();
 
       // 5. delete the key
-      String response = atClient.delete(pk).get();
-      System.out.println(response);
+      atClient.delete(pk).get();
 
-    } catch (AtException | IOException | InterruptedException | ExecutionException e) {
+    } catch (Exception e) {
       System.err.println(e);
       e.printStackTrace();
     }

@@ -6,8 +6,8 @@ import static org.hamcrest.Matchers.equalTo;
 import java.util.regex.Matcher;
 
 import org.atsign.client.api.AtClient;
-import org.atsign.common.AtSign;
-import org.atsign.common.Keys;
+import org.atsign.client.api.AtSign;
+import org.atsign.client.api.Keys;
 
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;

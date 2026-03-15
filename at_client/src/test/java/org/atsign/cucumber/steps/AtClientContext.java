@@ -1,8 +1,7 @@
 package org.atsign.cucumber.steps;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.atsign.client.cli.AbstractCli.decodeJsonListOfStrings;
-import static org.atsign.client.util.Preconditions.checkNotNull;
+import static org.atsign.client.impl.common.Preconditions.checkNotNull;
 import static org.atsign.cucumber.helpers.Helpers.isHostPortReachable;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -10,7 +9,6 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -21,10 +19,12 @@ import java.util.stream.Collectors;
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.AtEvents;
 import org.atsign.client.api.AtKeys;
-import org.atsign.client.util.EnrollmentId;
-import org.atsign.client.util.KeysUtil;
-import org.atsign.common.AtException;
-import org.atsign.common.AtSign;
+import org.atsign.client.impl.AtClients;
+import org.atsign.client.impl.commands.DataResponses;
+import org.atsign.client.impl.common.EnrollmentId;
+import org.atsign.client.impl.util.KeysUtils;
+import org.atsign.client.impl.exceptions.AtException;
+import org.atsign.client.api.AtSign;
 import org.atsign.cucumber.helpers.AtDemoData;
 import org.atsign.virtualenv.VirtualEnv;
 import org.junit.jupiter.api.function.Executable;
@@ -114,7 +114,7 @@ public class AtClientContext {
   @Given("atsign keys path is {path}")
   public void setClientAtSignKeyDir(File path) {
     checkKeysPathExists(path);
-    KeysUtil.expectedKeysFilesLocation = path.getPath();
+    KeysUtils.expectedKeysFilesLocation = path.getPath();
   }
 
   @Given("atsign keys path is at_demo_data package {path}")
@@ -124,7 +124,7 @@ public class AtClientContext {
 
   @Given("atsign keys suffix is {word}")
   public void setClientAtSignKeySuffix(String s) {
-    KeysUtil.keysFileSuffix = s;
+    KeysUtils.keysFileSuffix = s;
   }
 
   @Given("verbose logging is {word}")
@@ -134,12 +134,12 @@ public class AtClientContext {
 
   @Given("AtClient with keys {path} for {atsign}")
   public void createCurrentAtClient(File keysFile, AtSign atSign) throws Exception {
-    createCurrentAtClient(atSign, KeysUtil.loadKeys(resolveKeysFile(keysFile)), false);
+    createCurrentAtClient(atSign, KeysUtils.loadKeys(resolveKeysFile(keysFile)), false);
   }
 
   public File resolveKeysFile(File keysFile) {
     if (keysFile.getParentFile() == null) {
-      return new File(KeysUtil.expectedKeysFilesLocation, keysFile.getName());
+      return new File(KeysUtils.expectedKeysFilesLocation, keysFile.getName());
     } else {
       return keysFile;
     }
@@ -152,7 +152,7 @@ public class AtClientContext {
 
   @Given("AtClient for {atsign}")
   public void createCurrentAtClient(AtSign atSign) throws Exception {
-    createCurrentAtClient(atSign, KeysUtil.loadKeys(atSign), false);
+    createCurrentAtClient(atSign, KeysUtils.loadKeys(atSign), false);
   }
 
   @Given("AtClient is closed")
@@ -190,12 +190,12 @@ public class AtClientContext {
 
   @Given("AtClient with keys {path} and startMonitor for {atsign}")
   public void createAtClientWithMonitor(File keysFile, AtSign atSign) throws Exception {
-    createCurrentAtClient(atSign, KeysUtil.loadKeys(resolveKeysFile(keysFile)), true);
+    createCurrentAtClient(atSign, KeysUtils.loadKeys(resolveKeysFile(keysFile)), true);
   }
 
   @Given("AtClient and startMonitor for {atsign}")
   public void createAtClientWithMonitor(AtSign atSign) throws Exception {
-    createCurrentAtClient(atSign, KeysUtil.loadKeys(atSign), true);
+    createCurrentAtClient(atSign, KeysUtils.loadKeys(atSign), true);
   }
 
   @Given("{ordinal} {atsign} AtClient startMonitor")
@@ -249,10 +249,15 @@ public class AtClientContext {
 
   @Then("exception was {exception}")
   public void assertExpectedExceptionClass(Class<AtException> expectedClass) throws AtException {
-    if (expectedException.getCause() != null) {
-      assertThat(expectedException.getCause().getClass(), typeCompatibleWith(expectedClass));
-    } else {
-      assertThat(expectedException.getClass(), typeCompatibleWith(expectedClass));
+    try {
+      if (expectedException.getCause() != null) {
+        assertThat(expectedException.getCause().getClass(), typeCompatibleWith(expectedClass));
+      } else {
+        assertThat(expectedException.getClass(), typeCompatibleWith(expectedClass));
+      }
+    } catch (Throwable e) {
+      expectedException.printStackTrace();
+      throw e;
     }
   }
 
@@ -305,7 +310,7 @@ public class AtClientContext {
     } else if (list.size() == 1) {
       return list.get(0);
     } else {
-      return createAtClient(atSign, KeysUtil.loadKeys(atSign), false);
+      return createAtClient(atSign, KeysUtils.loadKeys(atSign), false);
     }
   }
 
@@ -324,7 +329,12 @@ public class AtClientContext {
     if (rootHostAndPort == null) {
       throw new IllegalArgumentException("root host and port not set");
     }
-    AtClient atClient = AtClient.withRemoteSecondary(rootHostAndPort, atSign, keys, isVerbose());
+    AtClient atClient = AtClients.builder()
+        .url(rootHostAndPort)
+        .atSign(atSign)
+        .keys(keys)
+        .isVerbose(isVerbose())
+        .build();
     AtClientEventListener listener = new AtClientEventListener(qualifiedAtSign);
     atClient.addEventListener(listener, ALL_EVENT_TYPES);
     clients.put(qualifiedAtSign, atClient);
@@ -441,7 +451,7 @@ public class AtClientContext {
     log.debug("teardown for {} deleted {}", lookupQualifiedAtSign(client), keys);
     try {
       client.close();
-    } catch (IOException e) {
+    } catch (Exception e) {
       log.debug("teardown close for {} threw exception : {}", lookupQualifiedAtSign(client), e.getMessage());
     }
   }
@@ -464,7 +474,7 @@ public class AtClientContext {
 
   private void deleteKeyNoThrow(AtClient client, String key) {
     try {
-      client.executeCommand("delete:" + key, true);
+      client.getCommandExecutor().sendSync("delete:" + key);
     } catch (Exception e) {
       log.error("attempt to delete {} failed : {}", key, e.getMessage());
     }
@@ -472,8 +482,8 @@ public class AtClientContext {
 
   private List<String> scanNoThrow(AtClient client) {
     try {
-      String json = client.getSecondary().executeCommand("scan:showHidden:true .*", true).getRawDataResponse();
-      return decodeJsonListOfStrings(json);
+      String response = client.getCommandExecutor().sendSync("scan:showHidden:true .*");
+      return DataResponses.matchDataJsonListOfStrings(response);
     } catch (Exception e) {
       log.error("failed to scan : {}", e.getMessage());
       return Collections.emptyList();

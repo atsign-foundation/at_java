@@ -1,32 +1,29 @@
 package org.atsign.examples;
 
-import static org.atsign.client.util.KeysUtil.loadKeys;
+import static org.atsign.client.api.AtSign.createAtSign;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 
 import org.atsign.client.api.AtClient;
-import org.atsign.common.AtException;
-import org.atsign.common.AtSign;
-import org.atsign.common.Keys;
-import org.atsign.common.Keys.SharedKey;
+import org.atsign.client.impl.AtClients;
+import org.atsign.client.api.AtSign;
+import org.atsign.client.api.Keys;
+import org.atsign.client.api.Keys.SharedKey;
+import org.atsign.client.impl.exceptions.AtClientConfigException;
 
 public class SharedKeyGetOtherExample {
   /// Get the SharedKey sharedBy another person and sharedWith you
-  public static void main(String[] args) {
+  public static void main(String[] args) throws AtClientConfigException {
     // 1. establish constants
-    String ROOT_URL = "root.atsign.org:64";
     String ATSIGN_STR_SHARED_BY = "@33thesad"; // their atSign (key is sharedBy this atSign)
     String ATSIGN_STR_SHARED_WITH = "@farinataanxious"; // your atSign (key is sharedWith you)
-    boolean VERBOSE = true;
     String KEY_NAME = "test";
 
     // 2. create AtSign objects
-    AtSign sharedBy = new AtSign(ATSIGN_STR_SHARED_BY);
-    AtSign sharedWith = new AtSign(ATSIGN_STR_SHARED_WITH); // your atSign
+    AtSign sharedBy = createAtSign(ATSIGN_STR_SHARED_BY);
+    AtSign sharedWith = createAtSign(ATSIGN_STR_SHARED_WITH); // your atSign
 
-    // 3. atClient factory method
-    try (AtClient atClient = AtClient.withRemoteSecondary(ROOT_URL, sharedWith, loadKeys(sharedWith), VERBOSE)) {
+    // 3. build an AtClient
+    try (AtClient atClient = AtClients.builder().atSign(sharedWith).build()) {
 
       // 4. create SharedKey instance
       // key is sharedBy the other person and sharedWith you.
@@ -36,7 +33,7 @@ public class SharedKeyGetOtherExample {
       String response = atClient.get(sk).get();
       System.out.println(response);
 
-    } catch (AtException | IOException | InterruptedException | ExecutionException e) {
+    } catch (Exception e) {
       System.err.println("Failed to create AtClient instance " + e);
       e.printStackTrace();
     }
