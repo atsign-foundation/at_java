@@ -50,7 +50,7 @@
 
     <!-- dependency versions -->
     <version.jackson>2.16.1</version.jackson>
-    <version.bouncycastle>1.78.1</version.bouncycastle>
+    <version.bouncycastle>1.79</version.bouncycastle>
     <version.netty>4.1.109.Final</version.netty>
     <version.picocli>4.7.6</version.picocli>
     <version.slf4j>2.0.13</version.slf4j>
