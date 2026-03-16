@@ -51,6 +51,7 @@ public class AtCommandExecutors {
                                                         Long timeoutMillis,
                                                         Long awaitReadyMillis,
                                                         ReconnectStrategy reconnect,
+                                                        Integer queueLimit,
                                                         Boolean isVerbose)
       throws AtException {
 
@@ -64,6 +65,7 @@ public class AtCommandExecutors {
         .timeoutMillis(defaultIfNotSet(timeoutMillis, DEFAULT_TIMEOUT_MILLIS))
         .awaitReadyMillis(defaultIfNotSet(awaitReadyMillis, DEFAULT_TIMEOUT_MILLIS))
         .reconnect(defaultIfNotSet(reconnect))
+        .queueLimit(queueLimit)
         .onReady(createOnReady(atSign, keys))
         .build();
   }

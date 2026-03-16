@@ -122,13 +122,12 @@ public class KeysUtils {
 
     if (!file.exists()) {
       // if keys do not exist in root, check in keys sub-directory under current working directory
-      file = getKeysFile(atSign, legacyKeysFilesLocation);
+      File legacyFile = getKeysFile(atSign, legacyKeysFilesLocation);
       // if file does not exist under current working directory, we're done - can't find the keys file
-      if (!file.exists()) {
-        throw new AtClientConfigException("loadKeys: No file called " + atSign + keysFileSuffix
-            + " at " + expectedKeysFilesLocation + " or " + legacyKeysFilesLocation +
-            "\t Keys files are expected to be in ~/.atsign/keys/ (canonical location) or ./keys/ (legacy location)");
+      if (!legacyFile.exists()) {
+        throw new AtClientConfigException("loadKeys: No file found at " + file + " or " + legacyFile);
       }
+      file = legacyFile;
     }
     return file;
   }
