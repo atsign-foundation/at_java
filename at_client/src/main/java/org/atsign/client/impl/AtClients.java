@@ -37,6 +37,7 @@ public class AtClients {
                                         Long timeoutMillis,
                                         Long awaitReadyMillis,
                                         ReconnectStrategy reconnect,
+                                        Integer queueLimit,
                                         Boolean isVerbose)
       throws AtException {
 
@@ -50,6 +51,7 @@ public class AtClients {
         .timeoutMillis(timeoutMillis)
         .awaitReadyMillis(awaitReadyMillis)
         .reconnect(reconnect)
+        .queueLimit(queueLimit)
         .isVerbose(isVerbose)
         .build();
 
@@ -76,6 +78,7 @@ public class AtClients {
    *   .timeoutMillis()    // timeout after which commands will complete exceptionally (optional)
    *   .awaitReadyMillis() // how long to wait for executor to become ready during build() (optional)
    *   .reconnect()        // a ReconnectStrategy (optional)
+   *   .queueLimit()       // number of queued commands that are permitted (optional)
    *   .isVerbose(...)     // true or false (optional)
    *   .build();
    * }
@@ -92,6 +95,7 @@ public class AtClients {
    * {@link AtCommandExecutors#DEFAULT_TIMEOUT_MILLIS}.
    * If <b>reconnect</b> is not set then the builder will default to a {@link SimpleReconnectStrategy}
    * with no limit to the retry attempts.
+   * If <b>queueLimit</b> is not set then the builder will default zero queued commands
    */
   public static class AtClientBuilder {
     // required for javadoc

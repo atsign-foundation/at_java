@@ -7,13 +7,14 @@ This module contains the AtSign Java SDK.
 If you are using maven, add the following to your pom.xml
 
 ```xml
-  <dependencies>
-    <dependency>
-      <groupId>org.atsign</groupId>
-      <artifactId>at_client</artifactId>
-      <version>1.0.0</version>
-    </dependency>
-  </dependencies>
+
+<dependencies>
+  <dependency>
+    <groupId>org.atsign</groupId>
+    <artifactId>at_client</artifactId>
+    <version>1.0.0</version>
+  </dependency>
+</dependencies>
 ```
 
 If you are using gradle, add the following to your build.gradle
@@ -29,33 +30,29 @@ dependencies {
 The latest snapshot version can be added as a maven dependency like this...
 
 ```xml
-  <repositories>
-    <repository>
-      <name>Central Portal Snapshots</name>
-      <id>central-portal-snapshots</id>
-      <url>https://central.sonatype.com/repository/maven-snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.atsign</groupId>
-      <artifactId>at_client</artifactId>
-      <version>1.0.1-SNAPSHOT</version>
-    </dependency>
-  </dependencies>
+<repositories>
+  <repository>
+    <name>Central Portal Snapshots</name>
+    <id>central-portal-snapshots</id>
+    <url>https://central.sonatype.com/repository/maven-snapshots</url>
+    <releases>
+      <enabled>false</enabled>
+    </releases>
+    <snapshots>
+      <enabled>true</enabled>
+    </snapshots>
+  </repository>
+</repositories>
+
+<dependencies>
+<dependency>
+  <groupId>org.atsign</groupId>
+  <artifactId>at_client</artifactId>
+  <version>1.0.1-SNAPSHOT</version>
+</dependency>
+</dependencies>
 ```
-
-## Logging
-
-The SDK uses the slf4j-api. It is up to you to decide which slf4j binding to use.
-See [slf4j providers](https://slf4j.org/manual.html#swapping).
 
 ## Dependencies
 
@@ -67,18 +64,166 @@ The SDK currently depends on the following
 * Slf4j api (Simple logging facade that can be bound a variety of logging
   frameworks)
 
-## Example Usage
+## Logging
+
+The SDK uses the slf4j-api. It is up to you to decide which slf4j binding to use.
+See [slf4j providers](https://slf4j.org/manual.html#swapping).
+
+If you are simply executing the example code below then you can just add slf4j-simple
+as a dependency in your pom.xml.
+
+```xml
+  <dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>slf4j-simple</artifactId>
+    <version>2.0.13</version>
+  </dependency>
+```
+
+## Getting Started
+
+The classes **org.atsign.client.impl.AtCommandExecutors** and 
+**org.atsign.client.impl.AtClients** 
+provide default implementations of the AtSign SDK interfaces (
+**org.atsign.client.api.AtCommandExecutor** and 
+**org.atsign.client.api.AtClient** respectively).
+
+An **org.atsign.client.api.AtCommandExecutor** represents something
+that can send At Protocol commands to an At Server (including the root
+/ directory sever).
+
+The package [commands](src/org/atsign/client/impl/commands) contains utility code
+which implements the 
+[At Protocol Specification ](https://github.com/atsign-foundation/at_protocol/blob/trunk/specification/at_protocol_specification.md)
+, for instance...
+
+* Authentication
+* Notifications
+* Verifying At Server responses
+* Signing public key values
+* End to end encryption / decryption for self keys and shared keys
+
+An **org.atsign.client.api.AtClient** provides a "map like" interface to
+an At Server. Enabling you to put, get and delete the different types of
+keys. By combining a default **org.atsign.client.api.AtCommandExecutor** and
+the utility code in the **commands** package it provides the core capabilities
+of the Java SDK.
+
+The following code illustrates putting some key values.
+
+```java
+package org.example;
+
+import org.atsign.client.api.AtClient;
+import org.atsign.client.api.AtSign;
+import org.atsign.client.api.Keys;
+import org.atsign.client.impl.AtClients;
+
+public class Main {
+
+   public static void main(String[] args) throws Exception {
+
+      AtSign atSign = AtSign.createAtSign("18prettyopera");
+
+      try (AtClient client = AtClients.builder().atSign(atSign).build()) {
+
+         Keys.PublicKey key = Keys.publicKeyBuilder()
+                 .sharedBy(atSign)
+                 .name("greeting")
+                 .build();
+
+         client.put(key, "hello").get();
+
+         AtSign anotherAtSign = AtSign.createAtSign("41malakoff");
+
+         Keys.SharedKey anotherKey = Keys.sharedKeyBuilder()
+                 .sharedBy(atSign)
+                 .sharedWith(anotherAtSign)
+                 .name("greeting")
+                 .build();
+
+         client.put(anotherKey, "hola").get();
+
+      }
+
+   }
+}
+```
+And this code illustrates creating getting the key values that were put in the 
+previous example code.
+
+```java
+package org.example;
+
+import org.atsign.client.api.AtClient;
+import org.atsign.client.api.AtSign;
+import org.atsign.client.api.Keys;
+import org.atsign.client.impl.AtClients;
+
+public class Main {
+
+    public static void main(String[] args) throws Exception {
+
+        AtSign atSign = AtSign.createAtSign("41malakoff");
+
+        try (AtClient client = AtClients.builder().atSign(atSign).build()) {
+
+            AtSign anotherAtSign = AtSign.createAtSign("18prettyopera");
+
+            Keys.PublicKey key = Keys.publicKeyBuilder()
+                    .sharedBy(anotherAtSign)
+                    .name("greeting")
+                    .build();
+
+            System.out.println(client.get(key).get());
+
+            Keys.SharedKey anotherKey = Keys.sharedKeyBuilder()
+                    .sharedBy(anotherAtSign)
+                    .sharedWith(atSign)
+                    .name("greeting")
+                    .build();
+
+            System.out.println(client.get(anotherKey).get());
+
+        }
+
+    }
+}
+```
+The **AtClients.builder()** will create an **AtCommandExecutor** which will resolve the
+endpoint for the atsign's at server from **root.atsign.org**. The **AtCommandExector**
+will automatically retry connections and reconnect if it becomes disconnected. The
+commands that are sent to the asign atserver will automatically timeout. The builder
+will automatically load **AtKeys** which correspond to the atsign name and will assume
+that these reside under ~/.atsign/keys. All of this behavior can be overridden with the 
+following builder fields.
+
+* **url** is used to set other root / directory endpoints, a proxy endpoint
+  or the explicit endpoint for the at server.
+* **keys** is used to explicitly provide the **AtKeys** which will be used for
+  authentication, signing and encryption.
+* **reconnect** is used to supply a **ReconnectStrategy** implementation that
+  controls if reconnect is supported at all, how many retries and reconnections
+  are supported, the pauses to apply between retries and when / if the at server
+  endpoint should be re-resolved.
+* **timeoutMillis** is used to specify the command timeout
+* **queueLimit** is used to specify how many commands can be queued. By default
+  the queue limit is zero.
+* **awaitReadyMillis** is used to specify how long the builder blocks for the
+  **AtCommandExecutor** to become ready (to send commands). NOTE: This will NOT
+  trigger a build exception if the executor fails to become ready in that time, but
+  the first command that is sent might be queued.
+
+See the [examples](../examples) module.
+
+---
+
+## Command Line Utilities
 
 The command line classes under
 [src/main/java/org/atsign/client/cli](src/main/java/org/atsign/client/impl/cli)
 serve as simple examples of how to instantiate an AtClient instance and invoke its
 interface.
-
-See also the [examples](../examples) module.
-
----
-
-## Command Line Utilities
 
 The following utilities provide a simple way to test behavior as-well as illustrating
 the fundamentals of using the SDK.
@@ -144,6 +289,7 @@ mvn exec:java -Dexec.mainClass=org.atsign.client.cli.register.Register -Dexec.ar
 
 When using the SUPER_API Key to register an atsign, the following sequence of
 calls take place:
+
 1. User provides at_java/Register with the SUPER_API Key passed as an argument
 2. at_java calls the AtSign Registrar API* Endpoint(get-atsign) with the
    SUPER_API Key provided
