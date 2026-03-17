@@ -356,4 +356,8 @@ public class Metadata {
       return false;
     }
   }
+
+  public static boolean isBinary(Metadata metadata) {
+    return metadata.isBinary() != null && metadata.isBinary();
+  }
 }

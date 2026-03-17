@@ -1,11 +1,13 @@
 package org.atsign.cucumber.steps;
 
+import static org.atsign.cucumber.steps.ParameterTypes.toBytes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 
+import io.cucumber.datatable.DataTable;
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.AtSign;
 import org.atsign.client.api.Keys;
@@ -29,6 +31,12 @@ public class PublicAtKeySteps {
     putKeyValue(atClient, clientAtSign, name, value);
   }
 
+  @When("{ordinal} {atsign} AtClient.put for PublicKey {word} and bytes")
+  public void put(Integer ordinal, AtSign clientAtSign, String name, DataTable table) throws Exception {
+    AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
+    putKeyValue(atClient, clientAtSign, name, toBytes(table));
+  }
+
   @When("{ordinal} {atsign} AtClient.put fails for PublicKey {word} and value {string}")
   public void putFails(Integer ordinal, AtSign clientAtSign, String name, String value) throws Exception {
     AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
@@ -39,6 +47,12 @@ public class PublicAtKeySteps {
   public void put(AtSign clientAtSign, String name, String value) throws Exception {
     AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
     putKeyValue(atClient, clientAtSign, name, value);
+  }
+
+  @When("{atsign} AtClient.put for PublicKey {word} and bytes")
+  public void put(AtSign clientAtSign, String name, DataTable table) throws Exception {
+    AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
+    putKeyValue(atClient, clientAtSign, name, toBytes(table));
   }
 
   @When("{atsign} AtClient.put fails for PublicKey {word} and value {string}")
@@ -52,6 +66,13 @@ public class PublicAtKeySteps {
     QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
     AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
     putKeyValue(atClient, currentQualifiedAtSign.getAtSign(), name, value);
+  }
+
+  @When("AtClient.put for PublicKey {word} and bytes")
+  public void put(String name, DataTable table) throws Exception {
+    QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
+    AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
+    putKeyValue(atClient, currentQualifiedAtSign.getAtSign(), name, toBytes(table));
   }
 
   @When("AtClient.put fails for PublicKey {word} and value {string}")
@@ -110,6 +131,13 @@ public class PublicAtKeySteps {
     assertThat(keyValue, equalTo(expected));
   }
 
+  @Then("{ordinal} {atsign} AtClient.getBinary for PublicKey {word} returns bytes that matches")
+  public void getAsOwner(Integer ordinal, AtSign clientAtSign, String name, DataTable expected) throws Exception {
+    AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
+    byte[] keyValue = getBinaryKeyValue(atClient, clientAtSign, name);
+    assertThat(keyValue, equalTo(toBytes(expected)));
+  }
+
   @Then("{ordinal} {atsign} AtClient.get fails for PublicKey {word}")
   public void getAsOwnerFails(Integer ordinal, AtSign clientAtSign, String name) throws Exception {
     AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
@@ -121,6 +149,13 @@ public class PublicAtKeySteps {
     AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
     String keyValue = getKeyValue(atClient, clientAtSign, name);
     assertThat(keyValue, equalTo(expected));
+  }
+
+  @Then("{atsign} AtClient.getBinary for PublicKey {word} returns bytes that matches")
+  public void getAsOwner(AtSign clientAtSign, String name, DataTable table) throws Exception {
+    AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
+    byte[] keyValue = getBinaryKeyValue(atClient, clientAtSign, name);
+    assertThat(keyValue, equalTo(toBytes(table)));
   }
 
   @Then("{atsign} AtClient.get fails for PublicKey {word}")
@@ -135,6 +170,14 @@ public class PublicAtKeySteps {
     AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
     String keyValue = getKeyValue(atClient, currentQualifiedAtSign.getAtSign(), name);
     assertThat(keyValue, equalTo(expected));
+  }
+
+  @Then("AtClient.getBinary for PublicKey {word} returns bytes that matches")
+  public void getAsOwner(String name, DataTable expected) throws Exception {
+    QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
+    AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
+    byte[] keyValue = getBinaryKeyValue(atClient, currentQualifiedAtSign.getAtSign(), name);
+    assertThat(keyValue, equalTo(toBytes(expected)));
   }
 
   @Then("AtClient.get fails for PublicKey {word}")
@@ -152,6 +195,14 @@ public class PublicAtKeySteps {
     assertThat(keyValue, equalTo(expected));
   }
 
+  @Then("{ordinal} {atsign} AtClient.getBinary for PublicKey {word} shared by {atsign} returns bytes that matches")
+  public void getAsNonOwner(Integer ordinal, AtSign clientAtSign, String name, AtSign sharedBy, DataTable table)
+      throws Exception {
+    AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
+    byte[] keyValue = getBinaryKeyValue(atClient, sharedBy, name);
+    assertThat(keyValue, equalTo(toBytes(table)));
+  }
+
   @Then("{ordinal} {atsign} AtClient.get fails for PublicKey shared by {atsign}")
   public void getAsNonOwnerFails(Integer ordinal, AtSign clientAtSign, String name, AtSign sharedBy) throws Exception {
     AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
@@ -163,6 +214,13 @@ public class PublicAtKeySteps {
     AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
     String keyValue = getKeyValue(atClient, sharedBy, name);
     assertThat(keyValue, equalTo(expected));
+  }
+
+  @Then("{atsign} AtClient.getBinary for PublicKey {word} shared by {atsign} returns bytes that matches")
+  public void getAsNonOwner(AtSign clientAtSign, String name, AtSign sharedBy, DataTable table) throws Exception {
+    AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
+    byte[] keyValue = getBinaryKeyValue(atClient, sharedBy, name);
+    assertThat(keyValue, equalTo(toBytes(table)));
   }
 
   @Then("{atsign} AtClient.get fails for PublicKey {word} shared by {atsign}")
@@ -179,6 +237,14 @@ public class PublicAtKeySteps {
     assertThat(keyValue, equalTo(expected));
   }
 
+  @Then("AtClient.getBinary for PublicKey {word} shared by {atsign} returns bytes that matches")
+  public void getAsNonOwner(String name, AtSign sharedBy, DataTable table) throws Exception {
+    QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
+    AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
+    byte[] keyValue = getBinaryKeyValue(atClient, sharedBy, name);
+    assertThat(keyValue, equalTo(toBytes(table)));
+  }
+
   @Then("AtClient.get fails for PublicKey {word} shared by {atsign}")
   public void getAsNonOwnerFails(String name, AtSign sharedBy) throws Exception {
     QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
@@ -192,9 +258,20 @@ public class PublicAtKeySteps {
     atClient.put(key, value).get();
   }
 
+  private void putKeyValue(AtClient atClient, AtSign sharedBy, String name, byte[] value)
+      throws InterruptedException, ExecutionException {
+    Keys.PublicKey key = toKey(sharedBy, name);
+    atClient.put(key, value).get();
+  }
+
   private String getKeyValue(AtClient atClient, AtSign sharedBy, String name) throws Exception {
     Keys.PublicKey key = toKey(sharedBy, name);
     return atClient.get(key).get();
+  }
+
+  private byte[] getBinaryKeyValue(AtClient atClient, AtSign sharedBy, String name) throws Exception {
+    Keys.PublicKey key = toKey(sharedBy, name);
+    return atClient.getBinary(key).get();
   }
 
   private void deleteKeyValue(AtClient atClient, AtSign owner, String name) throws Exception {

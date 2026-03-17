@@ -14,20 +14,20 @@ class ScanCommandsTest {
 
   @Test
   void testScanReturnsExpectedResults() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("scan:showHidden:true .*", "data:[]")
         .build();
 
     assertThat(ScanCommands.scan(executor, true, ".*"), equalTo(List.of()));
 
-    executor = TestConnectionBuilder.builder()
+    executor = TestExecutorBuilder.builder()
         .stub("scan:showHidden:true .+", "data:[\"public:publickey@gary\",\"public:signing_publickey@gary\"]")
         .build();
 
     assertThat(ScanCommands.scan(executor, true, ".+"),
                equalTo(List.of("public:publickey@gary", "public:signing_publickey@gary")));
 
-    executor = TestConnectionBuilder.builder()
+    executor = TestExecutorBuilder.builder()
         .stub("scan .*", "data:[\"public:publickey@gary\"]")
         .build();
     assertThat(ScanCommands.scan(executor, false, ".*"),
@@ -36,7 +36,7 @@ class ScanCommandsTest {
 
   @Test
   void testScanThrowsServerException() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("scan:showHidden:true .*", "error:AT0001:deliberate")
         .build();
     assertThrows(AtServerRuntimeException.class, () -> ScanCommands.scan(executor, true, ".*"));
@@ -45,7 +45,7 @@ class ScanCommandsTest {
 
   @Test
   void testScanThrowsExecutionException() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stubExecutionException("scan:showHidden:true .*")
         .build();
     assertThrows(RuntimeException.class, () -> ScanCommands.scan(executor, true, ".*"));

@@ -34,7 +34,7 @@ public class EnrollCommandsTest {
 
   @Test
   public void testDeleteCramSecretDoesNotThrowException() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("delete:privatekey:at_secret", "data:1")
         .build();
 
@@ -43,7 +43,7 @@ public class EnrollCommandsTest {
 
   @Test
   public void testDeleteCramSecretThrowsException() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("delete:privatekey:at_secret", "error:AT0001:deliberate")
         .build();
 
@@ -58,7 +58,7 @@ public class EnrollCommandsTest {
         .encryptKeyPair(generateRSAKeyPair())
         .build();
 
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("scan", "data:[\"signing_publickey@gary\"]")
         .build();
 
@@ -69,7 +69,7 @@ public class EnrollCommandsTest {
 
   @Test
   void testOtpSendsExpectedCommandAndMatchesExpectedResponse() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("otp:get", "data:ABC123")
         .build();
 
@@ -78,7 +78,7 @@ public class EnrollCommandsTest {
 
   @Test
   void testOtpThrowsExceptionOnError() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("otp:get", "error:AT0013:deliberate")
         .build();
 
@@ -93,7 +93,7 @@ public class EnrollCommandsTest {
         .encryptKeyPair(generateRSAKeyPair())
         .build();
 
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("scan", "data:[\"signing_publickey@alice\"]")
         .stub("from:@alice", "data:challenge")
         .stub("cram:7e91508d5.+", "data:success")
@@ -116,7 +116,7 @@ public class EnrollCommandsTest {
         .apkamSymmetricKey(generateAESKeyBase64())
         .build();
 
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("lookup:publickey@alice", "data:" + RSA_KEY)
         .stub("enroll:request\\{.+}", "data:{\"enrollmentId\":\"759acb09\",\"status\":\"pending\"}")
         .build();
@@ -143,7 +143,7 @@ public class EnrollCommandsTest {
     String privateEncryptKeysGetResponse = format("data:{\"value\":\"%s\",\"iv\":\"%s\"}",
                                                   aesEncryptToBase64(RSA_KEY, keys.getApkamSymmetricKey(), IV), IV);
 
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("from:@alice", "data:challenge")
         .stub("pkam:[^{].+", "data:success")
         .stub("keys:get:keyName:12345.default_self_enc_key.__manage@alice", selfEncryptKeysGetResponse)
@@ -168,7 +168,7 @@ public class EnrollCommandsTest {
         "\"namespace\":{\"ns\":\"rw\"},\"encryptedAPKAMSymmetricKey\":\"%s\",\"status\":\"pending\"}",
                                   rsaEncryptToBase64(AES_KEY, keys.getEncryptPublicKey()));
 
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("enroll:fetch\\{\"enrollmentId\":\"12345\"}", fetchResponse)
         .stub("enroll:approve\\{\"enrollmentId\":\"12345\".+",
               "data:{\"status\":\"approved\",\"enrollmentId\":\"12345\"}")
@@ -179,7 +179,7 @@ public class EnrollCommandsTest {
 
   @Test
   public void testDeny() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("enroll:deny\\{\"enrollmentId\":\"12345\".+",
               "data:{\"status\":\"denied\",\"enrollmentId\":\"12345\"}")
         .build();
@@ -189,7 +189,7 @@ public class EnrollCommandsTest {
 
   @Test
   public void testRevoke() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("enroll:revoke\\{\"enrollmentId\":\"12345\".+",
               "data:{\"status\":\"revoked\",\"enrollmentId\":\"12345\"}")
         .build();
@@ -199,7 +199,7 @@ public class EnrollCommandsTest {
 
   @Test
   public void testUnrevoke() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("enroll:unrevoke\\{\"enrollmentId\":\"12345\".+",
               "data:{\"status\":\"approved\",\"enrollmentId\":\"12345\"}")
         .build();
@@ -209,7 +209,7 @@ public class EnrollCommandsTest {
 
   @Test
   public void testDelete() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("enroll:delete\\{\"enrollmentId\":\"12345\".+",
               "data:{\"status\":\"deleted\",\"enrollmentId\":\"12345\"}")
         .build();
@@ -239,7 +239,7 @@ public class EnrollCommandsTest {
         "      \"fredns\": \"rw\"" +
         "    }}}";
 
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("enroll:list\\{\"enrollmentStatusFilter\":\\[\"pending\"]}", response)
         .build();
 

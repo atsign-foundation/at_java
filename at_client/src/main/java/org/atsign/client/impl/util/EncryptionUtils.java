@@ -1,6 +1,5 @@
 package org.atsign.client.impl.util;
 
-import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.EncodedKeySpec;
 import java.security.spec.InvalidKeySpecException;
@@ -15,6 +14,8 @@ import javax.crypto.spec.SecretKeySpec;
 import org.atsign.client.impl.exceptions.AtDecryptionException;
 import org.atsign.client.impl.exceptions.AtEncryptionException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Utility class which registers bouncycastle as a security {@link Provider} and provides
@@ -49,7 +50,7 @@ public class EncryptionUtils {
       throws AtEncryptionException {
     try {
       Cipher cipher = createAesCipher(Cipher.ENCRYPT_MODE, key, iv);
-      byte[] encrypted = cipher.doFinal(input.getBytes());
+      byte[] encrypted = cipher.doFinal(input.getBytes(UTF_8));
       return Base64.getEncoder().encodeToString(encrypted);
     } catch (NoSuchAlgorithmException | NoSuchProviderException | BadPaddingException | IllegalBlockSizeException
         | NoSuchPaddingException | InvalidKeyException | InvalidAlgorithmParameterException e) {
@@ -70,7 +71,7 @@ public class EncryptionUtils {
     try {
       Cipher cipher = createAesCipher(Cipher.DECRYPT_MODE, key, iv);
       byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(input));
-      return new String(decrypted);
+      return new String(decrypted, UTF_8);
     } catch (NoSuchAlgorithmException | NoSuchProviderException | NoSuchPaddingException | InvalidKeyException
         | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
       throw new AtDecryptionException("AES decryption failed", e);
@@ -123,9 +124,9 @@ public class EncryptionUtils {
       PrivateKey privateKey = toPrivateKey(key);
       Cipher decryptCipher = Cipher.getInstance("RSA");
       decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
-      byte[] decoded = Base64.getDecoder().decode(input.getBytes(StandardCharsets.UTF_8));
+      byte[] decoded = Base64.getDecoder().decode(input.getBytes(UTF_8));
       byte[] decryptedMessageBytes = decryptCipher.doFinal(decoded);
-      return new String(decryptedMessageBytes, StandardCharsets.UTF_8);
+      return new String(decryptedMessageBytes, UTF_8);
     } catch (NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidKeyException
         | IllegalBlockSizeException | BadPaddingException e) {
       throw new AtDecryptionException("RSA decryption failed", e);
@@ -145,7 +146,7 @@ public class EncryptionUtils {
       PublicKey publicKey = toPublicKey(key);
       Cipher encryptCipher = Cipher.getInstance("RSA");
       encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
-      byte[] clearTextBytes = input.getBytes(StandardCharsets.UTF_8);
+      byte[] clearTextBytes = input.getBytes(UTF_8);
       byte[] encryptedMessageBytes = encryptCipher.doFinal(clearTextBytes);
       return Base64.getEncoder().encodeToString(encryptedMessageBytes);
     } catch (NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidKeyException
@@ -167,7 +168,7 @@ public class EncryptionUtils {
       PrivateKey pk = toPrivateKey(key);
       Signature privateSignature = Signature.getInstance("SHA256withRSA");
       privateSignature.initSign(pk);
-      privateSignature.update(input.getBytes(StandardCharsets.UTF_8));
+      privateSignature.update(input.getBytes(UTF_8));
       byte[] signedBytes = privateSignature.sign();
       return Base64.getEncoder().encodeToString(signedBytes);
     } catch (NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException | SignatureException e) {
@@ -176,14 +177,14 @@ public class EncryptionUtils {
   }
 
   private static PublicKey toPublicKey(String s) throws NoSuchAlgorithmException, InvalidKeySpecException {
-    byte[] keyBytes = Base64.getDecoder().decode(s.getBytes(StandardCharsets.UTF_8));
+    byte[] keyBytes = Base64.getDecoder().decode(s.getBytes(UTF_8));
     EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
     KeyFactory rsaKeyFactory = KeyFactory.getInstance("RSA");
     return rsaKeyFactory.generatePublic(keySpec);
   }
 
   private static PrivateKey toPrivateKey(String s) throws NoSuchAlgorithmException, InvalidKeySpecException {
-    byte[] keyBytes = Base64.getDecoder().decode(s.getBytes(StandardCharsets.UTF_8));
+    byte[] keyBytes = Base64.getDecoder().decode(s.getBytes(UTF_8));
     PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
     KeyFactory rsaKeyFactory = KeyFactory.getInstance("RSA");
     return rsaKeyFactory.generatePrivate(keySpec);

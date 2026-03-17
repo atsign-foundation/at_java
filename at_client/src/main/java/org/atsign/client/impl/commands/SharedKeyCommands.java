@@ -1,10 +1,11 @@
 package org.atsign.client.impl.commands;
 
 import static org.atsign.client.api.AtKeyNames.toSharedByMeKeyName;
+import static org.atsign.client.impl.commands.CommandBuilders.LookupOperation.all;
 import static org.atsign.client.impl.commands.DataResponses.*;
 import static org.atsign.client.impl.commands.ErrorResponses.throwExceptionIfError;
-import static org.atsign.client.impl.commands.CommandBuilders.LookupOperation.all;
 import static org.atsign.client.impl.common.Preconditions.checkNotNull;
+import static org.atsign.client.impl.common.Preconditions.checkTrue;
 import static org.atsign.client.impl.util.EncryptionUtils.*;
 
 import java.util.concurrent.ExecutionException;
@@ -34,13 +35,30 @@ public class SharedKeyCommands {
    * @throws AtException If any of the commands fail or the key does not exist.
    */
 
-  public static String get(AtCommandExecutor executor, AtSign atSign, AtKeys keys, SharedKey key)
+  public static String get(AtCommandExecutor executor, AtSign atSign, AtKeys keys, SharedKey key) throws AtException {
+    return get(executor, atSign, keys, key, false);
+  }
+
+  /**
+   * Get the String value associated with a shared key. The value will be encrypted with a specific
+   * key for the sharedBy-sharedWith relationship.
+   *
+   * @param executor The {@link AtCommandExecutor} to use.
+   * @param atSign The AtSign that corresponds to the executor.
+   * @param key The {@link Keys.SharedKey}
+   * @param expectedBinary If true then lookup metadata will be checked
+   * @return The associated value.
+   * @throws AtException If any of the commands fail or the key does not exist.
+   */
+
+  public static String get(AtCommandExecutor executor, AtSign atSign, AtKeys keys, SharedKey key,
+                           boolean expectedBinary)
       throws AtException {
     checkAtSignCanGet(atSign, key);
     if (key.sharedBy().equals(atSign)) {
-      return getSharedByMe(executor, keys, key);
+      return getSharedByMe(executor, keys, key, expectedBinary);
     } else if (key.sharedWith().equals(atSign)) {
-      return getSharedByOther(executor, keys, key);
+      return getSharedByOther(executor, keys, key, expectedBinary);
     } else {
       throw new IllegalArgumentException("the client atsign is neither the sharedBy or sharedWith");
     }
@@ -85,12 +103,17 @@ public class SharedKeyCommands {
     }
   }
 
-  private static String getSharedByMe(AtCommandExecutor executor, AtKeys keys, SharedKey key) throws AtException {
+  private static String getSharedByMe(AtCommandExecutor executor, AtKeys keys, SharedKey key, boolean expectBinary)
+      throws AtException {
     try {
 
       // send local lookup command and decode
       String llookupCommand = CommandBuilders.llookupCommandBuilder().key(key).operation(all).build();
       LookupResponse llookupResponse = matchLookupResponse(throwExceptionIfError(executor.sendSync(llookupCommand)));
+
+      if (expectBinary) {
+        checkTrue(Metadata.isBinary(llookupResponse.metaData), "metadata.isBinary not set to true");
+      }
 
       // get my encrypt key for sharedBy sharedWith
       String aesKey = checkNotNull(getEncryptKeySharedByMe(executor, keys, key), key + " not found");
@@ -103,12 +126,17 @@ public class SharedKeyCommands {
     }
   }
 
-  private static String getSharedByOther(AtCommandExecutor executor, AtKeys keys, SharedKey key) throws AtException {
+  private static String getSharedByOther(AtCommandExecutor executor, AtKeys keys, SharedKey key, boolean expectBinary)
+      throws AtException {
     try {
 
       // send lookup command and decode
       String lookupCommand = CommandBuilders.lookupCommandBuilder().key(key).operation(all).build();
       LookupResponse lookupResponse = matchLookupResponse(throwExceptionIfError(executor.sendSync(lookupCommand)));
+
+      if (expectBinary) {
+        checkTrue(Metadata.isBinary(lookupResponse.metaData), "isBinary not set to true");
+      }
 
       // get my encrypt key for sharedBy sharedWith
       String shareEncryptionKey = getEncryptKeySharedByOther(executor, keys, key);

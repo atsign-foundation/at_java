@@ -44,3 +44,25 @@ Feature: AtClient API test for PublicKeys
     And AtClient.getAtKeys for "test.+" matches
       | Key              | Name | Namespace | Shared By | Shared With |
       | public:test@gary | test |           | gary      |             |
+
+  Scenario: PublicKey put bytes encodes as Base15e2
+    When AtClient.put for PublicKey test and bytes
+      | Binary   |          |          |          |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 |          |
+    Then AtClient.get for PublicKey test returns value that matches "곹彴곹彴곹彴곹彴"
+    But AtClient.getBinary for PublicKey test returns bytes that matches
+      | Binary   |          |          |          |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 |          |
+    And @colin AtClient.getBinary for PublicKey test shared by @gary returns bytes that matches
+      | Binary   |          |          |          |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 |          |
+

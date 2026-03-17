@@ -39,8 +39,8 @@ class PublicKeyCommandsTest {
 
   @Test
   void testGetSharedByMe() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
-        .stub("llookup:all:public:test@gary", createMockLookupResponse("public:test@gary", "hello world"))
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
+        .stubLookupResponse("llookup:all:public:test@gary", "public:test@gary", "hello world")
         .build();
 
     String actual = PublicKeyCommands.get(executor, createAtSign("gary"), key, null);
@@ -50,8 +50,8 @@ class PublicKeyCommandsTest {
 
   @Test
   void testGetCachedSharedByMe() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
-        .stub("llookup:all:public:test@gary", createMockLookupResponse("cached:public:test@gary", "hello world"))
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
+        .stubLookupResponse("llookup:all:public:test@gary", "cached:public:test@gary", "hello world")
         .build();
 
     PublicKeyCommands.get(executor, createAtSign("gary"), key, null);
@@ -61,7 +61,7 @@ class PublicKeyCommandsTest {
 
   @Test
   void testGetSharedByMeNoSuchKey() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("llookup:all:public:test@gary", "error:AT0015:deliberate")
         .build();
 
@@ -70,7 +70,7 @@ class PublicKeyCommandsTest {
 
   @Test
   void testGetSharedByMeExecutionException() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("llookup:all:public:test@gary", new ExecutionException("deliberate", null))
         .build();
 
@@ -79,8 +79,8 @@ class PublicKeyCommandsTest {
 
   @Test
   void testGetSharedByOther() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
-        .stub("plookup:all:test@gary", createMockLookupResponse("public:test@gary", "hello world"))
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
+        .stubLookupResponse("plookup:all:test@gary", "public:test@gary", "hello world")
         .build();
 
     String actual = PublicKeyCommands.get(executor, createAtSign("colin"), key, null);
@@ -90,8 +90,8 @@ class PublicKeyCommandsTest {
 
   @Test
   void testGetCachedSharedByOther() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
-        .stub("plookup:all:test@gary", createMockLookupResponse("cached:public:test@gary", "hello world"))
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
+        .stubLookupResponse("plookup:all:test@gary", "cached:public:test@gary", "hello world")
         .build();
 
     PublicKeyCommands.get(executor, createAtSign("colin"), key, null);
@@ -101,8 +101,8 @@ class PublicKeyCommandsTest {
 
   @Test
   void testGetSharedByOtherBypassCache() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
-        .stub("plookup:bypassCache:true:all:test@gary", createMockLookupResponse("public:test@gary", "hello world"))
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
+        .stubLookupResponse("plookup:bypassCache:true:all:test@gary", "public:test@gary", "hello world")
         .build();
 
     GetRequestOptions options = GetRequestOptions.builder().bypassCache(true).build();
@@ -115,7 +115,7 @@ class PublicKeyCommandsTest {
 
   @Test
   void testGetSharedByOtherNoSuchKey() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("plookup:all:test@gary", "error:AT0015:deliberate")
         .build();
 
@@ -124,7 +124,7 @@ class PublicKeyCommandsTest {
 
   @Test
   void testGetSharedByOtherExecutionException() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stubExecutionException("plookup:all:test@gary")
         .build();
 
@@ -133,7 +133,7 @@ class PublicKeyCommandsTest {
 
   @Test
   void testPutSendsExpectedCommands() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("update:dataSignature:.+:isEncrypted:false:public:test@gary hello world", "data:123")
         .build();
 
@@ -142,7 +142,7 @@ class PublicKeyCommandsTest {
 
   @Test
   void testPutThrowExceptionIfCommandFails() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("update:dataSignature:.+:isEncrypted:false:public:test@gary hello world", "error:AT0001:deliberate")
         .build();
 
@@ -156,7 +156,7 @@ class PublicKeyCommandsTest {
 
   @Test
   void testPutExecutionException() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stubExecutionException("update:dataSignature:.+:isEncrypted:false:public:test@gary hello world")
         .build();
 
@@ -166,13 +166,5 @@ class PublicKeyCommandsTest {
 
     assertThrows(RuntimeException.class,
                  () -> PublicKeyCommands.put(executor, createAtSign("gary"), keys, key, "hello world"));
-  }
-
-  private static String createMockLookupResponse(String key, String value) {
-    return String.format("data:{" +
-        "\"key\": \"%s\"," +
-        "\"data\": \"%s\"," +
-        "\"metaData\": {\"ttl\": 86400000, \"isBinary\": false, \"isEncrypted\": false, \"isPublic\": true}" +
-        "}", key, value);
   }
 }

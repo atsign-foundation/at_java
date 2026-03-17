@@ -16,7 +16,7 @@ class KeyCommandsTest {
 
   @Test
   void testDeleteKeyRawKey() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("delete:selfkey1@alice", "data:1")
         .build();
 
@@ -25,7 +25,7 @@ class KeyCommandsTest {
 
   @Test
   void testDeleteKeyRawKeyThrowsExceptionIfResponseIsError() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("delete:selfkey1@alice", "error:AT0001:an error message")
         .build();
 
@@ -34,7 +34,7 @@ class KeyCommandsTest {
 
   @Test
   void testDeleteKey() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("delete:keyname@colin", "data:1")
         .build();
 
@@ -50,7 +50,7 @@ class KeyCommandsTest {
   @Test
   void getKeysWithMetaDataReturnsExpectedResults() throws Exception {
 
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("scan:showHidden:true .+", "data:[\"public:publickey@gary\",\"public:signing_publickey@gary\"]")
         .stub("llookup:meta:public:publickey@gary", "data:{\"ttl\":1000}")
         .stub("llookup:meta:public:signing_publickey@gary", "data:{\"ttl\":2000}")
@@ -73,7 +73,7 @@ class KeyCommandsTest {
   @Test
   void getKeysWithoutMetaDataReturnsExpectedResults() throws Exception {
 
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("scan:showHidden:true .+", "data:[\"public:publickey@gary\",\"public:signing_publickey@gary\"]")
         .build();
 
