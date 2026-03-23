@@ -1,5 +1,6 @@
 package org.atsign.cucumber.steps;
 
+import static org.atsign.cucumber.steps.ParameterTypes.toBytes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -9,6 +10,7 @@ import org.atsign.client.api.AtClient;
 import org.atsign.client.api.AtSign;
 import org.atsign.client.api.Keys;
 
+import io.cucumber.datatable.DataTable;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -29,6 +31,13 @@ public class SharedAtKeySteps {
     putKeyValue(atClient, clientAtSign, name, sharedWith, value);
   }
 
+  @When("{ordinal} {atsign} AtClient.put for SharedKey {word} shared with {atsign} and bytes")
+  public void putAsOwner(Integer ordinal, AtSign clientAtSign, String name, AtSign sharedWith, DataTable table)
+      throws Exception {
+    AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
+    putKeyValue(atClient, clientAtSign, name, sharedWith, toBytes(table));
+  }
+
   @Then("{ordinal} {atsign} AtClient.put fails for SharedKey {word} shared with {atsign} and value {string}")
   public void putAsOwnerFails(Integer ordinal, AtSign clientAtSign, String name, AtSign sharedWith, String value)
       throws Exception {
@@ -42,6 +51,12 @@ public class SharedAtKeySteps {
     putKeyValue(atClient, clientAtSign, name, sharedWith, value);
   }
 
+  @When("{atsign} AtClient.put for SharedKey {word} shared with {atsign} and bytes")
+  public void putAsOwner(AtSign clientAtSign, String name, AtSign sharedWith, DataTable table) throws Exception {
+    AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
+    putKeyValue(atClient, clientAtSign, name, sharedWith, toBytes(table));
+  }
+
   @Then("{atsign} AtClient.put fails for SharedKey {word} shared with {atsign} and value {string}")
   public void putAsOwnerFails(AtSign clientAtSign, String name, AtSign sharedWith, String value) throws Exception {
     AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
@@ -53,6 +68,13 @@ public class SharedAtKeySteps {
     QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
     AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
     putKeyValue(atClient, currentQualifiedAtSign.getAtSign(), name, sharedWith, value);
+  }
+
+  @When("AtClient.put for SharedKey {word} shared with {atsign} and bytes")
+  public void putAsOwner(String name, AtSign sharedWith, DataTable table) throws Exception {
+    QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
+    AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
+    putKeyValue(atClient, currentQualifiedAtSign.getAtSign(), name, sharedWith, toBytes(table));
   }
 
   @Then("AtClient.put for fails SharedKey {word} shared with {atsign} and value {string}")
@@ -106,6 +128,14 @@ public class SharedAtKeySteps {
     assertThat(keyValue, equalTo(expected));
   }
 
+  @Then("{ordinal} {atsign} AtClient.getBinary for SharedKey {word} shared with {atsign} returns bytes that matches")
+  public void assertGetAsOwner(Integer ordinal, AtSign clientAtSign, String name, AtSign sharedWith, DataTable table)
+      throws Exception {
+    AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
+    byte[] keyValue = getBinaryKeyValue(atClient, clientAtSign, name, sharedWith);
+    assertThat(keyValue, equalTo(toBytes(table)));
+  }
+
   @Then("{ordinal} {atsign} AtClient.get fails for SharedKey {word} shared with {atsign}")
   public void assertGetExceptionAsOwner(Integer ordinal, AtSign clientAtSign, String name, AtSign sharedWith) {
     AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
@@ -117,6 +147,13 @@ public class SharedAtKeySteps {
     AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
     String keyValue = getKeyValue(atClient, clientAtSign, name, sharedWith);
     assertThat(keyValue, equalTo(expected));
+  }
+
+  @Then("{atsign} AtClient.getBinary for SharedKey {word} shared with {atsign} returns bytes that matches")
+  public void assertGetAsOwner(AtSign clientAtSign, String name, AtSign sharedWith, DataTable table) throws Exception {
+    AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
+    byte[] keyValue = getBinaryKeyValue(atClient, clientAtSign, name, sharedWith);
+    assertThat(keyValue, equalTo(toBytes(table)));
   }
 
   @Then("{atsign} AtClient.get fails for SharedKey {word} shared with {atsign}")
@@ -131,6 +168,14 @@ public class SharedAtKeySteps {
     AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
     String keyValue = getKeyValue(atClient, currentQualifiedAtSign.getAtSign(), name, sharedWith);
     assertThat(keyValue, equalTo(expected));
+  }
+
+  @Then("AtClient.getBinary for SharedKey {word} shared with {atsign} returns bytes that matches")
+  public void assertGetAsOwner(String name, AtSign sharedWith, DataTable table) throws Exception {
+    QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
+    AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
+    byte[] keyValue = getBinaryKeyValue(atClient, currentQualifiedAtSign.getAtSign(), name, sharedWith);
+    assertThat(keyValue, equalTo(toBytes(table)));
   }
 
   @Then("AtClient.get fails for SharedKey {word} shared with {atsign}")
@@ -150,6 +195,14 @@ public class SharedAtKeySteps {
     assertThat(keyValue, equalTo(expected));
   }
 
+  @Then("{ordinal} {atsign} AtClient.getBinary for SharedKey {word} shared by {atsign} returns bytes that matches")
+  public void assertGetAsRecipient(Integer ordinal, AtSign clientAtSign, String name, AtSign sharedBy, DataTable table)
+      throws Exception {
+    AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
+    byte[] keyValue = getBinaryKeyValue(atClient, sharedBy, name, clientAtSign);
+    assertThat(keyValue, equalTo(toBytes(table)));
+  }
+
   @Then("{ordinal} {atsign} AtClient.get fails for SharedKey {word} shared by {atsign}}")
   public void assertGetSharedKeyResultForRecipientFails(Integer ordinal, AtSign clientAtSign, String name,
                                                         AtSign sharedBy)
@@ -166,6 +219,14 @@ public class SharedAtKeySteps {
     assertThat(keyValue, equalTo(expected));
   }
 
+  @Then("{atsign} AtClient.getBinary for SharedKey {word} shared by {atsign} returns bytes that matches")
+  public void assertGetAsRecipient(AtSign clientAtSign, String name, AtSign sharedBy, DataTable table)
+      throws Exception {
+    AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
+    byte[] keyValue = getBinaryKeyValue(atClient, sharedBy, name, clientAtSign);
+    assertThat(keyValue, equalTo(toBytes(table)));
+  }
+
   @Then("{atsign} AtClient.get fails for SharedKey {word} shared by {atsign}")
   public void assertGetAsRecipientFails(AtSign clientAtSign, String name, AtSign sharedBy) throws Exception {
     AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
@@ -178,6 +239,14 @@ public class SharedAtKeySteps {
     AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
     String keyValue = getKeyValue(atClient, sharedBy, name, currentQualifiedAtSign.getAtSign());
     assertThat(keyValue, equalTo(expected));
+  }
+
+  @Then("AtClient.getBinary for SharedKey {word} shared by {atsign} returns bytes that matches")
+  public void assertGetAsRecipient(String name, AtSign sharedBy, DataTable table) throws Exception {
+    QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
+    AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
+    byte[] keyValue = getBinaryKeyValue(atClient, sharedBy, name, currentQualifiedAtSign.getAtSign());
+    assertThat(keyValue, equalTo(toBytes(table)));
   }
 
   @Then("AtClient.get fails for SharedKey {word} shared by {atsign}")
@@ -193,9 +262,21 @@ public class SharedAtKeySteps {
     atClient.put(key, value).get();
   }
 
+  private void putKeyValue(AtClient atClient, AtSign sharedBy, String name, AtSign sharedWith, byte[] value)
+      throws Exception {
+    Keys.SharedKey key = createKey(sharedBy, name, sharedWith);
+    atClient.put(key, value).get();
+  }
+
   private String getKeyValue(AtClient atClient, AtSign sharedBy, String name, AtSign sharedWith) throws Exception {
     Keys.SharedKey key = createKey(sharedBy, name, sharedWith);
     return atClient.get(key).get();
+  }
+
+  private byte[] getBinaryKeyValue(AtClient atClient, AtSign sharedBy, String name, AtSign sharedWith)
+      throws Exception {
+    Keys.SharedKey key = createKey(sharedBy, name, sharedWith);
+    return atClient.getBinary(key).get();
   }
 
   private void deleteKeyValue(AtClient atClient, AtSign sharedBy, String name, AtSign sharedWith) throws Exception {

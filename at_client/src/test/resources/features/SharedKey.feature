@@ -48,13 +48,34 @@ Feature: AtClient API test for SharedKeys
       | public:test@gary |
 
   Scenario: Namespace qualified
-      When @gary AtClient.put for SharedKey message.ns shared with @colin and value "hi colin it's gary"
-      And @colin AtClient.put for SharedKey message.ns shared with @gary and value "hi gary it's colin"
-      Then @colin AtClient.get for SharedKey message.ns shared by @gary returns value that matches "hi colin it's gary"
-      And @gary AtClient.get for SharedKey message.ns shared by @colin returns value that matches "hi gary it's colin"
+    When @gary AtClient.put for SharedKey message.ns shared with @colin and value "hi colin it's gary"
+    And @colin AtClient.put for SharedKey message.ns shared with @gary and value "hi gary it's colin"
+    Then @colin AtClient.get for SharedKey message.ns shared by @gary returns value that matches "hi colin it's gary"
+    And @gary AtClient.get for SharedKey message.ns shared by @colin returns value that matches "hi gary it's colin"
 
   Scenario: SharedKey get returns expected value for "Shared With" atsign after change
     When AtClient.put for SharedKey test shared with @colin and value "hello world"
     And @colin AtClient.get for SharedKey test shared by @gary returns value that matches "hello world"
     And AtClient.put for SharedKey test shared with @colin and value "goodbye cruel world"
     Then @colin AtClient.get for SharedKey test shared by @gary returns value that matches "goodbye cruel world"
+
+  Scenario: SharedKey put bytes encodes as Base15e2
+    When AtClient.put for SharedKey test shared with @colin and bytes
+      | Binary   |          |          |          |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 |          |
+    Then AtClient.get for SharedKey test shared with @colin returns value that matches "곹彴곹彴곹彴곹彴"
+    But AtClient.getBinary for SharedKey test shared with @colin returns bytes that matches
+      | Binary   |          |          |          |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 |          |
+    And @colin AtClient.getBinary for SharedKey test shared by @gary returns bytes that matches
+      | Binary   |          |          |          |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 |          |

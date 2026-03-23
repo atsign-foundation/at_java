@@ -35,3 +35,18 @@ Feature: AtClient API tests for SelfKeys
     Then @colin AtClient.getAtKeys for ".+" does NOT contain
       | test@gary |
 
+  Scenario: SelfKey put bytes encodes as Base15e2
+    When AtClient.put for SelfKey test and bytes
+      | Binary   |          |          |          |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 |          |
+    Then AtClient.get for SelfKey test returns value that matches "곹彴곹彴곹彴곹彴"
+    But AtClient.getBinary for SelfKey test returns bytes that matches
+      | Binary   |          |          |          |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 | 10101010 |
+      | 10101010 | 10101010 | 10101010 |          |
+

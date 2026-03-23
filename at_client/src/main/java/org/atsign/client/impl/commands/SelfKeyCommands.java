@@ -5,6 +5,7 @@ import static org.atsign.client.impl.commands.DataResponses.matchDataInt;
 import static org.atsign.client.impl.commands.DataResponses.matchLookupResponse;
 import static org.atsign.client.impl.commands.ErrorResponses.throwExceptionIfError;
 import static org.atsign.client.impl.common.Preconditions.checkNotNull;
+import static org.atsign.client.impl.common.Preconditions.checkTrue;
 import static org.atsign.client.impl.util.EncryptionUtils.*;
 
 import java.util.concurrent.ExecutionException;
@@ -30,6 +31,26 @@ public class SelfKeyCommands {
    * @throws AtException If any of the commands fail or the key does not exist.
    */
   public static String get(AtCommandExecutor executor, AtSign atSign, AtKeys keys, SelfKey key) throws AtException {
+    return get(executor, atSign, keys, key, false);
+  }
+
+  /**
+   * Get the String value associated with a self key. The value will be decrypted with the AtSign's
+   * Self Encryption Key.
+   *
+   * @param executor The {@link AtCommandExecutor} to use.
+   * @param atSign The AtSign that corresponds to the executor.
+   * @param key The {@link Keys.SelfKey}
+   * @param expectBinary If true then metadata will be checked
+   * @return The associated value.
+   * @throws AtException If any of the commands fail or the key does not exist.
+   */
+  public static String get(AtCommandExecutor executor,
+                           AtSign atSign,
+                           AtKeys keys,
+                           SelfKey key,
+                           boolean expectBinary)
+      throws AtException {
     checkAtSignCanGet(atSign, key);
     try {
 
@@ -37,6 +58,10 @@ public class SelfKeyCommands {
       String llookupCommand = CommandBuilders.llookupCommandBuilder().key(key).operation(all).build();
       String llookupResponse = executor.sendSync(llookupCommand);
       LookupResponse response = matchLookupResponse(throwExceptionIfError(llookupResponse));
+
+      if (expectBinary) {
+        checkTrue(Metadata.isBinary(response.metaData), "metadata.isBinary not set to true");
+      }
 
       // decrypt with my self encrypt key
       String selfEncryptionKey = keys.getSelfEncryptKey();

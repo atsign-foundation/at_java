@@ -1,11 +1,13 @@
 package org.atsign.cucumber.steps;
 
+import static org.atsign.cucumber.steps.ParameterTypes.toBytes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 
+import io.cucumber.datatable.DataTable;
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.AtSign;
 import org.atsign.client.api.Keys;
@@ -29,6 +31,12 @@ public class SelfAtKeySteps {
     putKeyValue(atClient, clientAtSign, name, value);
   }
 
+  @When("{ordinal} {atsign} AtClient.put for SelfKey {word} and bytes")
+  public void put(Integer ordinal, AtSign clientAtSign, String name, DataTable table) throws Exception {
+    AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
+    putKeyValue(atClient, clientAtSign, name, toBytes(table));
+  }
+
   @When("{ordinal} {atsign} AtClient.put fails for SelfKey {word} and value {string}")
   public void putFails(Integer ordinal, AtSign clientAtSign, String name, String value) throws Exception {
     AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
@@ -41,11 +49,24 @@ public class SelfAtKeySteps {
     putKeyValue(atClient, clientAtSign, name, value);
   }
 
+  @When("{atsign} AtClient.put for SelfKey {word} and bytes")
+  public void put(AtSign clientAtSign, String name, DataTable table) throws Exception {
+    AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
+    putKeyValue(atClient, clientAtSign, name, toBytes(table));
+  }
+
   @When("AtClient.put for SelfKey {word} and value {string}")
   public void put(String name, String value) throws Exception {
     QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
     AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
     putKeyValue(atClient, currentQualifiedAtSign.getAtSign(), name, value);
+  }
+
+  @When("AtClient.put for SelfKey {word} and bytes")
+  public void put(String name, DataTable table) throws Exception {
+    QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
+    AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
+    putKeyValue(atClient, currentQualifiedAtSign.getAtSign(), name, toBytes(table));
   }
 
   // delete
@@ -97,6 +118,13 @@ public class SelfAtKeySteps {
     assertThat(keyValue, equalTo(expected));
   }
 
+  @Then("{ordinal} {atsign} AtClient.getBinary for SelfKey {word} returns bytes that matches")
+  public void assertGet(Integer ordinal, AtSign clientAtSign, String name, DataTable table) throws Exception {
+    AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
+    byte[] keyValue = getBinaryKeyValue(atClient, clientAtSign, name);
+    assertThat(keyValue, equalTo(toBytes(table)));
+  }
+
   @Then("{ordinal} {atsign} AtClient.get fails for SelfKey {word}")
   public void assertGetFails(Integer ordinal, AtSign clientAtSign, String name) throws Exception {
     AtClient atClient = context.lookupAtClient(clientAtSign, ordinal);
@@ -108,6 +136,13 @@ public class SelfAtKeySteps {
     AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
     String keyValue = getKeyValue(atClient, clientAtSign, name);
     assertThat(keyValue, equalTo(expected));
+  }
+
+  @Then("{atsign} AtClient.getBinary for SelfKey {word} returns bytes that matches")
+  public void assertGet(AtSign clientAtSign, String name, DataTable table) throws Exception {
+    AtClient atClient = context.lookupOrCreateAtClient(clientAtSign);
+    byte[] keyValue = getBinaryKeyValue(atClient, clientAtSign, name);
+    assertThat(keyValue, equalTo(toBytes(table)));
   }
 
   @Then("{atsign} AtClient.get fails for SelfKey {word}")
@@ -124,6 +159,14 @@ public class SelfAtKeySteps {
     assertThat(keyValue, equalTo(expected));
   }
 
+  @Then("AtClient.getBinary for SelfKey {word} returns bytes that matches")
+  public void assertGet(String name, DataTable table) throws Exception {
+    QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
+    AtClient atClient = context.lookupAtClient(currentQualifiedAtSign);
+    byte[] keyValue = getBinaryKeyValue(atClient, currentQualifiedAtSign.getAtSign(), name);
+    assertThat(keyValue, equalTo(toBytes(table)));
+  }
+
   @Then("AtClient.get fails for SelfKey {word}")
   public void assertGetFails(String name) throws Exception {
     QualifiedAtSign currentQualifiedAtSign = context.getCurrentQualifiedAtSign();
@@ -137,9 +180,20 @@ public class SelfAtKeySteps {
     atClient.put(key, value).get();
   }
 
+  private void putKeyValue(AtClient atClient, AtSign atSign, String name, byte[] value)
+      throws InterruptedException, ExecutionException {
+    Keys.SelfKey key = createKey(atSign, name);
+    atClient.put(key, value).get();
+  }
+
   private String getKeyValue(AtClient atClient, AtSign atSign, String name) throws Exception {
     Keys.SelfKey key = createKey(atSign, name);
     return atClient.get(key).get();
+  }
+
+  private byte[] getBinaryKeyValue(AtClient atClient, AtSign atSign, String name) throws Exception {
+    Keys.SelfKey key = createKey(atSign, name);
+    return atClient.getBinary(key).get();
   }
 
   private void deleteKeyValue(AtClient atClient, AtSign atSign, String name) throws Exception {

@@ -17,7 +17,7 @@ public class AuthenticationCommandsTest {
 
   @Test
   public void testAuthenticateWithCramDoesNotThrowException() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("from:@alice", "data:challenge")
         .stub("cram:7e91508d5.+", "data:success")
         .build();
@@ -27,7 +27,7 @@ public class AuthenticationCommandsTest {
 
   @Test
   public void testAuthenticateWithCramFailThrowsExpectedException() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("from:@alice", "data:challenge")
         .stub("cram:.+", "error:AT0401:deliberate")
         .build();
@@ -41,7 +41,7 @@ public class AuthenticationCommandsTest {
   @Test
   public void testAuthenticateWithPkamDoesNotThrowException() throws Exception {
     AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).build();
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("from:@alice", "data:challenge")
         .stub("pkam:[^{].+", "data:success")
         .build();
@@ -52,7 +52,7 @@ public class AuthenticationCommandsTest {
   @Test
   public void testAuthenticateWithApkamWithEnrollmentId() throws Exception {
     AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).enrollmentId(createEnrollmentId("12345")).build();
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("from:@alice", "data:challenge")
         .stub("pkam:signingAlgo:rsa2048:hashingAlgo:sha256:enrollmentId:12345:.+", "data:success")
         .build();
@@ -63,7 +63,7 @@ public class AuthenticationCommandsTest {
   @Test
   public void testAuthenticateWithApkamFailThrowsExpectedException() throws Exception {
     AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).enrollmentId(createEnrollmentId("12345")).build();
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("from:@alice", "data:challenge")
         .stub("pkam:.+", "error:AT0401:deliberate")
         .build();
@@ -77,7 +77,7 @@ public class AuthenticationCommandsTest {
   @Test
   public void testPkamAuthenticatorThrowsOnReadyException() throws Exception {
     AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).enrollmentId(createEnrollmentId("12345")).build();
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("from:@alice", "data:challenge")
         .stub("pkam:.+", "error:AT0401:deliberate")
         .build();

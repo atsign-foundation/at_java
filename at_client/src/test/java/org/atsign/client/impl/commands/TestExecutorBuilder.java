@@ -1,8 +1,10 @@
 package org.atsign.client.impl.commands;
 
+import static org.atsign.client.impl.common.Preconditions.checkTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -11,44 +13,49 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.impl.util.JsonUtils;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 
-public class TestConnectionBuilder {
+public class TestExecutorBuilder {
 
   private Map<Pattern, Object> mapping = new LinkedHashMap<>();
 
-  public static TestConnectionBuilder builder() {
-    return new TestConnectionBuilder();
+  public static TestExecutorBuilder builder() {
+    return new TestExecutorBuilder();
   }
 
-  public TestConnectionBuilder stub(String command, String response) {
+  public TestExecutorBuilder stub(String command, String response) {
     return stub(Pattern.compile(command), response);
   }
 
-  public TestConnectionBuilder stub(Pattern command, String response) {
+  public TestExecutorBuilder stub(Pattern command, String response) {
     mapping.put(command, response);
     return this;
   }
 
-  public TestConnectionBuilder stub(String command, Function<Matcher, String> fn) {
+  public TestExecutorBuilder stub(String command, Function<Matcher, String> fn) {
     return stub(Pattern.compile(command), fn);
   }
 
-  public TestConnectionBuilder stub(Pattern command, Function<Matcher, String> fn) {
+  public TestExecutorBuilder stub(Pattern command, Function<Matcher, String> fn) {
     mapping.put(command, fn);
     return this;
   }
 
-  public TestConnectionBuilder stub(String command, Exception ex) {
+  public TestExecutorBuilder stub(String command, Exception ex) {
     return stub(Pattern.compile(command), ex);
   }
 
-  public TestConnectionBuilder stubExecutionException(String command) {
+  public TestExecutorBuilder stubExecutionException(String command) {
     return stub(Pattern.compile(command), new ExecutionException("deliberate", null));
   }
 
-  public TestConnectionBuilder stub(Pattern command, Exception ex) {
+  public TestExecutorBuilder stubLookupResponse(String command, String key, String value, Object... metadata) {
+    return stub(Pattern.compile(command), createLookupResponse(key, value, metadata));
+  }
+
+  public TestExecutorBuilder stub(Pattern command, Exception ex) {
     mapping.put(command, ex);
     return this;
   }
@@ -73,4 +80,15 @@ public class TestConnectionBuilder {
     });
     return mock;
   }
+
+  private static String createLookupResponse(String key, String value, Object... metadata) {
+    checkTrue((metadata.length % 2) == 0, "expected name value pairs");
+    Map<String, Object> map = new HashMap<>();
+    for (int i = 0; i < metadata.length; i++) {
+      map.put((String) metadata[i], metadata[++i]);
+    }
+    return String.format("data:{\"key\": \"%s\",\"data\": \"%s\",\"metaData\": %s}",
+                         key, value, JsonUtils.writeValueAsString(map));
+  }
+
 }

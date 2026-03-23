@@ -41,8 +41,8 @@ class SelfKeyCommandsTest {
 
     String iv = generateRandomIvBase64(16);
     String encrypted = aesEncryptToBase64("hello me", keys.getSelfEncryptKey(), iv);
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
-        .stub("llookup:all:test@gary", createMockLookupResponse("test@gary", encrypted, iv))
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
+        .stubLookupResponse("llookup:all:test@gary", "test@gary", encrypted, "ivNonce", iv)
         .build();
 
     String actual = SelfKeyCommands.get(executor, atSign, keys, key);
@@ -52,7 +52,7 @@ class SelfKeyCommandsTest {
 
   @Test
   void testGetException() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("llookup:all:test@gary", "error:AT0001:deliberate")
         .build();
 
@@ -61,7 +61,7 @@ class SelfKeyCommandsTest {
 
   @Test
   void testGetExecutionException() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stubExecutionException("llookup:all:test@gary")
         .build();
 
@@ -70,7 +70,7 @@ class SelfKeyCommandsTest {
 
   @Test
   void testPut() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("update:dataSignature:.+:isEncrypted:true:ivNonce:.+:test@gary .+", "data:123")
         .build();
 
@@ -80,7 +80,7 @@ class SelfKeyCommandsTest {
 
   @Test
   void testPutAtException() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("update:dataSignature:.+:isEncrypted:true:ivNonce:.+:test@gary .+", "error:AT0001:deliberate")
         .build();
 
@@ -89,20 +89,11 @@ class SelfKeyCommandsTest {
 
   @Test
   void testPutExecutionException() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stubExecutionException("update:dataSignature:.+:isEncrypted:true:ivNonce:.+:test@gary .+")
         .build();
 
     assertThrows(RuntimeException.class, () -> SelfKeyCommands.put(executor, atSign, keys, key, "hello world"));
-  }
-
-  private static String createMockLookupResponse(String key, String encrypted, String iv) {
-
-    return String.format("data:{" +
-        "\"key\": \"%s\"," +
-        "\"data\": \"%s\"," +
-        "\"metaData\": {\"ttl\": 86400000, \"ivNonce\": \"%s\", \"isEncrypted\": true, \"isPublic\": false}" +
-        "}", key, encrypted, iv);
   }
 
 }

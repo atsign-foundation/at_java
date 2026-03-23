@@ -11,13 +11,10 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.atsign.client.api.AtClient;
-import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.*;
 import org.atsign.client.api.AtEvents.AtEventBus;
 import org.atsign.client.api.AtEvents.AtEventListener;
 import org.atsign.client.api.AtEvents.AtEventType;
-import org.atsign.client.api.AtKeys;
-import org.atsign.client.api.AtSign;
 import org.atsign.client.api.Keys.AtKey;
 import org.atsign.client.api.Keys.PublicKey;
 import org.atsign.client.api.Keys.SelfKey;
@@ -28,6 +25,7 @@ import org.atsign.client.impl.exceptions.AtException;
 
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
+import org.atsign.client.impl.util.Base2e15Utils;
 
 /**
  * Implementation of an {@link AtClient} which uses a {@link AtCommandExecutor} and
@@ -144,7 +142,7 @@ public class AtClientImpl implements AtClient {
 
   @Override
   public CompletableFuture<byte[]> getBinary(SharedKey sharedKey) {
-    throw new UnsupportedOperationException("to be implemented");
+    return wrapAsync(() -> Base2e15Utils.decode(SharedKeyCommands.get(executor, atSign, keys, sharedKey, true)));
   }
 
   @Override
@@ -164,7 +162,7 @@ public class AtClientImpl implements AtClient {
 
   @Override
   public CompletableFuture<byte[]> getBinary(SelfKey selfKey) {
-    throw new UnsupportedOperationException("to be implemented");
+    return wrapAsync(() -> Base2e15Utils.decode(SelfKeyCommands.get(executor, atSign, keys, selfKey, true)));
   }
 
   @Override
@@ -189,12 +187,12 @@ public class AtClientImpl implements AtClient {
 
   @Override
   public CompletableFuture<byte[]> getBinary(PublicKey publicKey) {
-    throw new UnsupportedOperationException("to be implemented");
+    return wrapAsync(() -> Base2e15Utils.decode(PublicKeyCommands.get(executor, atSign, publicKey, true, null)));
   }
 
   @Override
   public CompletableFuture<byte[]> getBinary(PublicKey publicKey, GetRequestOptions options) {
-    throw new UnsupportedOperationException("to be implemented");
+    return wrapAsync(() -> Base2e15Utils.decode(PublicKeyCommands.get(executor, atSign, publicKey, true, options)));
   }
 
   @Override
@@ -209,17 +207,17 @@ public class AtClientImpl implements AtClient {
 
   @Override
   public CompletableFuture<Void> put(SharedKey sharedKey, byte[] value) {
-    throw new UnsupportedOperationException("to be implemented");
+    return put(setIsBinary(sharedKey), Base2e15Utils.encode(value));
   }
 
   @Override
   public CompletableFuture<Void> put(SelfKey selfKey, byte[] value) {
-    throw new UnsupportedOperationException("to be implemented");
+    return put(setIsBinary(selfKey), Base2e15Utils.encode(value));
   }
 
   @Override
   public CompletableFuture<Void> put(PublicKey publicKey, byte[] value) {
-    throw new UnsupportedOperationException("to be implemented");
+    return put(setIsBinary(publicKey), Base2e15Utils.encode(value));
   }
 
   @Override
@@ -284,7 +282,7 @@ public class AtClientImpl implements AtClient {
   }
 
   /**
-   * A runnable command which returns a value but can throw {@link AtException}s or execution
+   * A runnable command which returns a String value but can throw {@link AtException}s or execution
    * exceptions
    */
   public interface AtCommandThatReturnsString {
@@ -292,6 +290,25 @@ public class AtClientImpl implements AtClient {
   }
 
   private static CompletableFuture<String> wrapAsync(AtCommandThatReturnsString command) {
+    return CompletableFuture.supplyAsync(() -> {
+      try {
+        return command.run();
+      } catch (Exception e) {
+        throw new CompletionException(e);
+      }
+    });
+  }
+
+  /**
+   * A runnable command which returns a byte array value but can throw {@link AtException}s or
+   * execution
+   * exceptions
+   */
+  public interface AtCommandThatReturnsByteArray {
+    byte[] run() throws AtException, ExecutionException, InterruptedException;
+  }
+
+  private static CompletableFuture<byte[]> wrapAsync(AtCommandThatReturnsByteArray command) {
     return CompletableFuture.supplyAsync(() -> {
       try {
         return command.run();
@@ -319,4 +336,12 @@ public class AtClientImpl implements AtClient {
       }
     });
   }
+
+  private static <T extends AtKey> T setIsBinary(T key) {
+    if (!Metadata.isBinary(key.metadata())) {
+      key.overwriteMetadata(key.metadata().toBuilder().isBinary(true).build());
+    }
+    return key;
+  }
+
 }

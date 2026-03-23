@@ -4,6 +4,7 @@ import static org.atsign.client.impl.commands.CommandBuilders.LookupOperation.al
 import static org.atsign.client.impl.commands.DataResponses.matchDataInt;
 import static org.atsign.client.impl.commands.DataResponses.matchLookupResponse;
 import static org.atsign.client.impl.commands.ErrorResponses.throwExceptionIfError;
+import static org.atsign.client.impl.common.Preconditions.checkTrue;
 import static org.atsign.client.impl.util.EncryptionUtils.signSHA256RSA;
 
 import java.util.concurrent.ExecutionException;
@@ -34,10 +35,29 @@ public class PublicKeyCommands {
    */
   public static String get(AtCommandExecutor executor, AtSign atSign, PublicKey key, GetRequestOptions options)
       throws AtException {
+    return get(executor, atSign, key, false, options);
+  }
+
+  /**
+   * Get the String value associated with a public key.
+   *
+   * @param executor The {@link AtCommandExecutor} to use.
+   * @param atSign The AtSign that corresponds to the executor.
+   * @param key The {@link PublicKey}
+   * @param options If set then can be used to bypass caches.
+   * @return The associated value.
+   * @throws AtException If any of the commands fail or the key does not exist.
+   */
+  public static String get(AtCommandExecutor executor,
+                           AtSign atSign,
+                           PublicKey key,
+                           boolean expectBinary,
+                           GetRequestOptions options)
+      throws AtException {
     if (atSign.equals(key.sharedBy())) {
-      return getSharedByMe(executor, key);
+      return getSharedByMe(executor, key, expectBinary);
     } else {
-      return getSharedByOther(executor, key, options);
+      return getSharedByOther(executor, key, expectBinary, options);
     }
   }
 
@@ -47,10 +67,14 @@ public class PublicKeyCommands {
    *
    * @param executor The {@link AtCommandExecutor} to use.
    * @param key The {@link PublicKey}
+   * @param expectBinary If true then metadata will be checked
    * @return The associated value.
    * @throws AtException If any of the commands fail or the key does not exist.
    */
-  public static String getSharedByMe(AtCommandExecutor executor, PublicKey key) throws AtException {
+  public static String getSharedByMe(AtCommandExecutor executor,
+                                     PublicKey key,
+                                     boolean expectBinary)
+      throws AtException {
     try {
 
       // send a local lookup command and decode the response
@@ -60,6 +84,10 @@ public class PublicKeyCommands {
           .build();
       String llookupResponse = executor.sendSync(llookupCommand);
       LookupResponse response = matchLookupResponse(throwExceptionIfError(llookupResponse));
+
+      if (expectBinary) {
+        checkTrue(Metadata.isBinary(response.metaData), "metadata.isBinary not set to true");
+      }
 
       // set isCached in metadata
       if (response.key.contains("cached:")) {
@@ -82,10 +110,15 @@ public class PublicKeyCommands {
    *
    * @param executor The {@link AtCommandExecutor} to use.
    * @param key The {@link PublicKey}
+   * @param expectBinary If true then metadata will be checked
+   * @param options If set then can be used to bypass caches.
    * @return The associated value.
    * @throws AtException If any of the commands fail or the key does not exist.
    */
-  public static String getSharedByOther(AtCommandExecutor executor, PublicKey key, GetRequestOptions options)
+  public static String getSharedByOther(AtCommandExecutor executor,
+                                        PublicKey key,
+                                        boolean expectBinary,
+                                        GetRequestOptions options)
       throws AtException {
     try {
 
@@ -97,6 +130,10 @@ public class PublicKeyCommands {
           .build();
       String plookupResponse = executor.sendSync(plookupCommand);
       LookupResponse response = matchLookupResponse(throwExceptionIfError(plookupResponse));
+
+      if (expectBinary) {
+        checkTrue(Metadata.isBinary(response.metaData), "isBinary not set to true");
+      }
 
       // set isCached in metadata
       if (response.key.contains("cached:")) {

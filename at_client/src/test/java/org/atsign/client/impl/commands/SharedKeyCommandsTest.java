@@ -40,9 +40,9 @@ class SharedKeyCommandsTest {
     String encryptKey = generateAESKeyBase64();
     String iv = generateRandomIvBase64(16);
     String encrypted = aesEncryptToBase64("hello colin", encryptKey, iv);
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("llookup:shared_key.colin@gary", "data:" + rsaEncryptToBase64(encryptKey, keys.getEncryptPublicKey()))
-        .stub("llookup:all:@colin:test@gary", createMockLookupResponse("@colin:test@gary", encrypted, iv))
+        .stubLookupResponse("llookup:all:@colin:test@gary", "@colin:test@gary", encrypted, "ivNonce", iv)
         .build();
 
     String actual = SharedKeyCommands.get(executor, createAtSign("gary"), keys, key);
@@ -52,7 +52,7 @@ class SharedKeyCommandsTest {
 
   @Test
   void testGetNotSharedByMeOrWithMeThrowsException() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .build();
 
     RuntimeException ex =
@@ -66,8 +66,8 @@ class SharedKeyCommandsTest {
     String iv = generateRandomIvBase64(16);
     String encrypted = aesEncryptToBase64("hello colin", encryptKey, iv);
     keys.put("shared_key.colin", encryptKey);
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
-        .stub("llookup:all:@colin:test@gary", createMockLookupResponse("@colin:test@gary", encrypted, iv))
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
+        .stubLookupResponse("llookup:all:@colin:test@gary", "@colin:test@gary", encrypted, "ivNonce", iv)
         .build();
 
     String actual = SharedKeyCommands.get(executor, createAtSign("gary"), keys, key);
@@ -78,7 +78,7 @@ class SharedKeyCommandsTest {
   @Test
   void testGetSharedByMeServerException() throws Exception {
     String encryptKey = generateAESKeyBase64();
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("llookup:shared_key.colin@gary", "data:" + rsaEncryptToBase64(encryptKey, keys.getEncryptPublicKey()))
         .stub("llookup:all:@colin:test@gary", "error:AT0001:deliberate")
         .build();
@@ -90,7 +90,7 @@ class SharedKeyCommandsTest {
   @Test
   void testGetSharedByMeExecutionException() throws Exception {
     String encryptKey = generateAESKeyBase64();
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("llookup:shared_key.colin@gary", "data:" + rsaEncryptToBase64(encryptKey, keys.getEncryptPublicKey()))
         .stubExecutionException("llookup:all:@colin:test@gary")
         .build();
@@ -103,8 +103,8 @@ class SharedKeyCommandsTest {
     String encryptKey = generateAESKeyBase64();
     String iv = generateRandomIvBase64(16);
     String encrypted = aesEncryptToBase64("hello colin", encryptKey, iv);
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
-        .stub("lookup:all:test@gary", createMockLookupResponse("@colin:test@gary", encrypted, iv))
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
+        .stubLookupResponse("lookup:all:test@gary", "@colin:test@gary", encrypted, "ivNonce", iv)
         .stub("lookup:shared_key@gary", "data:" + rsaEncryptToBase64(encryptKey, keys.getEncryptPublicKey()))
         .build();
 
@@ -116,7 +116,7 @@ class SharedKeyCommandsTest {
   @Test
   void testPutWhenSharedKeyAlreadyExists() throws Exception {
     String encryptKey = generateAESKeyBase64();
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("llookup:shared_key.colin@gary", "data:" + rsaEncryptToBase64(encryptKey, keys.getEncryptPublicKey()))
         .stub("update:isEncrypted:true:ivNonce:.+:@colin:test@gary .+", "data:123")
         .build();
@@ -127,7 +127,7 @@ class SharedKeyCommandsTest {
 
   @Test
   void testPutWhenSharedKeDoesNotAlreadyExists() throws Exception {
-    AtCommandExecutor executor = TestConnectionBuilder.builder()
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("llookup:shared_key.colin@gary", "error:AT0015:deliberate")
         .stub("plookup:publickey@colin", "data:" + keys.getEncryptPublicKey())
         .stub("update:shared_key.colin@gary .+", "data:1")
@@ -137,22 +137,4 @@ class SharedKeyCommandsTest {
 
     SharedKeyCommands.put(executor, createAtSign("gary"), keys, key, "hello colin");
   }
-
-  private static String createMockLookupResponse(String key, String value) {
-    return String.format("data:{" +
-        "\"key\": \"%s\"," +
-        "\"data\": \"%s\"," +
-        "\"metaData\": {\"ttl\": 86400000, \"isEncrypted\": false, \"isPublic\": true}" +
-        "}", key, value);
-  }
-
-
-  private static String createMockLookupResponse(String key, String encrypted, String iv) {
-    return String.format("data:{" +
-        "\"key\": \"%s\"," +
-        "\"data\": \"%s\"," +
-        "\"metaData\": {\"ttl\": 86400000, \"ivNonce\": \"%s\", \"isEncrypted\": true, \"isPublic\": false}" +
-        "}", key, encrypted, iv);
-  }
-
 }

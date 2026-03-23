@@ -59,6 +59,7 @@ The latest snapshot version can be added as a maven dependency like this...
 The SDK currently depends on the following
 
 * Bouncycastle (encryption, decryption, and cryptography utilities)
+* Netty (networking)
 * Jackson (support for JSON and YAML encoding and decoding)
 * Pico CLI (lightweight command line interface framework)
 * Slf4j api (Simple logging facade that can be bound a variety of logging
