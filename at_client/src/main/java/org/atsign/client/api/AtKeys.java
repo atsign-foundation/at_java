@@ -1,8 +1,6 @@
 package org.atsign.client.api;
 
-import java.security.Key;
 import java.security.KeyPair;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -10,6 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.Builder;
 import lombok.Value;
 import org.atsign.client.impl.common.EnrollmentId;
+
+import static org.atsign.client.impl.util.EncryptionUtils.toStringBase64;
 
 /**
  * An immutable class used to hold an {@link org.atsign.client.api.AtClient}s keys. These
@@ -154,18 +154,14 @@ public class AtKeys {
   public static class AtKeysBuilder {
 
     public AtKeysBuilder encryptKeyPair(KeyPair keyPair) {
-      return this.encryptPublicKey(createStringBase64(keyPair.getPublic()))
-          .encryptPrivateKey(createStringBase64(keyPair.getPrivate()));
+      return this.encryptPublicKey(toStringBase64(keyPair.getPublic()))
+          .encryptPrivateKey(toStringBase64(keyPair.getPrivate()));
     }
 
     public AtKeysBuilder apkamKeyPair(KeyPair keyPair) {
-      return this.apkamPublicKey(createStringBase64(keyPair.getPublic()))
-          .apkamPrivateKey(createStringBase64(keyPair.getPrivate()));
+      return this.apkamPublicKey(toStringBase64(keyPair.getPublic()))
+          .apkamPrivateKey(toStringBase64(keyPair.getPrivate()));
     }
-  }
-
-  private static String createStringBase64(Key key) {
-    return Base64.getEncoder().encodeToString(key.getEncoded());
   }
 
 }

@@ -96,7 +96,7 @@ public abstract class AbstractCli<T extends AbstractCli<T>> {
   protected AtCommandExecutor createAuthenticatedConnection(String rootUrl, AtSign atSign, int retries)
       throws AtException {
     return createCommandExecutorBuilder(rootUrl, atSign, retries, verbose)
-        .onReady(AuthenticationCommands.pkamAuthenticator(atSign, getKeys()))
+        .onReady(AuthenticationCommands.pkamAuthenticator(atSign, getKeys(), null))
         .build();
   }
 

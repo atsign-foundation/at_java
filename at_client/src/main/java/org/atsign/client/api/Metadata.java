@@ -2,12 +2,13 @@ package org.atsign.client.api;
 
 import java.time.OffsetDateTime;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import org.atsign.client.impl.util.JsonUtils;
 
 import lombok.Builder;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
-import org.atsign.client.impl.util.JsonUtils;
 
 /**
  * Value class which models key metadata in the Atsign Platform
@@ -41,8 +42,14 @@ public class Metadata {
   Boolean isCached;
   String sharedKeyEnc;
   String pubKeyCS;
+  PublicKeyHash pubKeyHash;
   String encoding;
+  String encKeyName;
+  String encAlgo;
   String ivNonce;
+  String skeEncKeyName;
+  String skeEncAlgo;
+  Boolean immutable;
 
   /**
    * A builder for instantiating {@link Metadata} instances. Note: Metadata is immutable so if you
@@ -58,6 +65,7 @@ public class Metadata {
   }
 
   /**
+   * Ordering is crucial see at_commons\lib\src\verb\syntax.dart
    *
    * @return the encoded metadata fields as recognized by an At Server in an update command.
    */
@@ -70,12 +78,18 @@ public class Metadata {
         .append(ccd != null ? ":ccd:" + ccd : "")
         .append(dataSignature != null ? ":dataSignature:" + dataSignature : "")
         .append(sharedKeyStatus != null ? ":sharedKeyStatus:" + sharedKeyStatus : "")
-        .append(sharedKeyEnc != null ? ":sharedKeyEnc:" + sharedKeyEnc : "")
-        .append(pubKeyCS != null ? ":pubKeyCS:" + pubKeyCS : "")
         .append(isBinary != null ? ":isBinary:" + isBinary : "")
         .append(isEncrypted != null ? ":isEncrypted:" + isEncrypted : "")
+        .append(sharedKeyEnc != null ? ":sharedKeyEnc:" + sharedKeyEnc : "")
+        .append(pubKeyCS != null ? ":pubKeyCS:" + pubKeyCS : "")
+        .append(pubKeyHash != null ? ":pubKeyHash:" + pubKeyHash.hash + ":hashingAlgo:" + pubKeyHash.hashingAlgo : "")
         .append(encoding != null ? ":encoding:" + encoding : "")
+        .append(encKeyName != null ? ":encKeyName:" + encKeyName : "")
+        .append(encAlgo != null ? ":encAlgo:" + encAlgo : "")
         .append(ivNonce != null ? ":ivNonce:" + ivNonce : "")
+        .append(skeEncKeyName != null ? ":skeEncKeyName:" + skeEncKeyName : "")
+        .append(skeEncAlgo != null ? ":skeEncAlgo:" + skeEncAlgo : "")
+        .append(immutable != null ? ":immutable:" + immutable : "")
         .toString();
   }
 
@@ -158,11 +172,29 @@ public class Metadata {
     if (!setPubKeyCSIfNotNull(builder, md1.pubKeyCS)) {
       setPubKeyCSIfNotNull(builder, md2.pubKeyCS);
     }
+    if (!setPubKeyHashIfNotNull(builder, md1.pubKeyHash)) {
+      setPubKeyHashIfNotNull(builder, md2.pubKeyHash);
+    }
     if (!setEncodingIfNotNull(builder, md1.encoding)) {
       setEncodingIfNotNull(builder, md2.encoding);
     }
+    if (!setEncKeyNameIfNotNull(builder, md1.encKeyName)) {
+      setEncKeyNameIfNotNull(builder, md2.encKeyName);
+    }
+    if (!setEncAlgoIfNotNull(builder, md1.encAlgo)) {
+      setEncAlgoIfNotNull(builder, md2.encAlgo);
+    }
     if (!setIvNonceIfNotNull(builder, md1.ivNonce)) {
       setIvNonceIfNotNull(builder, md2.ivNonce);
+    }
+    if (!setSkeEncKeyNameIfNotNull(builder, md1.skeEncKeyName)) {
+      setSkeEncKeyNameIfNotNull(builder, md2.skeEncKeyName);
+    }
+    if (!setSkeEncAlgoIfNotNull(builder, md1.skeEncAlgo)) {
+      setSkeEncAlgoIfNotNull(builder, md2.skeEncAlgo);
+    }
+    if (!setImmutableIfNotNull(builder, md1.immutable)) {
+      setImmutableIfNotNull(builder, md2.immutable);
     }
 
     return builder;
@@ -339,9 +371,36 @@ public class Metadata {
     }
   }
 
+  public static boolean setPubKeyHashIfNotNull(MetadataBuilder builder, PublicKeyHash value) {
+    if (value != null) {
+      builder.pubKeyHash(value);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   public static boolean setEncodingIfNotNull(MetadataBuilder builder, String value) {
     if (value != null) {
       builder.encoding(value);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  public static boolean setEncKeyNameIfNotNull(MetadataBuilder builder, String value) {
+    if (value != null) {
+      builder.encKeyName(value);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  public static boolean setEncAlgoIfNotNull(MetadataBuilder builder, String value) {
+    if (value != null) {
+      builder.encAlgo(value);
       return true;
     } else {
       return false;
@@ -357,7 +416,46 @@ public class Metadata {
     }
   }
 
+  public static boolean setSkeEncKeyNameIfNotNull(MetadataBuilder builder, String value) {
+    if (value != null) {
+      builder.skeEncKeyName(value);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  public static boolean setSkeEncAlgoIfNotNull(MetadataBuilder builder, String value) {
+    if (value != null) {
+      builder.skeEncAlgo(value);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  public static boolean setImmutableIfNotNull(MetadataBuilder builder, Boolean value) {
+    if (value != null) {
+      builder.immutable(value);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   public static boolean isBinary(Metadata metadata) {
     return metadata.isBinary() != null && metadata.isBinary();
+  }
+
+  /**
+   * Model a public key hash tuple, the hash value and the algorithm used to generate the digest.
+   */
+  @Value
+  @Jacksonized
+  @Builder
+  @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+  public static class PublicKeyHash {
+    String hash;
+    String hashingAlgo;
   }
 }

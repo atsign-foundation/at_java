@@ -1,5 +1,8 @@
 package org.atsign.client.impl.util;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.atsign.client.impl.common.Preconditions.checkNotBlank;
+
 import java.security.*;
 import java.security.spec.EncodedKeySpec;
 import java.security.spec.InvalidKeySpecException;
@@ -15,13 +18,13 @@ import org.atsign.client.impl.exceptions.AtDecryptionException;
 import org.atsign.client.impl.exceptions.AtEncryptionException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 /**
  * Utility class which registers bouncycastle as a security {@link Provider} and provides
  * static methods for the various encryption functions required by Atsign client APIs
  */
 public class EncryptionUtils {
+
+  private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
 
   /**
    * The signing algo "label"
@@ -33,8 +36,42 @@ public class EncryptionUtils {
    */
   public static final String HASHING_ALGO_SHA256 = "sha256";
 
+  /**
+   * The hashing algo "label"
+   */
+  public static final String HASHING_ALGO_SHA512 = "sha512";
+
   static {
     Security.addProvider(new BouncyCastleProvider());
+  }
+
+  /**
+   * Creates a digest for the given input using the given algo.
+   *
+   * @param input The text to digest.
+   * @param algo The digest algorithm to use. e.g. MD5
+   * @return The digest as a hex string.
+   * @throws AtEncryptionException If algorithm cannot be found or any other error.
+   */
+  public static String digest(String input, String algo) throws AtEncryptionException {
+    try {
+      MessageDigest md = MessageDigest.getInstance(toMessageDigestAlgorithm(algo));
+      return bytesToHex(md.digest(checkNotBlank(input, "input blank").getBytes(UTF_8)));
+    } catch (IllegalArgumentException | NoSuchAlgorithmException e) {
+      throw new AtEncryptionException("failed to hash : " + e.getMessage(), e);
+    }
+  }
+
+  private static String toMessageDigestAlgorithm(String algo) {
+    checkNotBlank(algo, "algo blank");
+    switch (algo) {
+      case HASHING_ALGO_SHA256:
+        return "SHA-256";
+      case HASHING_ALGO_SHA512:
+        return "SHA-512";
+      default:
+        return algo;
+    }
   }
 
   /**
@@ -50,11 +87,12 @@ public class EncryptionUtils {
       throws AtEncryptionException {
     try {
       Cipher cipher = createAesCipher(Cipher.ENCRYPT_MODE, key, iv);
-      byte[] encrypted = cipher.doFinal(input.getBytes(UTF_8));
+      byte[] encrypted = cipher.doFinal(checkNotBlank(input, "input is blank").getBytes(UTF_8));
       return Base64.getEncoder().encodeToString(encrypted);
-    } catch (NoSuchAlgorithmException | NoSuchProviderException | BadPaddingException | IllegalBlockSizeException
-        | NoSuchPaddingException | InvalidKeyException | InvalidAlgorithmParameterException e) {
-      throw new AtEncryptionException("AES encryption failed", e);
+    } catch (IllegalArgumentException | NoSuchAlgorithmException | NoSuchProviderException | BadPaddingException
+        | IllegalBlockSizeException | NoSuchPaddingException | InvalidKeyException
+        | InvalidAlgorithmParameterException e) {
+      throw new AtEncryptionException("AES encryption failed : " + e.getMessage(), e);
     }
   }
 
@@ -70,11 +108,12 @@ public class EncryptionUtils {
   public static String aesDecryptFromBase64(String input, String key, String iv) throws AtDecryptionException {
     try {
       Cipher cipher = createAesCipher(Cipher.DECRYPT_MODE, key, iv);
-      byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(input));
+      byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(checkNotBlank(input, "input is blank")));
       return new String(decrypted, UTF_8);
-    } catch (NoSuchAlgorithmException | NoSuchProviderException | NoSuchPaddingException | InvalidKeyException
-        | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
-      throw new AtDecryptionException("AES decryption failed", e);
+    } catch (IllegalArgumentException | NoSuchAlgorithmException | NoSuchProviderException | NoSuchPaddingException
+        | InvalidKeyException | InvalidAlgorithmParameterException | IllegalBlockSizeException
+        | BadPaddingException e) {
+      throw new AtDecryptionException("AES decryption failed : " + e.getMessage(), e);
     }
   }
 
@@ -124,12 +163,12 @@ public class EncryptionUtils {
       PrivateKey privateKey = toPrivateKey(key);
       Cipher decryptCipher = Cipher.getInstance("RSA");
       decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
-      byte[] decoded = Base64.getDecoder().decode(input.getBytes(UTF_8));
+      byte[] decoded = Base64.getDecoder().decode(checkNotBlank(input, "input is blank").getBytes(UTF_8));
       byte[] decryptedMessageBytes = decryptCipher.doFinal(decoded);
       return new String(decryptedMessageBytes, UTF_8);
-    } catch (NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidKeyException
-        | IllegalBlockSizeException | BadPaddingException e) {
-      throw new AtDecryptionException("RSA decryption failed", e);
+    } catch (IllegalArgumentException | NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException
+        | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+      throw new AtDecryptionException("RSA decryption failed : " + e.getMessage(), e);
     }
   }
 
@@ -146,12 +185,12 @@ public class EncryptionUtils {
       PublicKey publicKey = toPublicKey(key);
       Cipher encryptCipher = Cipher.getInstance("RSA");
       encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
-      byte[] clearTextBytes = input.getBytes(UTF_8);
+      byte[] clearTextBytes = checkNotBlank(input, "input is blank").getBytes(UTF_8);
       byte[] encryptedMessageBytes = encryptCipher.doFinal(clearTextBytes);
       return Base64.getEncoder().encodeToString(encryptedMessageBytes);
-    } catch (NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidKeyException
-        | IllegalBlockSizeException | BadPaddingException e) {
-      throw new AtEncryptionException("RSA encryption failed", e);
+    } catch (IllegalArgumentException | NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException
+        | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+      throw new AtEncryptionException("RSA encryption failed : " + e.getMessage(), e);
     }
   }
 
@@ -168,35 +207,36 @@ public class EncryptionUtils {
       PrivateKey pk = toPrivateKey(key);
       Signature privateSignature = Signature.getInstance("SHA256withRSA");
       privateSignature.initSign(pk);
-      privateSignature.update(input.getBytes(UTF_8));
+      privateSignature.update(checkNotBlank(input, "input is blank").getBytes(UTF_8));
       byte[] signedBytes = privateSignature.sign();
       return Base64.getEncoder().encodeToString(signedBytes);
-    } catch (NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException | SignatureException e) {
-      throw new AtEncryptionException("SHA256 sign failed", e);
+    } catch (IllegalArgumentException | NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException
+        | SignatureException e) {
+      throw new AtEncryptionException("SHA256 sign failed : " + e.getMessage(), e);
     }
   }
 
   private static PublicKey toPublicKey(String s) throws NoSuchAlgorithmException, InvalidKeySpecException {
-    byte[] keyBytes = Base64.getDecoder().decode(s.getBytes(UTF_8));
+    byte[] keyBytes = Base64.getDecoder().decode(checkNotBlank(s, "key is blank").getBytes(UTF_8));
     EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
     KeyFactory rsaKeyFactory = KeyFactory.getInstance("RSA");
     return rsaKeyFactory.generatePublic(keySpec);
   }
 
   private static PrivateKey toPrivateKey(String s) throws NoSuchAlgorithmException, InvalidKeySpecException {
-    byte[] keyBytes = Base64.getDecoder().decode(s.getBytes(UTF_8));
+    byte[] keyBytes = Base64.getDecoder().decode(checkNotBlank(s, "key is blank").getBytes(UTF_8));
     PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
     KeyFactory rsaKeyFactory = KeyFactory.getInstance("RSA");
     return rsaKeyFactory.generatePrivate(keySpec);
   }
 
   private static SecretKey toSecretKey(String s) {
-    byte[] keyBytes = Base64.getDecoder().decode(s.getBytes());
+    byte[] keyBytes = Base64.getDecoder().decode(checkNotBlank(s, "key is blank").getBytes());
     return new SecretKeySpec(keyBytes, "AES");
   }
 
   private static IvParameterSpec toIvParameterSpec(String s) {
-    byte[] ivBytes = Base64.getDecoder().decode(s.getBytes());
+    byte[] ivBytes = Base64.getDecoder().decode(checkNotBlank(s, "iv is blank").getBytes());
     return new IvParameterSpec(ivBytes);
   }
 
@@ -211,6 +251,20 @@ public class EncryptionUtils {
     SecureRandom secureRandom = new SecureRandom();
     secureRandom.nextBytes(iv);
     return Base64.getEncoder().encodeToString(iv);
+  }
+
+  public static String bytesToHex(byte[] bytes) {
+    char[] hexChars = new char[bytes.length * 2];
+    for (int j = 0; j < bytes.length; j++) {
+      int v = bytes[j] & 0xFF;
+      hexChars[j * 2] = HEX_ARRAY[v >>> 4];
+      hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
+    }
+    return new String(hexChars);
+  }
+
+  public static String toStringBase64(Key key) {
+    return Base64.getEncoder().encodeToString(key.getEncoded());
   }
 
   private static Cipher createAesCipher(int mode, String keyBase64, String ivNonce) throws NoSuchAlgorithmException,

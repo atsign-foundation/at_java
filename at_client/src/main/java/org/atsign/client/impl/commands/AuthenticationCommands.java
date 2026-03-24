@@ -4,10 +4,12 @@ import static org.atsign.client.impl.commands.AtExceptions.throwOnReadyException
 import static org.atsign.client.impl.commands.DataResponses.matchDataStringNoWhitespace;
 import static org.atsign.client.impl.commands.DataResponses.matchDataSuccess;
 import static org.atsign.client.impl.commands.ErrorResponses.throwExceptionIfError;
+import static org.atsign.client.impl.util.EncryptionUtils.bytesToHex;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
@@ -24,8 +26,8 @@ import org.atsign.client.impl.exceptions.AtUnauthenticatedException;
  */
 public class AuthenticationCommands {
 
-  public static Consumer<AtCommandExecutor> pkamAuthenticator(AtSign atSign, AtKeys keys) {
-    return throwOnReadyException(executor -> authenticateWithPkam(executor, atSign, keys));
+  public static Consumer<AtCommandExecutor> pkamAuthenticator(AtSign atSign, AtKeys keys, Map<String, Object> config) {
+    return throwOnReadyException(executor -> authenticateWithPkam(executor, atSign, keys, config));
   }
 
   /**
@@ -38,10 +40,27 @@ public class AuthenticationCommands {
    */
   public static void authenticateWithPkam(AtCommandExecutor executor, AtSign atSign, AtKeys keys)
       throws AtException {
+    authenticateWithPkam(executor, atSign, keys, null);
+  }
+
+  /**
+   * Implements the protocol workflow / sequence for PKAM authentication.
+   *
+   * @param executor The executor with which to send the commands.
+   * @param atSign The asign to authenticate.
+   * @param keys The keys to use to authenticate.
+   * @param config The map of configuration values to send in the from command.
+   * @throws AtException If authentication fails.
+   */
+  public static void authenticateWithPkam(AtCommandExecutor executor,
+                                          AtSign atSign,
+                                          AtKeys keys,
+                                          Map<String, Object> config)
+      throws AtException {
     try {
 
       // send a from command and expect to receive a challenge
-      String fromCommand = CommandBuilders.fromCommandBuilder().atSign(atSign).build();
+      String fromCommand = CommandBuilders.fromCommandBuilder().atSign(atSign).config(config).build();
       String fromResponse = executor.sendSync(fromCommand);
       String challenge = matchDataStringNoWhitespace(throwExceptionIfError(fromResponse));
 
@@ -105,15 +124,5 @@ public class AuthenticationCommands {
     }
   }
 
-  private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
 
-  public static String bytesToHex(byte[] bytes) {
-    char[] hexChars = new char[bytes.length * 2];
-    for (int j = 0; j < bytes.length; j++) {
-      int v = bytes[j] & 0xFF;
-      hexChars[j * 2] = HEX_ARRAY[v >>> 4];
-      hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
-    }
-    return new String(hexChars);
-  }
 }

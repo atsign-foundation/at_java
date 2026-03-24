@@ -39,9 +39,13 @@ public class CommandBuilders {
    * @throws IllegalArgumentException If mandatory fields are not set or if field values conflict.
    */
   @Builder(builderMethodName = "fromCommandBuilder", builderClassName = "FromCommandBuilder")
-  public static String from(AtSign atSign) {
+  public static String from(AtSign atSign, Map<String, Object> config) {
     checkNotNull(atSign, "atSign not set");
-    return "from:" + atSign;
+    StringBuilder builder = new StringBuilder("from:").append(atSign);
+    if (config != null && !config.isEmpty()) {
+      builder.append(":clientConfig:").append(JsonUtils.writeValueAsString(config));
+    }
+    return builder.toString();
   }
 
   /**

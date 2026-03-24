@@ -28,7 +28,6 @@ Feature: AtClient API Monitor tests
     And @colin AtClient.delete for SharedKey test shared with @gary
     Then @gary AtClient monitor receives the following
       | Event Type                  | messageType     | from   | to    | operation | key                    | decryptedValue |
-      | sharedKeyNotification       | MessageType.key | @colin | @gary | update    | @gary:shared_key@colin |                |
       | updateNotification          | MessageType.key | @colin | @gary | update    | @gary:test@colin       |                |
       | decryptedUpdateNotification | MessageType.key | @colin | @gary | update    | @gary:test@colin       | hello world    |
       | deleteNotification          | MessageType.key | @colin | @gary | delete    | @gary:test@colin       |                |

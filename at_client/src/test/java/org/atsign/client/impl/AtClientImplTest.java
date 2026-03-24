@@ -420,14 +420,16 @@ class AtClientImplTest {
     String iv = generateRandomIvBase64(16);
     String encrypted1 = aesEncryptToBase64("hello from me", encryptKey, iv);
     String encrypted2 = aesEncryptToBase64("greetings from another world", encryptKey, iv);
+    String sharedKeyEnc = rsaEncryptToBase64(encryptKey, keys.getEncryptPublicKey());
 
     AtCommandExecutor executor = TestExecutorBuilder.builder()
-        .stub("llookup:shared_key.another@test", "data:" + rsaEncryptToBase64(encryptKey, keys.getEncryptPublicKey()))
-        .stubLookupResponse("llookup:all:@another:key1@test", "key1@test", encrypted1, "ivNonce", iv)
+        .stub("llookup:shared_key.another@test", "data:" + sharedKeyEnc)
+        .stubLookupResponse("llookup:all:@another:key1@test", "key1@test", encrypted1,
+                            "ivNonce", iv, "sharedKeyEnc", sharedKeyEnc)
         .stub("llookup:all:public:key2@test", "error:AT0001:deliberate")
         .stubExecutionException("llookup:all:public:key3@test")
-        .stub("lookup:shared_key@another", "data:" + rsaEncryptToBase64(encryptKey, keys.getEncryptPublicKey()))
-        .stubLookupResponse("lookup:all:key4@another", "key4@test", encrypted2, "ivNonce", iv)
+        .stubLookupResponse("lookup:all:key4@another", "key4@test", encrypted2,
+                            "ivNonce", iv, "sharedKeyEnc", sharedKeyEnc)
         .build();
 
     AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
@@ -458,13 +460,15 @@ class AtClientImplTest {
     String encrypted1 = aesEncryptToBase64(Base2e15Utils.encode(bytes1), encryptKey, iv);
     String encrypted2 = aesEncryptToBase64(Base2e15Utils.encode(bytes2), encryptKey, iv);
 
+    String sharedKeyEnc = rsaEncryptToBase64(encryptKey, keys.getEncryptPublicKey());
     AtCommandExecutor executor = TestExecutorBuilder.builder()
-        .stub("llookup:shared_key.another@test", "data:" + rsaEncryptToBase64(encryptKey, keys.getEncryptPublicKey()))
-        .stub("lookup:shared_key@another", "data:" + rsaEncryptToBase64(encryptKey, keys.getEncryptPublicKey()))
-        .stubLookupResponse("llookup:all:@another:key1@test", "key1@test", encrypted1, "ivNonce", iv, "isBinary", true)
+        .stub("llookup:shared_key.another@test", "data:" + sharedKeyEnc)
+        .stubLookupResponse("llookup:all:@another:key1@test", "key1@test", encrypted1,
+                            "ivNonce", iv, "isBinary", true, "sharedKeyEnc", sharedKeyEnc)
         .stub("llookup:all:public:key2@test", "error:AT0001:deliberate")
         .stubExecutionException("llookup:all:public:key3@test")
-        .stubLookupResponse("lookup:all:key4@another", "key4@test", encrypted2, "ivNonce", iv, "isBinary", true)
+        .stubLookupResponse("lookup:all:key4@another", "key4@test", encrypted2,
+                            "ivNonce", iv, "isBinary", true, "sharedKeyEnc", sharedKeyEnc)
         .stubLookupResponse("llookup:all:@another:key5@test", "key5@test", encrypted1, "ivNonce", iv)
         .build();
 
