@@ -12,6 +12,9 @@
 
   <artifactId>at_utils</artifactId>
 
+  <name>at_utils</name>
+  <description>atsign Java utils</description>
+
   <properties>
     <config.spotless>../config/java-format.xml</config.spotless>
     <config.checkstyle>../config/checkstyle.xml</config.checkstyle>

@@ -406,10 +406,31 @@
     </pluginManagement>
 
     <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+      </plugin>
+
       <plugin>
         <groupId>org.sonatype.central</groupId>
         <artifactId>central-publishing-maven-plugin</artifactId>
       </plugin>
+
+      <plugin>
+        <groupId>se.bjurr.gitchangelog</groupId>
+        <artifactId>git-changelog-maven-plugin</artifactId>
+        <version>2.1.0</version>
+        <configuration>
+          <templateFile>config/CHANGELOG.mustache</templateFile>
+          <file>CHANGELOG.md</file>
+          <ignoreCommitsIfMessageMatches>
+            ^(?!(feat|fix|docs|style|refactor|test|chore|perf|revert)).*
+          </ignoreCommitsIfMessageMatches>
+          <fromRef>startchangelog</fromRef>
+        </configuration>
+      </plugin>
+
     </plugins>
 
   </build>

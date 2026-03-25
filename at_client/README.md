@@ -77,7 +77,7 @@ as a dependency in your pom.xml.
   <dependency>
     <groupId>org.slf4j</groupId>
     <artifactId>slf4j-simple</artifactId>
-    <version>2.0.13</version>
+    <version>${version.slf4j}</version>
   </dependency>
 ```
 
