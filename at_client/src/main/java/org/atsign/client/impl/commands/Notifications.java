@@ -38,8 +38,11 @@ public class Notifications {
    * @param keys The {@link AtKeys} to authenticate with.
    * @param consumer A consumer that will be invoked with each notification.
    */
-  public static Consumer<AtCommandExecutor> monitor(AtSign atSign, AtKeys keys, Consumer<String> consumer) {
-    return throwOnReadyException(executor -> monitor(executor, atSign, keys, consumer));
+  public static Consumer<AtCommandExecutor> monitor(AtSign atSign,
+                                                    AtKeys keys,
+                                                    Map<String, Object> config,
+                                                    Consumer<String> consumer) {
+    return throwOnReadyException(executor -> monitor(executor, atSign, keys, config, consumer));
   }
 
   /**
@@ -51,12 +54,34 @@ public class Notifications {
    * @param consumer A consumer that will be invoked with each notification.
    * @throws AtException If any of the commands fail.
    */
-  public static void monitor(AtCommandExecutor executor, AtSign atSign, AtKeys keys, Consumer<String> consumer)
+  public static void monitor(AtCommandExecutor executor,
+                             AtSign atSign,
+                             AtKeys keys,
+                             Consumer<String> consumer)
+      throws AtException {
+    monitor(executor, atSign, keys, null, consumer);
+  }
+
+  /**
+   * Sends the commands to perform PKAM authentication followed by monitor command.
+   *
+   * @param executor The {@link AtCommandExecutor} to use.
+   * @param atSign The {@link AtSign} to authenticate.
+   * @param keys The {@link AtKeys} to authenticate with.
+   * @param config The map of configuration values to send with the from command.
+   * @param consumer A consumer that will be invoked with each notification.
+   * @throws AtException If any of the commands fail.
+   */
+  public static void monitor(AtCommandExecutor executor,
+                             AtSign atSign,
+                             AtKeys keys,
+                             Map<String, Object> config,
+                             Consumer<String> consumer)
       throws AtException {
     try {
 
       // authenticate
-      authenticateWithPkam(executor, atSign, keys);
+      authenticateWithPkam(executor, atSign, keys, config);
 
       // send monitor command
       executor.sendSync("monitor", consumer);

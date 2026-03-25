@@ -1,13 +1,14 @@
 package org.atsign.client.impl.commands;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.atsign.client.impl.common.EnrollmentId.createEnrollmentId;
 import static org.atsign.client.api.AtSign.createAtSign;
+import static org.atsign.client.impl.common.EnrollmentId.createEnrollmentId;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +37,35 @@ public class CommandBuildersTest {
     String command = CommandBuilders.fromCommandBuilder()
         .atSign(createAtSign("@bob"))
         .build();
-    assertEquals("from:@bob", command);
+    assertThat(command, equalTo("from:@bob"));
+  }
+
+  @Test
+  public void testFromBuilderWithEmptyConfigGeneratesExpectedOutput() {
+
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                                               () -> CommandBuilders.fromCommandBuilder().build());
+    assertThat(ex.getMessage(), containsString("atSign not set"));
+
+    String command = CommandBuilders.fromCommandBuilder()
+        .atSign(createAtSign("@bob"))
+        .config(new HashMap<>())
+        .build();
+    assertThat(command, equalTo("from:@bob"));
+  }
+
+  @Test
+  public void testFromBuilderWithConfigGeneratesExpectedOutput() {
+
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                                               () -> CommandBuilders.fromCommandBuilder().build());
+    assertThat(ex.getMessage(), containsString("atSign not set"));
+
+    String command = CommandBuilders.fromCommandBuilder()
+        .atSign(createAtSign("@bob"))
+        .config(Collections.singletonMap("clientVersion", "1.2.3"))
+        .build();
+    assertThat(command, equalTo("from:@bob:clientConfig:{\"clientVersion\":\"1.2.3\"}"));
   }
 
   @Test
@@ -49,13 +78,13 @@ public class CommandBuildersTest {
     String command = CommandBuilders.cramCommandBuilder()
         .digest("digest")
         .build();
-    assertEquals("cram:digest", command);
+    assertThat(command, equalTo("cram:digest"));
   }
 
   @Test
   public void testPolBuilderGeneratesExpectedOutput() {
     String command = CommandBuilders.polCommandBuilder().build();
-    assertEquals("pol", command);
+    assertThat(command, equalTo("pol"));
   }
 
   @Test
@@ -68,7 +97,7 @@ public class CommandBuildersTest {
     String command = CommandBuilders.pkamCommandBuilder()
         .digest("digest")
         .build();
-    assertEquals("pkam:digest", command);
+    assertThat(command, equalTo("pkam:digest"));
   }
 
   @Test
@@ -95,7 +124,7 @@ public class CommandBuildersTest {
         .signingAlgo("RSA")
         .hashingAlgo("SHA")
         .build();
-    assertEquals("pkam:signingAlgo:RSA:hashingAlgo:SHA:enrollmentId:12345-6789:digest", command);
+    assertThat(command, equalTo("pkam:signingAlgo:RSA:hashingAlgo:SHA:enrollmentId:12345-6789:digest"));
   }
 
   @Test
@@ -253,7 +282,7 @@ public class CommandBuildersTest {
         .sharedBy(createAtSign("@bob"))
         .value("my Value 123")
         .build();
-    assertEquals("update:test@bob my Value 123", command);
+    assertThat(command, equalTo("update:test@bob my Value 123"));
 
     // self key but shared with self
     command = CommandBuilders.updateCommandBuilder()
@@ -262,7 +291,7 @@ public class CommandBuildersTest {
         .sharedWith(createAtSign("bob"))
         .value("My value 123")
         .build();
-    assertEquals("update:@bob:test@bob My value 123", command);
+    assertThat(command, equalTo("update:@bob:test@bob My value 123"));
 
     // public key
     command = CommandBuilders.updateCommandBuilder()
@@ -271,7 +300,7 @@ public class CommandBuildersTest {
         .isPublic(true)
         .value("my Value 123")
         .build();
-    assertEquals("update:public:publickey@bob my Value 123", command);
+    assertThat(command, equalTo("update:public:publickey@bob my Value 123"));
 
     // cached public key
     command = CommandBuilders.updateCommandBuilder()
@@ -281,7 +310,7 @@ public class CommandBuildersTest {
         .isCached(true)
         .value("my Value 123")
         .build();
-    assertEquals("update:cached:public:publickey@alice my Value 123", command);
+    assertThat(command, equalTo("update:cached:public:publickey@alice my Value 123"));
 
     // shared key
     command = CommandBuilders.updateCommandBuilder()
@@ -290,7 +319,7 @@ public class CommandBuildersTest {
         .sharedWith(createAtSign("@alice"))
         .value("my Value 123")
         .build();
-    assertEquals("update:@alice:sharedkey@bob my Value 123", command);
+    assertThat(command, equalTo("update:@alice:sharedkey@bob my Value 123"));
 
     // with shared key
     SharedKey sk1 = Keys.sharedKeyBuilder()
@@ -304,7 +333,8 @@ public class CommandBuildersTest {
         .key(sk1)
         .value("myBinaryValue123456")
         .build();
-    assertEquals("update:ttl:600000:isBinary:true:isEncrypted:true:@alice:test@bob myBinaryValue123456", command);
+    assertThat(command,
+               equalTo("update:ttl:600000:isBinary:true:isEncrypted:true:@alice:test@bob myBinaryValue123456"));
 
     // with public key
     PublicKey pk1 = Keys.publicKeyBuilder()
@@ -316,7 +346,7 @@ public class CommandBuildersTest {
         .key(pk1)
         .value("myValue123")
         .build();
-    assertEquals("update:isEncrypted:false:cached:public:test@bob myValue123", command);
+    assertThat(command, equalTo("update:isEncrypted:false:cached:public:test@bob myValue123"));
 
     // with self key
     SelfKey sk2 = Keys.selfKeyBuilder()
@@ -328,7 +358,7 @@ public class CommandBuildersTest {
         .key(sk2)
         .value("myValue123")
         .build();
-    assertEquals("update:ttl:600000:isEncrypted:true:test@bob myValue123", command);
+    assertThat(command, equalTo("update:ttl:600000:isEncrypted:true:test@bob myValue123"));
 
     // with self key (shared with self)
     AtSign bob = createAtSign("@bob");
@@ -342,7 +372,7 @@ public class CommandBuildersTest {
         .key(sk3)
         .value("myValue123")
         .build();
-    assertEquals("update:ttl:600000:isEncrypted:true:@bob:test@bob myValue123", command);
+    assertThat(command, equalTo("update:ttl:600000:isEncrypted:true:@bob:test@bob myValue123"));
 
     // private hidden key
     // TODO with private hidden key when implemented
@@ -438,7 +468,7 @@ public class CommandBuildersTest {
         .keyName("test")
         .sharedBy(createAtSign("@alice"))
         .build();
-    assertEquals("llookup:test@alice", command);
+    assertThat(command, equalTo("llookup:test@alice"));
 
     // Type.METADATA self key
     command = CommandBuilders.llookupCommandBuilder()
@@ -446,7 +476,7 @@ public class CommandBuildersTest {
         .sharedBy(createAtSign("@alice"))
         .operation(LookupOperation.meta)
         .build();
-    assertEquals("llookup:meta:test@alice", command);
+    assertThat(command, equalTo("llookup:meta:test@alice"));
 
     // hidden self key, meta
     command = CommandBuilders.llookupCommandBuilder()
@@ -455,7 +485,7 @@ public class CommandBuildersTest {
         .operation(LookupOperation.meta)
         .isHidden(true)
         .build();
-    assertEquals("llookup:meta:_test@alice", command);
+    assertThat(command, equalTo("llookup:meta:_test@alice"));
 
     // Type.ALL public cached key
     command = CommandBuilders.llookupCommandBuilder()
@@ -465,7 +495,7 @@ public class CommandBuildersTest {
         .isPublic(true)
         .operation(LookupOperation.all)
         .build();
-    assertEquals("llookup:all:cached:public:publickey@alice", command);
+    assertThat(command, equalTo("llookup:all:cached:public:publickey@alice"));
 
     // no key name
     IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
@@ -489,12 +519,12 @@ public class CommandBuildersTest {
         .key(pk)
         .operation(LookupOperation.meta)
         .build();
-    assertEquals("llookup:meta:public:publickey@bob", command);
+    assertThat(command, equalTo("llookup:meta:public:publickey@bob"));
     command = CommandBuilders.llookupCommandBuilder()
         .rawKey("public:publickey@bob")
         .operation(LookupOperation.meta)
         .build();
-    assertEquals("llookup:meta:public:publickey@bob", command);
+    assertThat(command, equalTo("llookup:meta:public:publickey@bob"));
 
     // with shared key
     SharedKey sk = Keys.sharedKeyBuilder()
@@ -506,7 +536,7 @@ public class CommandBuildersTest {
         .key(sk)
         .operation(LookupOperation.none)
         .build();
-    assertEquals("llookup:@alice:sharedkey@bob", command);
+    assertThat(command, equalTo("llookup:@alice:sharedkey@bob"));
 
     // with self key
     SelfKey selfKey1 = Keys.selfKeyBuilder().sharedBy(createAtSign("@bob")).name("test").build();
@@ -514,7 +544,7 @@ public class CommandBuildersTest {
         .key(selfKey1)
         .operation(LookupOperation.all)
         .build(); // "llookup:all:test@bob"
-    assertEquals("llookup:all:test@bob", command);
+    assertThat(command, equalTo("llookup:all:test@bob"));
 
     // with self key (shared with self)
     AtSign as = createAtSign("@bob");
@@ -523,7 +553,7 @@ public class CommandBuildersTest {
         .key(selfKey2)
         .operation(LookupOperation.all)
         .build();
-    assertEquals("llookup:all:@bob:test@bob", command);
+    assertThat(command, equalTo("llookup:all:@bob:test@bob"));
 
     // with cached public key
     PublicKey pk2 = Keys.publicKeyBuilder()
@@ -535,7 +565,7 @@ public class CommandBuildersTest {
         .key(pk2)
         .operation(LookupOperation.all)
         .build();
-    assertEquals("llookup:all:cached:public:publickey@bob", command);
+    assertThat(command, equalTo("llookup:all:cached:public:publickey@bob"));
 
     // with cached shared key
     SharedKey sk2 = Keys.sharedKeyBuilder()
@@ -548,7 +578,7 @@ public class CommandBuildersTest {
         .key(sk2)
         .operation(LookupOperation.none)
         .build();
-    assertEquals("llookup:cached:@alice:sharedkey@bob", command);
+    assertThat(command, equalTo("llookup:cached:@alice:sharedkey@bob"));
 
     // with private hidden key
     // TODO: not implemented yet
@@ -605,11 +635,11 @@ public class CommandBuildersTest {
         .keyName("test")
         .sharedBy(createAtSign("@alice"))
         .build();
-    assertEquals("lookup:test@alice", command);
+    assertThat(command, equalTo("lookup:test@alice"));
     command = CommandBuilders.lookupCommandBuilder()
         .rawKey("test@alice")
         .build();
-    assertEquals("lookup:test@alice", command);
+    assertThat(command, equalTo("lookup:test@alice"));
 
     // Type.METADATA
     command = CommandBuilders.lookupCommandBuilder()
@@ -617,7 +647,7 @@ public class CommandBuildersTest {
         .sharedBy(createAtSign("@alice"))
         .operation(LookupOperation.meta)
         .build();
-    assertEquals("lookup:meta:test@alice", command);
+    assertThat(command, equalTo("lookup:meta:test@alice"));
 
     // Type.ALL
     command = CommandBuilders.lookupCommandBuilder()
@@ -625,7 +655,7 @@ public class CommandBuildersTest {
         .sharedBy(createAtSign("@alice"))
         .operation(LookupOperation.all)
         .build(); // "lookup:test@alice"
-    assertEquals("lookup:all:test@alice", command);
+    assertThat(command, equalTo("lookup:all:test@alice"));
 
     // no key name
     IllegalArgumentException ex =
@@ -647,7 +677,7 @@ public class CommandBuildersTest {
         .key(sk)
         .operation(LookupOperation.meta)
         .build();
-    assertEquals("lookup:meta:test@sharedby", command);
+    assertThat(command, equalTo("lookup:meta:test@sharedby"));
   }
 
   @Test
@@ -673,11 +703,11 @@ public class CommandBuildersTest {
         .keyName("publickey")
         .sharedBy(createAtSign("@alice"))
         .build(); // "plookup:publickey@alice"
-    assertEquals("plookup:publickey@alice", command);
+    assertThat(command, equalTo("plookup:publickey@alice"));
     command = CommandBuilders.plookupCommandBuilder()
         .rawKey("publickey@alice")
         .build(); // "plookup:publickey@alice"
-    assertEquals("plookup:publickey@alice", command);
+    assertThat(command, equalTo("plookup:publickey@alice"));
 
     // Type.METADATA
     command = CommandBuilders.plookupCommandBuilder()
@@ -685,7 +715,7 @@ public class CommandBuildersTest {
         .sharedBy(createAtSign("@alice"))
         .operation(LookupOperation.meta)
         .build();
-    assertEquals("plookup:meta:publickey@alice", command);
+    assertThat(command, equalTo("plookup:meta:publickey@alice"));
 
     // Type.ALL
     command = CommandBuilders.plookupCommandBuilder()
@@ -693,7 +723,7 @@ public class CommandBuildersTest {
         .sharedBy(createAtSign("@alice"))
         .operation(LookupOperation.all)
         .build();
-    assertEquals("plookup:all:publickey@alice", command);
+    assertThat(command, equalTo("plookup:all:publickey@alice"));
 
     // no key
     IllegalArgumentException ex =
@@ -714,7 +744,7 @@ public class CommandBuildersTest {
         .key(pk)
         .operation(LookupOperation.all)
         .build();
-    assertEquals("plookup:all:publickey@bob", command);
+    assertThat(command, equalTo("plookup:all:publickey@bob"));
 
     // bypasscache true
     command = CommandBuilders.plookupCommandBuilder()
@@ -723,7 +753,7 @@ public class CommandBuildersTest {
         .bypassCache(true)
         .operation(LookupOperation.all)
         .build();
-    assertEquals("plookup:bypassCache:true:all:publickey@alice", command);
+    assertThat(command, equalTo("plookup:bypassCache:true:all:publickey@alice"));
   }
 
   @Test
@@ -751,11 +781,11 @@ public class CommandBuildersTest {
         .keyName("publickey")
         .sharedBy(createAtSign("@alice"))
         .build();
-    assertEquals("delete:public:publickey@alice", command);
+    assertThat(command, equalTo("delete:public:publickey@alice"));
     command = CommandBuilders.deleteCommandBuilder()
         .rawKey("public:publickey@alice")
         .build();
-    assertEquals("delete:public:publickey@alice", command);
+    assertThat(command, equalTo("delete:public:publickey@alice"));
 
     // delete a cached public key
     command = CommandBuilders.deleteCommandBuilder()
@@ -764,14 +794,14 @@ public class CommandBuildersTest {
         .keyName("publickey")
         .sharedBy(createAtSign("@bob"))
         .build();
-    assertEquals("delete:cached:public:publickey@bob", command);
+    assertThat(command, equalTo("delete:cached:public:publickey@bob"));
 
     // delete a self key
     command = CommandBuilders.deleteCommandBuilder()
         .keyName("test")
         .sharedBy(createAtSign("@alice"))
         .build();
-    assertEquals("delete:test@alice", command);
+    assertThat(command, equalTo("delete:test@alice"));
 
     // delete a hidden self key
     command = CommandBuilders.deleteCommandBuilder()
@@ -779,7 +809,7 @@ public class CommandBuildersTest {
         .keyName("test")
         .sharedBy(createAtSign("@alice"))
         .build();
-    assertEquals("delete:_test@alice", command);
+    assertThat(command, equalTo("delete:_test@alice"));
 
     // delete a shared key
     command = CommandBuilders.deleteCommandBuilder()
@@ -787,7 +817,7 @@ public class CommandBuildersTest {
         .sharedBy(createAtSign("@alice"))
         .sharedWith(createAtSign("@bob"))
         .build();
-    assertEquals("delete:@bob:test@alice", command);
+    assertThat(command, equalTo("delete:@bob:test@alice"));
 
     // delete a cached shared key
     command = CommandBuilders.deleteCommandBuilder()
@@ -796,7 +826,7 @@ public class CommandBuildersTest {
         .sharedBy(createAtSign("@alice"))
         .sharedWith(createAtSign("@bob"))
         .build();
-    assertEquals("delete:cached:@bob:test@alice", command);
+    assertThat(command, equalTo("delete:cached:@bob:test@alice"));
 
     // missing key name
     IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
@@ -816,7 +846,7 @@ public class CommandBuildersTest {
     command = CommandBuilders.deleteCommandBuilder()
         .key(selfKey)
         .build();
-    assertEquals("delete:test@alice", command);
+    assertThat(command, equalTo("delete:test@alice"));
 
     // with public key
     PublicKey pk = Keys.publicKeyBuilder().sharedBy(createAtSign("@bob")).name("publickey").build();
@@ -833,7 +863,7 @@ public class CommandBuildersTest {
     command = CommandBuilders.deleteCommandBuilder()
         .key(sk)
         .build();
-    assertEquals("delete:@bob:test@alice", command);
+    assertThat(command, equalTo("delete:@bob:test@alice"));
   }
 
   @Test
@@ -880,45 +910,45 @@ public class CommandBuildersTest {
 
     // Test not setting any parameters
     String command = CommandBuilders.scanCommandBuilder().build();
-    assertEquals("scan", command);
+    assertThat(command, equalTo("scan"));
 
     // Test setting just regex
     command = CommandBuilders.scanCommandBuilder().regex("*.public")
         .build();
-    assertEquals("scan *.public", command);
+    assertThat(command, equalTo("scan *.public"));
 
     // Test setting just fromAtSign
     command = CommandBuilders.scanCommandBuilder()
         .fromAtSign(createAtSign("@other"))
         .build();
-    assertEquals("scan:@other", command);
+    assertThat(command, equalTo("scan:@other"));
 
     // Test seting just showHidden
     command = CommandBuilders.scanCommandBuilder()
         .showHidden(true)
         .build();
-    assertEquals("scan:showHidden:true", command);
+    assertThat(command, equalTo("scan:showHidden:true"));
 
     // Test setting regex & fromAtSign
     command = CommandBuilders.scanCommandBuilder()
         .regex("*.public")
         .fromAtSign(createAtSign("@other"))
         .build();
-    assertEquals("scan:@other *.public", command);
+    assertThat(command, equalTo("scan:@other *.public"));
 
     // Test setting regex & showHidden
     command = CommandBuilders.scanCommandBuilder()
         .regex("*.public")
         .showHidden(true)
         .build();
-    assertEquals("scan:showHidden:true *.public", command);
+    assertThat(command, equalTo("scan:showHidden:true *.public"));
 
     // Test setting fromAtSign & showHidden
     command = CommandBuilders.scanCommandBuilder()
         .fromAtSign(createAtSign("@other"))
         .showHidden(true)
         .build();
-    assertEquals("scan:showHidden:true:@other", command);
+    assertThat(command, equalTo("scan:showHidden:true:@other"));
 
     // Test setting regex & fromAtSign & showHidden
     command = CommandBuilders.scanCommandBuilder()
@@ -926,7 +956,7 @@ public class CommandBuildersTest {
         .fromAtSign(createAtSign("@other"))
         .showHidden(true)
         .build();
-    assertEquals("scan:showHidden:true:@other *.public", command);
+    assertThat(command, equalTo("scan:showHidden:true:@other *.public"));
   }
 
   @Test
@@ -945,7 +975,7 @@ public class CommandBuildersTest {
         .recipient(createAtSign("@test"))
         .text("Hi")
         .build();
-    assertEquals("notify:messageType:text:@test:Hi", command);
+    assertThat(command, equalTo("notify:messageType:text:@test:Hi"));
   }
 
   @Test
@@ -990,14 +1020,14 @@ public class CommandBuildersTest {
         .recipient(createAtSign("recipient"))
         .key("phone")
         .build();
-    assertEquals("notify:update:messageType:key:@recipient:phone@sender", command);
+    assertThat(command, equalTo("notify:update:messageType:key:@recipient:phone@sender"));
 
     // test command with a fully formed key
     command = CommandBuilders.notifyKeyChangeCommandBuilder()
         .operation(NotifyOperation.update)
         .key("@recipient:phone@sender")
         .build();
-    assertEquals("notify:update:messageType:key:@recipient:phone@sender", command);
+    assertThat(command, equalTo("notify:update:messageType:key:@recipient:phone@sender"));
 
     // test command when ttr and value are present
     command = CommandBuilders.notifyKeyChangeCommandBuilder()
@@ -1006,7 +1036,7 @@ public class CommandBuildersTest {
         .ttr(1000L)
         .value("cache_me")
         .build();
-    assertEquals("notify:update:messageType:key:ttr:1000:@recipient:phone@sender:cache_me", command);
+    assertThat(command, equalTo("notify:update:messageType:key:ttr:1000:@recipient:phone@sender:cache_me"));
   }
 
   @Test
@@ -1019,7 +1049,7 @@ public class CommandBuildersTest {
 
     String command = CommandBuilders.notifyStatusCommandBuilder()
         .notificationId("n1234").build();
-    assertEquals("notify:status:n1234", command);
+    assertThat(command, equalTo("notify:status:n1234"));
   }
 
   @Test
@@ -1326,7 +1356,7 @@ public class CommandBuildersTest {
   @Test
   public void testOtpBuilderGeneratesExpectedOutput() {
     String command = CommandBuilders.otpCommandBuilder().build();
-    assertEquals("otp:get", command);
+    assertThat(command, equalTo("otp:get"));
   }
 
   @Test

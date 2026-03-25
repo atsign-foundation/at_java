@@ -52,6 +52,7 @@ public class AtClientImpl implements AtClient {
 
   private final AtSign atSign;
   private final AtKeys keys;
+  private final Map<String, Object> config;
   private final AtCommandExecutor executor;
   private final AtEventBus eventBus;
   private final AtomicBoolean isMonitoring = new AtomicBoolean();
@@ -68,9 +69,14 @@ public class AtClientImpl implements AtClient {
   }
 
   @Builder
-  public AtClientImpl(AtSign atSign, AtKeys keys, AtCommandExecutor executor, AtEventBus eventBus) {
+  public AtClientImpl(AtSign atSign,
+                      AtKeys keys,
+                      Map<String, Object> config,
+                      AtCommandExecutor executor,
+                      AtEventBus eventBus) {
     this.atSign = checkNotNull(atSign, "atSign not set");
     this.keys = checkNotNull(keys, "keys not set");
+    this.config = config;
     this.executor = checkNotNull(executor, "executor not set");
     this.eventBus = checkNotNull(eventBus, "eventBus not set");
     this.eventBus.addEventListener(this::handleEvent, EnumSet.allOf(AtEventType.class));
@@ -106,13 +112,13 @@ public class AtClientImpl implements AtClient {
   @Override
   public void startMonitor() {
     isMonitoring.compareAndSet(false, true);
-    executor.onReady(Notifications.monitor(atSign, keys, eventBusBridge::accept));
+    executor.onReady(Notifications.monitor(atSign, keys, config, eventBusBridge::accept));
   }
 
   @Override
   public void stopMonitor() {
     isMonitoring.compareAndSet(true, false);
-    executor.onReady(AuthenticationCommands.pkamAuthenticator(atSign, keys));
+    executor.onReady(AuthenticationCommands.pkamAuthenticator(atSign, keys, config));
   }
 
   @Override
@@ -268,12 +274,18 @@ public class AtClientImpl implements AtClient {
   private void onUpdateNotification(Map<String, Object> eventData) throws AtException {
     // Let's see if we can decrypt it on the fly
     if (eventData.get("value") != null) {
-      String key = (String) eventData.get("key");
       String encryptedValue = (String) eventData.get("value");
       Map<String, Object> metadata = (Map<String, Object>) eventData.get("metadata");
       String ivNonce = (String) metadata.get("ivNonce");
-      SharedKey sk = org.atsign.client.api.Keys.sharedKeyBuilder().rawKey(key).build();
-      String encryptKeySharedByOther = SharedKeyCommands.getEncryptKeySharedByOther(executor, keys, sk);
+      String encryptKeySharedByOther;
+      String sharedKeyEnc = (String) metadata.get("sharedKeyEnc");
+      if (sharedKeyEnc != null) {
+        encryptKeySharedByOther = rsaDecryptFromBase64(sharedKeyEnc, keys.getEncryptPrivateKey());
+      } else {
+        String key = (String) eventData.get("key");
+        SharedKey sk = org.atsign.client.api.Keys.sharedKeyBuilder().rawKey(key).build();
+        encryptKeySharedByOther = SharedKeyCommands.lookupEncryptKeySharedByOther(executor, keys, sk);
+      }
       String decryptedValue = aesDecryptFromBase64(encryptedValue, encryptKeySharedByOther, ivNonce);
       HashMap<String, Object> newEventData = new HashMap<>(eventData);
       newEventData.put("decryptedValue", decryptedValue);

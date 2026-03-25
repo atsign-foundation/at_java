@@ -13,8 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.atsign.client.api.*;
 import org.atsign.client.api.Keys.SharedKey;
-import org.atsign.client.impl.exceptions.AtException;
-import org.atsign.client.impl.exceptions.AtKeyNotFoundException;
+import org.atsign.client.impl.exceptions.*;
 import org.atsign.client.impl.util.EncryptionUtils;
 
 /**
@@ -81,7 +80,7 @@ public class SharedKeyCommands {
     try {
 
       // get or create key for sharedBy - sharedWith
-      String aesKey = getEncryptKeySharedByMe(executor, keys, key);
+      String aesKey = lookupEncryptKeySharedByMe(executor, keys, key);
       if (aesKey == null) {
         aesKey = createEncryptKey(executor, keys, key);
       }
@@ -115,8 +114,8 @@ public class SharedKeyCommands {
         checkTrue(Metadata.isBinary(llookupResponse.metaData), "metadata.isBinary not set to true");
       }
 
-      // get my encrypt key for sharedBy sharedWith
-      String aesKey = checkNotNull(getEncryptKeySharedByMe(executor, keys, key), key + " not found");
+      // get the encryption key that was previously created by "me"
+      String aesKey = checkNotNull(lookupEncryptKeySharedByMe(executor, keys, key), key + " not found");
 
       // return decrypted value
       return aesDecryptFromBase64(llookupResponse.data, aesKey, llookupResponse.metaData.ivNonce());
@@ -138,15 +137,33 @@ public class SharedKeyCommands {
         checkTrue(Metadata.isBinary(lookupResponse.metaData), "isBinary not set to true");
       }
 
-      // get my encrypt key for sharedBy sharedWith
-      String shareEncryptionKey = getEncryptKeySharedByOther(executor, keys, key);
+      // get the encryption key that was created by the "other"
+      String sharedEncryptionKey;
+      if (lookupResponse.metaData.sharedKeyEnc() != null) {
+        sharedEncryptionKey = extractEncryptKeySharedByOther(lookupResponse, keys);
+      } else {
+        sharedEncryptionKey = lookupEncryptKeySharedByOther(executor, keys, key);
+      }
 
       // return decrypted value
-      return aesDecryptFromBase64(lookupResponse.data, shareEncryptionKey, lookupResponse.metaData.ivNonce());
+      return aesDecryptFromBase64(lookupResponse.data, sharedEncryptionKey, lookupResponse.metaData.ivNonce());
 
     } catch (ExecutionException | InterruptedException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  private static String extractEncryptKeySharedByOther(LookupResponse lookupResponse, AtKeys keys)
+      throws AtException {
+    String encryptedShareEncryptionKey = lookupResponse.metaData.sharedKeyEnc();
+    if (lookupResponse.metaData.pubKeyHash() != null) {
+      String algo = lookupResponse.metaData.pubKeyHash().hashingAlgo();
+      String hash = digest(keys.getEncryptPublicKey(), algo);
+      if (!hash.equals(lookupResponse.metaData.pubKeyHash().hash())) {
+        throw new AtPublicKeyChangeException("pubKeyHash mis-match");
+      }
+    }
+    return rsaDecryptFromBase64(encryptedShareEncryptionKey, keys.getEncryptPrivateKey());
   }
 
   /**
@@ -160,7 +177,7 @@ public class SharedKeyCommands {
    * @return The symmetric encryption key (in base64).
    * @throws AtException If any of the commands fail or the key does not exist.
    */
-  public static String getEncryptKeySharedByMe(AtCommandExecutor executor, AtKeys keys, SharedKey key)
+  public static String lookupEncryptKeySharedByMe(AtCommandExecutor executor, AtKeys keys, SharedKey key)
       throws AtException {
     try {
 
@@ -205,7 +222,7 @@ public class SharedKeyCommands {
    * @return The symmetric encryption key (in base64).
    * @throws AtException If any of the commands fail or the key does not exist.
    */
-  public static String getEncryptKeySharedByOther(AtCommandExecutor executor, AtKeys keys, SharedKey key)
+  public static String lookupEncryptKeySharedByOther(AtCommandExecutor executor, AtKeys keys, SharedKey key)
       throws AtException {
     try {
 
@@ -250,9 +267,15 @@ public class SharedKeyCommands {
           .sharedBy(key.sharedBy())
           .value(encryptedForMe)
           .build();
+      executor.sendSync(updateForUsCommand);
 
-      // get the other (sharedWith) atsign's public key
+      // get the other (sharedWith) atsign's public key (and compute the hash of that key)
       String otherPublicKey = getEncryptKey(executor, key.sharedWith());
+      Metadata.PublicKeyHash hash = Metadata.PublicKeyHash.builder()
+          .hash(EncryptionUtils.digest(otherPublicKey, HASHING_ALGO_SHA512))
+          .hashingAlgo(HASHING_ALGO_SHA512)
+          .build();
+      String checksum = digest(otherPublicKey, "MD5");
 
       // compose an update command to store this key encrypted with the other (sharedWith) atsign's public key
       String encryptedForOther = rsaEncryptToBase64(aesKey, otherPublicKey);
@@ -263,11 +286,18 @@ public class SharedKeyCommands {
           .ttr(TimeUnit.HOURS.toMillis(24))
           .value(encryptedForOther)
           .build();
-
-      // send the update commands
-      executor.sendSync(updateForUsCommand);
       executor.sendSync(updateForOtherCommand);
 
+      // update the key metadata to include the shared encryption key encrypted with the other (sharedWith)
+      // atsign's public key plus the hash of that key to accommodate race conditions on public key changes
+      Metadata modifiedMetadata = key.metadata().toBuilder()
+          .sharedKeyEnc(encryptedForOther)
+          .pubKeyHash(hash)
+          .pubKeyCS(checksum)
+          .build();
+      key.overwriteMetadata(modifiedMetadata);
+
+      // store in my cache
       keys.put(AtKeyNames.toSharedByMeKeyName(key.sharedWith()), aesKey);
 
       // return the new

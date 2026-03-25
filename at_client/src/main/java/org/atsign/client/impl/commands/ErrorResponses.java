@@ -3,6 +3,7 @@ package org.atsign.client.impl.commands;
 import static org.atsign.client.impl.commands.AtExceptions.toTypedException;
 import static org.atsign.client.impl.common.Preconditions.checkNotNull;
 
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,6 +20,8 @@ public class ErrorResponses {
   private static final Pattern ERROR = Pattern.compile("error:(.+)");
 
   private static final Pattern ERROR_WITH_CODE = Pattern.compile("error:(AT\\d+)([^:]*):\\s*(.+)");
+
+  private static final Pattern ERROR_WITH_JSON = Pattern.compile("error:(\\{.+})");
 
   /**
    * Use this to verify a "error:xxxx" response.
@@ -48,7 +51,12 @@ public class ErrorResponses {
 
   private static AtException getAtExceptionIfError(String response) throws AtException {
     checkNotNull(response);
-    Matcher matcher = ERROR_WITH_CODE.matcher(response);
+    Matcher matcher = ERROR_WITH_JSON.matcher(response);
+    if (matcher.matches()) {
+      Map<String, Object> map = Responses.decodeJsonMapOfObjects(matcher.group(1));
+      return toTypedException((String) map.get("errorCode"), (String) map.get("errorDescription"));
+    }
+    matcher = ERROR_WITH_CODE.matcher(response);
     if (matcher.matches()) {
       return toTypedException(matcher.group(1), matcher.group(3));
     }

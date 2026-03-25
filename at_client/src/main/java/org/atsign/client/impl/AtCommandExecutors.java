@@ -3,6 +3,12 @@ package org.atsign.client.impl;
 
 import static org.atsign.client.impl.common.Preconditions.checkNotNull;
 
+import java.io.InputStream;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -16,6 +22,7 @@ import org.atsign.client.impl.exceptions.AtException;
 import org.atsign.client.impl.netty.NettyAtCommandExecutor;
 
 import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Utility methods / builders for instantiating {@link AtCommandExecutor} implementations
@@ -40,6 +47,7 @@ import lombok.Builder;
  * <b>NOTE:</b> If reconnect is not set then the builder will default to a
  * {@link SimpleReconnectStrategy}
  */
+@Slf4j
 public class AtCommandExecutors {
 
   public static final long DEFAULT_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5);
@@ -48,6 +56,7 @@ public class AtCommandExecutors {
   public static AtCommandExecutor createCommandExecutor(String url,
                                                         AtSign atSign,
                                                         AtKeys keys,
+                                                        Map<String, Object> config,
                                                         Long timeoutMillis,
                                                         Long awaitReadyMillis,
                                                         ReconnectStrategy reconnect,
@@ -66,7 +75,7 @@ public class AtCommandExecutors {
         .awaitReadyMillis(defaultIfNotSet(awaitReadyMillis, DEFAULT_TIMEOUT_MILLIS))
         .reconnect(defaultIfNotSet(reconnect))
         .queueLimit(queueLimit)
-        .onReady(createOnReady(atSign, keys))
+        .onReady(createOnReady(atSign, keys, createClientConfig(config)))
         .build();
   }
 
@@ -101,10 +110,27 @@ public class AtCommandExecutors {
     // required for javadoc
   }
 
-  private static Consumer<AtCommandExecutor> createOnReady(AtSign atSign, AtKeys keys) {
+  public static Map<String, Object> createClientConfig(Map<String, Object> config) {
+    Map<String, Object> result = new HashMap<>();
+    result.put("clientId", UUID.randomUUID());
+    Properties properties = new Properties();
+    URL resource = AtCommandExecutors.class.getClassLoader().getResource("client-config.properties");
+    try (InputStream in = resource.openStream()) {
+      properties.load(in);
+      properties.forEach((k, v) -> result.put(k.toString(), v.toString().replace("-SNAPSHOT", "")));
+    } catch (Exception e) {
+      log.warn("unable to load client-config.properties");
+    }
+    if (config != null) {
+      result.putAll(config);
+    }
+    return result;
+  }
+
+  private static Consumer<AtCommandExecutor> createOnReady(AtSign atSign, AtKeys keys, Map<String, Object> config) {
     Consumer<AtCommandExecutor> onReady;
     if (atSign != null && keys != null) {
-      onReady = AuthenticationCommands.pkamAuthenticator(atSign, keys);
+      onReady = AuthenticationCommands.pkamAuthenticator(atSign, keys, config);
     } else {
       onReady = c -> {
       };
@@ -119,5 +145,4 @@ public class AtCommandExecutors {
   private static long defaultIfNotSet(Long l, long defaultValue) {
     return l != null ? l : defaultValue;
   }
-
 }

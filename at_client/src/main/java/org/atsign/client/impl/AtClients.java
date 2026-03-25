@@ -2,13 +2,14 @@ package org.atsign.client.impl;
 
 import static org.atsign.client.impl.common.Preconditions.checkNotNull;
 
-import org.atsign.client.api.AtClient;
-import org.atsign.client.api.AtCommandExecutor;
-import org.atsign.client.api.AtKeys;
-import org.atsign.client.api.AtSign;
+import java.io.File;
+import java.util.Map;
+
+import org.atsign.client.api.*;
 import org.atsign.client.impl.common.ReconnectStrategy;
 import org.atsign.client.impl.common.SimpleAtEventBus;
 import org.atsign.client.impl.common.SimpleReconnectStrategy;
+import org.atsign.client.impl.exceptions.AtClientConfigException;
 import org.atsign.client.impl.exceptions.AtException;
 import org.atsign.client.impl.util.KeysUtils;
 
@@ -34,6 +35,8 @@ public class AtClients {
   public static AtClient createAtClient(String url,
                                         AtSign atSign,
                                         AtKeys keys,
+                                        String keysPath,
+                                        Map<String, Object> config,
                                         Long timeoutMillis,
                                         Long awaitReadyMillis,
                                         ReconnectStrategy reconnect,
@@ -42,12 +45,13 @@ public class AtClients {
       throws AtException {
 
     checkNotNull(atSign, "atSign not set");
-    keys = keys != null ? keys : KeysUtils.loadKeys(atSign);
+    keys = keys != null ? keys : loadKeys(keysPath, atSign);
 
     AtCommandExecutor executor = AtCommandExecutors.builder()
         .url(url)
         .atSign(atSign)
         .keys(keys)
+        .config(config)
         .timeoutMillis(timeoutMillis)
         .awaitReadyMillis(awaitReadyMillis)
         .reconnect(reconnect)
@@ -60,9 +64,24 @@ public class AtClients {
     return AtClientImpl.builder()
         .atSign(atSign)
         .keys(keys)
+        .config(config)
         .executor(executor)
         .eventBus(eventBus)
         .build();
+  }
+
+  private static AtKeys loadKeys(String path, AtSign atSign) throws AtClientConfigException {
+    if (path == null) {
+      return KeysUtils.loadKeys(atSign);
+    }
+    File f = new File(path);
+    if (!f.exists()) {
+      throw new AtClientConfigException(path + " does not exist");
+    }
+    if (f.isDirectory()) {
+      return KeysUtils.loadKeys(KeysUtils.getKeysFile(atSign, path));
+    }
+    return KeysUtils.loadKeys(f);
   }
 
   /**
@@ -75,6 +94,8 @@ public class AtClients {
    *   .atSign(...)        // the AtSign that this client will authenticate as
    *   .url(...)           // the url for the root server or proxy (optional)
    *   .keys(...)          // the AtKeys that this client will use (optional)
+   *   .keysPath(...)      // the location for the AtKeys that this client will use (optional)
+   *   .config(...)        // the config map that will be passed during authentication (optional)
    *   .timeoutMillis()    // timeout after which commands will complete exceptionally (optional)
    *   .awaitReadyMillis() // how long to wait for executor to become ready during build() (optional)
    *   .reconnect()        // a ReconnectStrategy (optional)
@@ -89,6 +110,9 @@ public class AtClients {
    * If <b>keys</b> is not set then the builder will default to attempting to load the keys
    * which correspond to the atSign field in ~/.atsign/keys (or the environment variable
    * / system property {@link KeysUtils#ATSIGN_KEYS_DIR} if set).
+   * If <b>keysPath</b> is set (and keys is not set) then the builder will attempt to load keys
+   * from the path value. If the provided value is not a directory it will simply load the file,
+   * otherwise it will look for a atKeys file for the atSign in the path.
    * If <b>timeoutMillis</b> is not set then builder will default to
    * {@link AtCommandExecutors#DEFAULT_TIMEOUT_MILLIS}.
    * If <b>awaitReadyMillis</b> is not set then the builder will default to
@@ -100,4 +124,5 @@ public class AtClients {
   public static class AtClientBuilder {
     // required for javadoc
   }
+
 }

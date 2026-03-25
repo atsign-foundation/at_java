@@ -1,7 +1,7 @@
 package org.atsign.client.impl.commands;
 
-import static org.atsign.client.impl.util.EncryptionUtils.*;
 import static org.atsign.client.api.AtSign.createAtSign;
+import static org.atsign.client.impl.util.EncryptionUtils.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -9,10 +9,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 
-import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.Keys;
+import org.atsign.client.api.Metadata;
+import org.atsign.client.impl.exceptions.AtPublicKeyChangeException;
 import org.atsign.client.impl.exceptions.AtServerRuntimeException;
+import org.atsign.client.impl.util.EncryptionUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -103,14 +106,54 @@ class SharedKeyCommandsTest {
     String encryptKey = generateAESKeyBase64();
     String iv = generateRandomIvBase64(16);
     String encrypted = aesEncryptToBase64("hello colin", encryptKey, iv);
+    String sharedKeyEnc = rsaEncryptToBase64(encryptKey, keys.getEncryptPublicKey());
+    Metadata.PublicKeyHash hash = Metadata.PublicKeyHash.builder()
+        .hash(EncryptionUtils.digest(keys.getEncryptPublicKey(), HASHING_ALGO_SHA512))
+        .hashingAlgo(HASHING_ALGO_SHA512)
+        .build();
     AtCommandExecutor executor = TestExecutorBuilder.builder()
-        .stubLookupResponse("lookup:all:test@gary", "@colin:test@gary", encrypted, "ivNonce", iv)
-        .stub("lookup:shared_key@gary", "data:" + rsaEncryptToBase64(encryptKey, keys.getEncryptPublicKey()))
+        .stubLookupResponse("lookup:all:test@gary", "@colin:test@gary", encrypted,
+                            "ivNonce", iv, "sharedKeyEnc", sharedKeyEnc, "pubKeyHash", hash)
         .build();
 
     String actual = SharedKeyCommands.get(executor, createAtSign("colin"), keys, key);
 
     assertThat(actual, equalTo("hello colin"));
+  }
+
+  @Test
+  void getGetSharedByOtherBackwardCompatibilityCase() throws Exception {
+    String encryptKey = generateAESKeyBase64();
+    String iv = generateRandomIvBase64(16);
+    String encrypted = aesEncryptToBase64("hello colin", encryptKey, iv);
+    String sharedKeyEnc = rsaEncryptToBase64(encryptKey, keys.getEncryptPublicKey());
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
+        .stubLookupResponse("lookup:all:test@gary", "@colin:test@gary", encrypted, "ivNonce", iv)
+        .stub("lookup:shared_key@gary", "data:" + sharedKeyEnc)
+        .build();
+
+    String actual = SharedKeyCommands.get(executor, createAtSign("colin"), keys, key);
+
+    assertThat(actual, equalTo("hello colin"));
+  }
+
+  @Test
+  void getGetSharedByOtherThrowsExceptionForPubKeyHashMismatch() throws Exception {
+    String encryptKey = generateAESKeyBase64();
+    String iv = generateRandomIvBase64(16);
+    String encrypted = aesEncryptToBase64("hello colin", encryptKey, iv);
+    String sharedKeyEnc = rsaEncryptToBase64(encryptKey, keys.getEncryptPublicKey());
+    Metadata.PublicKeyHash hash = Metadata.PublicKeyHash.builder()
+        .hash("XXX")
+        .hashingAlgo(HASHING_ALGO_SHA512)
+        .build();
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
+        .stubLookupResponse("lookup:all:test@gary", "@colin:test@gary", encrypted,
+                            "ivNonce", iv, "sharedKeyEnc", sharedKeyEnc, "pubKeyHash", hash)
+        .build();
+
+    assertThrows(AtPublicKeyChangeException.class,
+                 () -> SharedKeyCommands.get(executor, createAtSign("colin"), keys, key));
   }
 
   @Test
@@ -126,15 +169,18 @@ class SharedKeyCommandsTest {
   }
 
   @Test
-  void testPutWhenSharedKeDoesNotAlreadyExists() throws Exception {
+  void testPutWhenSharedKeyDoesNotAlreadyExists() throws Exception {
     AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("llookup:shared_key.colin@gary", "error:AT0015:deliberate")
         .stub("plookup:publickey@colin", "data:" + keys.getEncryptPublicKey())
         .stub("update:shared_key.colin@gary .+", "data:1")
         .stub("update:ttr:86400000:@colin:shared_key@gary .+", "data:2")
-        .stub("update:isEncrypted:true:ivNonce:.+:@colin:test@gary .+", "data:3")
+        .stub("update:isEncrypted:true:sharedKeyEnc:.+:ivNonce:.+:@colin:test@gary .+", "data:3")
         .build();
 
     SharedKeyCommands.put(executor, createAtSign("gary"), keys, key, "hello colin");
+
+    verify(executor).sendSync(argThat(s -> s.contains("update:") && s.contains(":pubKeyHash:")));
+    verify(executor).sendSync(argThat(s -> s.contains("update:") && s.contains(":pubKeyCS:")));
   }
 }

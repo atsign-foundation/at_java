@@ -1,7 +1,7 @@
 package org.atsign.client.impl.commands;
 
-import static org.atsign.client.impl.util.EncryptionUtils.generateRSAKeyPair;
 import static org.atsign.client.api.AtSign.createAtSign;
+import static org.atsign.client.impl.util.EncryptionUtils.generateRSAKeyPair;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -12,9 +12,9 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
+import org.atsign.client.api.AtCommandExecutor;
 import org.atsign.client.api.AtEvents;
 import org.atsign.client.api.AtKeys;
-import org.atsign.client.api.AtCommandExecutor;
 import org.atsign.client.api.AtSign;
 import org.atsign.client.impl.exceptions.AtOnReadyException;
 import org.atsign.client.impl.exceptions.AtTimeoutException;
@@ -49,7 +49,8 @@ class NotificationsTest {
       throw new AtTimeoutException("deliberate");
     }).when(executor).sendSync(eq("monitor"), Mockito.any(Consumer.class));
 
-    Exception ex = assertThrows(Exception.class, () -> Notifications.monitor(atSign, keys, consumer).accept(executor));
+    Exception ex =
+        assertThrows(Exception.class, () -> Notifications.monitor(atSign, keys, null, consumer).accept(executor));
     assertThat(ex, instanceOf(AtOnReadyException.class));
   }
 

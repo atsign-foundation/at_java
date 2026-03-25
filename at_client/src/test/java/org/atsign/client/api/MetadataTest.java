@@ -1,14 +1,15 @@
 package org.atsign.client.api;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import org.junit.jupiter.api.Test;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 class MetadataTest {
 
@@ -130,6 +131,10 @@ class MetadataTest {
         .isEncrypted(true).isBinary(true).namespaceAware(true)
         .dataSignature("ds1").sharedKeyStatus("sks1").sharedKeyEnc("ske1")
         .pubKeyCS("pkcs1").encoding("utf8").ivNonce("iv1")
+        .pubKeyHash(Metadata.PublicKeyHash.builder().hash("hash1").hashingAlgo("algo1").build())
+        .encKeyName("encKeyName1").encAlgo("encAlgo1")
+        .skeEncKeyName("skeEncKeyName1").skeEncAlgo("skeEncAlgo1")
+        .immutable(true)
         .build();
 
     Metadata md2 = Metadata.builder()
@@ -138,13 +143,17 @@ class MetadataTest {
         .isEncrypted(false).isBinary(false).namespaceAware(false)
         .dataSignature("ds2").sharedKeyStatus("sks2").sharedKeyEnc("ske2")
         .pubKeyCS("pkcs2").encoding("ascii").ivNonce("iv2")
+        .pubKeyHash(Metadata.PublicKeyHash.builder().hash("hash2").hashingAlgo("algo2").build())
+        .encKeyName("encKeyName2").encAlgo("encAlgo2")
+        .skeEncKeyName("skeEncKeyName2").skeEncAlgo("skeEncAlgo2")
+        .immutable(false)
         .build();
 
     Metadata merged = Metadata.merge(md1, md2);
 
-    assertThat(merged.ttl(), is(1L));
-    assertThat(merged.ttb(), is(2L));
-    assertThat(merged.ttr(), is(3L));
+    assertThat(merged.ttl(), equalTo(1L));
+    assertThat(merged.ttb(), equalTo(2L));
+    assertThat(merged.ttr(), equalTo(3L));
     assertThat(merged.ccd(), is(true));
     assertThat(merged.isPublic(), is(true));
     assertThat(merged.isHidden(), is(true));
@@ -152,12 +161,19 @@ class MetadataTest {
     assertThat(merged.isEncrypted(), is(true));
     assertThat(merged.isBinary(), is(true));
     assertThat(merged.namespaceAware(), is(true));
-    assertThat(merged.dataSignature(), is("ds1"));
-    assertThat(merged.sharedKeyStatus(), is("sks1"));
-    assertThat(merged.sharedKeyEnc(), is("ske1"));
-    assertThat(merged.pubKeyCS(), is("pkcs1"));
-    assertThat(merged.encoding(), is("utf8"));
-    assertThat(merged.ivNonce(), is("iv1"));
+    assertThat(merged.dataSignature(), equalTo("ds1"));
+    assertThat(merged.sharedKeyStatus(), equalTo("sks1"));
+    assertThat(merged.sharedKeyEnc(), equalTo("ske1"));
+    assertThat(merged.pubKeyCS(), equalTo("pkcs1"));
+    assertThat(merged.encoding(), equalTo("utf8"));
+    assertThat(merged.ivNonce(), equalTo("iv1"));
+    assertThat(merged.pubKeyHash(),
+               equalTo(Metadata.PublicKeyHash.builder().hash("hash1").hashingAlgo("algo1").build()));
+    assertThat(merged.encKeyName(), equalTo("encKeyName1"));
+    assertThat(merged.encAlgo(), equalTo("encAlgo1"));
+    assertThat(merged.skeEncKeyName(), equalTo("skeEncKeyName1"));
+    assertThat(merged.skeEncAlgo(), equalTo("skeEncAlgo1"));
+    assertThat(merged.immutable(), is(true));
   }
 
   @Test
@@ -173,13 +189,17 @@ class MetadataTest {
         .pubKeyCS("pkcs2").encoding("ascii").ivNonce("iv2")
         .availableAt(now).expiresAt(now).refreshAt(now)
         .createdAt(now).updatedAt(now)
+        .pubKeyHash(Metadata.PublicKeyHash.builder().hash("hash2").hashingAlgo("algo2").build())
+        .encKeyName("encKeyName2").encAlgo("encAlgo2")
+        .skeEncKeyName("skeEncKeyName2").skeEncAlgo("skeEncAlgo2")
+        .immutable(false)
         .build();
 
     Metadata merged = Metadata.merge(md1, md2);
 
-    assertThat(merged.ttl(), is(1L));
-    assertThat(merged.ttb(), is(2L));
-    assertThat(merged.ttr(), is(3L));
+    assertThat(merged.ttl(), equalTo(1L));
+    assertThat(merged.ttb(), equalTo(2L));
+    assertThat(merged.ttr(), equalTo(3L));
     assertThat(merged.ccd(), is(true));
     assertThat(merged.isPublic(), is(true));
     assertThat(merged.isHidden(), is(true));
@@ -187,17 +207,24 @@ class MetadataTest {
     assertThat(merged.isEncrypted(), is(true));
     assertThat(merged.isBinary(), is(true));
     assertThat(merged.namespaceAware(), is(true));
-    assertThat(merged.dataSignature(), is("ds2"));
-    assertThat(merged.sharedKeyStatus(), is("sks2"));
-    assertThat(merged.sharedKeyEnc(), is("ske2"));
-    assertThat(merged.pubKeyCS(), is("pkcs2"));
-    assertThat(merged.encoding(), is("ascii"));
-    assertThat(merged.ivNonce(), is("iv2"));
-    assertThat(merged.availableAt(), is(now));
-    assertThat(merged.expiresAt(), is(now));
-    assertThat(merged.refreshAt(), is(now));
-    assertThat(merged.createdAt(), is(now));
-    assertThat(merged.updatedAt(), is(now));
+    assertThat(merged.dataSignature(), equalTo("ds2"));
+    assertThat(merged.sharedKeyStatus(), equalTo("sks2"));
+    assertThat(merged.sharedKeyEnc(), equalTo("ske2"));
+    assertThat(merged.pubKeyCS(), equalTo("pkcs2"));
+    assertThat(merged.encoding(), equalTo("ascii"));
+    assertThat(merged.ivNonce(), equalTo("iv2"));
+    assertThat(merged.availableAt(), equalTo(now));
+    assertThat(merged.expiresAt(), equalTo(now));
+    assertThat(merged.refreshAt(), equalTo(now));
+    assertThat(merged.createdAt(), equalTo(now));
+    assertThat(merged.updatedAt(), equalTo(now));
+    assertThat(merged.pubKeyHash(),
+               equalTo(Metadata.PublicKeyHash.builder().hash("hash2").hashingAlgo("algo2").build()));
+    assertThat(merged.encKeyName(), equalTo("encKeyName2"));
+    assertThat(merged.encAlgo(), equalTo("encAlgo2"));
+    assertThat(merged.skeEncKeyName(), equalTo("skeEncKeyName2"));
+    assertThat(merged.skeEncAlgo(), equalTo("skeEncAlgo2"));
+    assertThat(merged.immutable(), is(false));
   }
 
   @Test
@@ -225,6 +252,12 @@ class MetadataTest {
     assertThat(merged.refreshAt(), is(nullValue()));
     assertThat(merged.createdAt(), is(nullValue()));
     assertThat(merged.updatedAt(), is(nullValue()));
+    assertThat(merged.pubKeyHash(), is(nullValue()));
+    assertThat(merged.encKeyName(), is(nullValue()));
+    assertThat(merged.encAlgo(), is(nullValue()));
+    assertThat(merged.skeEncKeyName(), is(nullValue()));
+    assertThat(merged.skeEncAlgo(), is(nullValue()));
+    assertThat(merged.immutable(), is(nullValue()));
   }
 
   @Test
@@ -245,28 +278,28 @@ class MetadataTest {
   void testSetTtbIfNotNullReturnsTrueAndSetsValueWhenNotNull() {
     Metadata.MetadataBuilder b = Metadata.builder();
     assertThat(Metadata.setTtbIfNotNull(b, 10L), is(true));
-    assertThat(b.build().ttb(), is(10L));
+    assertThat(b.build().ttb(), equalTo(10L));
   }
 
   @Test
   void testSetTtbIfNotNullReturnsFalseAndDoesNotOverwriteExistingValueWhenNull() {
     Metadata.MetadataBuilder b = Metadata.builder().ttb(10L);
     assertThat(Metadata.setTtbIfNotNull(b, null), is(false));
-    assertThat(b.build().ttb(), is(10L));
+    assertThat(b.build().ttb(), equalTo(10L));
   }
 
   @Test
   void testSetTtrIfNotNullReturnsTrueAndSetsValueWhenNotNull() {
     Metadata.MetadataBuilder b = Metadata.builder();
     assertThat(Metadata.setTtrIfNotNull(b, 5L), is(true));
-    assertThat(b.build().ttr(), is(5L));
+    assertThat(b.build().ttr(), equalTo(5L));
   }
 
   @Test
   void testSetTtrIfNotNullReturnsFalseAndDoesNotOverwriteExistingValueWhenNull() {
     Metadata.MetadataBuilder b = Metadata.builder().ttr(5L);
     assertThat(Metadata.setTtrIfNotNull(b, null), is(false));
-    assertThat(b.build().ttr(), is(5L));
+    assertThat(b.build().ttr(), equalTo(5L));
   }
 
   @Test
@@ -371,42 +404,42 @@ class MetadataTest {
   void testSetDataSignatureIfNotNullReturnsTrueAndSetsValueWhenNotNull() {
     Metadata.MetadataBuilder b = Metadata.builder();
     assertThat(Metadata.setDataSignatureIfNotNull(b, "sig"), is(true));
-    assertThat(b.build().dataSignature(), is("sig"));
+    assertThat(b.build().dataSignature(), equalTo("sig"));
   }
 
   @Test
   void testSetDataSignatureIfNotNullReturnsFalseAndDoesNotOverwriteExistingValueWhenNull() {
     Metadata.MetadataBuilder b = Metadata.builder().dataSignature("sig");
     assertThat(Metadata.setDataSignatureIfNotNull(b, null), is(false));
-    assertThat(b.build().dataSignature(), is("sig"));
+    assertThat(b.build().dataSignature(), equalTo("sig"));
   }
 
   @Test
   void testSetSharedKeyStatusIfNotNullReturnsTrueAndSetsValueWhenNotNull() {
     Metadata.MetadataBuilder b = Metadata.builder();
     assertThat(Metadata.setSharedKeyStatusIfNotNull(b, "ok"), is(true));
-    assertThat(b.build().sharedKeyStatus(), is("ok"));
+    assertThat(b.build().sharedKeyStatus(), equalTo("ok"));
   }
 
   @Test
   void testSetSharedKeyStatusIfNotNullReturnsFalseAndDoesNotOverwriteExistingValueWhenNull() {
     Metadata.MetadataBuilder b = Metadata.builder().sharedKeyStatus("ok");
     assertThat(Metadata.setSharedKeyStatusIfNotNull(b, null), is(false));
-    assertThat(b.build().sharedKeyStatus(), is("ok"));
+    assertThat(b.build().sharedKeyStatus(), equalTo("ok"));
   }
 
   @Test
   void testSetSharedKeyEncIfNotNullReturnsTrueAndSetsValueWhenNotNull() {
     Metadata.MetadataBuilder b = Metadata.builder();
     assertThat(Metadata.setSharedKeyEncIfNotNull(b, "encKey"), is(true));
-    assertThat(b.build().sharedKeyEnc(), is("encKey"));
+    assertThat(b.build().sharedKeyEnc(), equalTo("encKey"));
   }
 
   @Test
   void testSetSharedKeyEncIfNotNullReturnsFalseAndDoesNotOverwriteExistingValueWhenNull() {
     Metadata.MetadataBuilder b = Metadata.builder().sharedKeyEnc("encKey");
     assertThat(Metadata.setSharedKeyEncIfNotNull(b, null), is(false));
-    assertThat(b.build().sharedKeyEnc(), is("encKey"));
+    assertThat(b.build().sharedKeyEnc(), equalTo("encKey"));
   }
 
   @Test
@@ -420,34 +453,122 @@ class MetadataTest {
   void testSetPubKeyCSIfNotNullReturnsFalseAndDoesNotOverwriteExistingValueWhenNull() {
     Metadata.MetadataBuilder b = Metadata.builder().pubKeyCS("checksum");
     assertThat(Metadata.setPubKeyCSIfNotNull(b, null), is(false));
-    assertThat(b.build().pubKeyCS(), is("checksum"));
+    assertThat(b.build().pubKeyCS(), equalTo("checksum"));
   }
 
   @Test
   void testSetEncodingIfNotNullReturnsTrueAndSetsValueWhenNotNull() {
     Metadata.MetadataBuilder b = Metadata.builder();
     assertThat(Metadata.setEncodingIfNotNull(b, "utf8"), is(true));
-    assertThat(b.build().encoding(), is("utf8"));
+    assertThat(b.build().encoding(), equalTo("utf8"));
   }
 
   @Test
   void testSetEncodingIfNotNullReturnsFalseAndDoesNotOverwriteExistingValueWhenNull() {
     Metadata.MetadataBuilder b = Metadata.builder().encoding("utf8");
     assertThat(Metadata.setEncodingIfNotNull(b, null), is(false));
-    assertThat(b.build().encoding(), is("utf8"));
+    assertThat(b.build().encoding(), equalTo("utf8"));
   }
 
   @Test
   void testSetIvNonceIfNotNullReturnsTrueAndSetsValueWhenNotNull() {
     Metadata.MetadataBuilder b = Metadata.builder();
     assertThat(Metadata.setIvNonceIfNotNull(b, "iv99"), is(true));
-    assertThat(b.build().ivNonce(), is("iv99"));
+    assertThat(b.build().ivNonce(), equalTo("iv99"));
   }
 
   @Test
   void testSetIvNonceIfNotNullReturnsFalseAndDoesNotOverwriteExistingValueWhenNull() {
     Metadata.MetadataBuilder b = Metadata.builder().ivNonce("iv99");
     assertThat(Metadata.setIvNonceIfNotNull(b, null), is(false));
-    assertThat(b.build().ivNonce(), is("iv99"));
+    assertThat(b.build().ivNonce(), equalTo("iv99"));
   }
+
+  @Test
+  void testSetPubKeyHashIfNotNullReturnsTrueAndSetsValueWhenNotNull() {
+    Metadata.MetadataBuilder b = Metadata.builder();
+    Metadata.PublicKeyHash hash = Metadata.PublicKeyHash.builder().hash("HASH").hashingAlgo("algo").build();
+    assertThat(Metadata.setPubKeyHashIfNotNull(b, hash), is(true));
+    assertThat(b.build().pubKeyHash(), equalTo(hash));
+  }
+
+  @Test
+  void testSetPubKeyHashIfNotNullReturnsFalseAndDoesNotOverwriteExistingValueWhenNull() {
+    Metadata.PublicKeyHash hash = Metadata.PublicKeyHash.builder().hash("HASH").hashingAlgo("algo").build();
+    Metadata.MetadataBuilder b = Metadata.builder().pubKeyHash(hash);
+    assertThat(Metadata.setPubKeyHashIfNotNull(b, null), is(false));
+    assertThat(b.build().pubKeyHash(), equalTo(hash));
+  }
+
+  @Test
+  void testSetEncKeyNameIfNotNullReturnsTrueAndSetsValueWhenNotNull() {
+    Metadata.MetadataBuilder b = Metadata.builder();
+    assertThat(Metadata.setEncKeyNameIfNotNull(b, "encKeyName"), is(true));
+    assertThat(b.build().encKeyName(), equalTo("encKeyName"));
+  }
+
+  @Test
+  void testSetEncKeyNameIfNotNullReturnsFalseAndDoesNotOverwriteExistingValueWhenNull() {
+    Metadata.MetadataBuilder b = Metadata.builder().encKeyName("encKeyName");
+    assertThat(Metadata.setEncKeyNameIfNotNull(b, null), is(false));
+    assertThat(b.build().encKeyName(), equalTo("encKeyName"));
+  }
+
+  @Test
+  void testSetEncAlgoIfNotNullReturnsTrueAndSetsValueWhenNotNull() {
+    Metadata.MetadataBuilder b = Metadata.builder();
+    assertThat(Metadata.setEncAlgoIfNotNull(b, "encAlgo"), is(true));
+    assertThat(b.build().encAlgo(), equalTo("encAlgo"));
+  }
+
+  @Test
+  void testSetEncAlgoIfNotNullReturnsFalseAndDoesNotOverwriteExistingValueWhenNull() {
+    Metadata.MetadataBuilder b = Metadata.builder().encAlgo("encAlgo");
+    assertThat(Metadata.setEncAlgoIfNotNull(b, null), is(false));
+    assertThat(b.build().encAlgo(), equalTo("encAlgo"));
+  }
+
+  @Test
+  void testSetSkeEncKeyNameIfNotNullReturnsTrueAndSetsValueWhenNotNull() {
+    Metadata.MetadataBuilder b = Metadata.builder();
+    assertThat(Metadata.setSkeEncKeyNameIfNotNull(b, "skeEncAlgo"), is(true));
+    assertThat(b.build().skeEncKeyName(), equalTo("skeEncAlgo"));
+  }
+
+  @Test
+  void testSetSkeEncKeyNameIfNotNullReturnsFalseAndDoesNotOverwriteExistingValueWhenNull() {
+    Metadata.MetadataBuilder b = Metadata.builder().skeEncKeyName("skeEncAlgo");
+    assertThat(Metadata.setSkeEncKeyNameIfNotNull(b, null), is(false));
+    assertThat(b.build().skeEncKeyName(), equalTo("skeEncAlgo"));
+  }
+
+  @Test
+  void testSetSkeEncAlgoIfNotNullReturnsTrueAndSetsValueWhenNotNull() {
+    Metadata.MetadataBuilder b = Metadata.builder();
+    assertThat(Metadata.setSkeEncAlgoIfNotNull(b, "skeEncAlgo"), is(true));
+    assertThat(b.build().skeEncAlgo(), equalTo("skeEncAlgo"));
+  }
+
+  @Test
+  void testSetSkeEncAlgoIfNotNullReturnsFalseAndDoesNotOverwriteExistingValueWhenNull() {
+    Metadata.MetadataBuilder b = Metadata.builder().skeEncAlgo("skeEncAlgo");
+    assertThat(Metadata.setSkeEncAlgoIfNotNull(b, null), is(false));
+    assertThat(b.build().skeEncAlgo(), equalTo("skeEncAlgo"));
+  }
+
+
+  @Test
+  void testSetImmutableIfNotNullReturnsTrueAndSetsValueWhenNotNull() {
+    Metadata.MetadataBuilder b = Metadata.builder();
+    assertThat(Metadata.setImmutableIfNotNull(b, false), is(true));
+    assertThat(b.build().immutable(), is(false));
+  }
+
+  @Test
+  void testSetImmutableIfNotNullReturnsFalseAndDoesNotOverwriteExistingValueWhenNull() {
+    Metadata.MetadataBuilder b = Metadata.builder().immutable(true);
+    assertThat(Metadata.setImmutableIfNotNull(b, null), is(false));
+    assertThat(b.build().immutable(), is(true));
+  }
+
 }

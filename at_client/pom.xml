@@ -19,12 +19,20 @@
     <config.checkstyle>../config/checkstyle.xml</config.checkstyle>
 
     <!-- lower for now because cli and register code has no tests -->
-    <coverage.line>0.77</coverage.line>
-    <coverage.branch>0.7</coverage.branch>
+    <coverage.line>0.80</coverage.line>
+    <coverage.branch>0.80</coverage.branch>
 
   </properties>
 
   <build>
+
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+
     <plugins>
 
       <plugin>

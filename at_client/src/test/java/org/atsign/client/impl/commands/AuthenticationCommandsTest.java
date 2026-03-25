@@ -13,6 +13,9 @@ import org.atsign.client.impl.exceptions.AtOnReadyException;
 import org.atsign.client.impl.exceptions.AtUnauthenticatedException;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
+import java.util.Map;
+
 public class AuthenticationCommandsTest {
 
   @Test
@@ -61,6 +64,18 @@ public class AuthenticationCommandsTest {
   }
 
   @Test
+  public void testAuthenticateWithApkamWithConfig() throws Exception {
+    AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).enrollmentId(createEnrollmentId("12345")).build();
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
+        .stub("from:@alice:clientConfig:.+", "data:challenge")
+        .stub("pkam:signingAlgo:rsa2048:hashingAlgo:sha256:enrollmentId:12345:.+", "data:success")
+        .build();
+
+    Map<String, Object> config = Collections.singletonMap("clientVersion", "1.2.3");
+    AuthenticationCommands.authenticateWithPkam(executor, createAtSign("@alice"), keys, config);
+  }
+
+  @Test
   public void testAuthenticateWithApkamFailThrowsExpectedException() throws Exception {
     AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).enrollmentId(createEnrollmentId("12345")).build();
     AtCommandExecutor executor = TestExecutorBuilder.builder()
@@ -83,15 +98,9 @@ public class AuthenticationCommandsTest {
         .build();
 
     Exception ex = assertThrows(Exception.class,
-                                () -> AuthenticationCommands.pkamAuthenticator(createAtSign("@alice"), keys)
+                                () -> AuthenticationCommands.pkamAuthenticator(createAtSign("@alice"), keys, null)
                                     .accept(executor));
     assertThat(ex, instanceOf(AtOnReadyException.class));
     assertThat(ex.getMessage(), containsString("deliberate"));
-  }
-
-  @Test
-  public void testBytesToHex() throws Exception {
-    byte[] bytes = new byte[] {(byte) 0x00, (byte) 0x0f, (byte) 0xff};
-    assertThat(AuthenticationCommands.bytesToHex(bytes), is("000fff"));
   }
 }
