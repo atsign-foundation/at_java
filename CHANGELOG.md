@@ -1,4 +1,6 @@
-# What's here / changelog
+# Changelog
+
+## [Unreleased]
 
 ## Next
 
