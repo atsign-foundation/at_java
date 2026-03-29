@@ -11,9 +11,6 @@ on:
         description: 'The next dev version (will infer from release version)'
         required: false
         default: ''
-  push:
-    branches:
-      - java_release_process
 
 permissions:
   contents: write
@@ -32,14 +29,14 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Import GPG key and upload to keyserver
-      run: |
-        echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --no-tty --import
-        KEY_ID=$(gpg --list-keys --keyid-format LONG | grep pub | awk '{print $2}' | cut -d'/' -f2)
-        echo "Key ID is: $KEY_ID"
-        gpg --batch --no-tty --keyserver keyserver.ubuntu.com --send-keys $KEY_ID
-        gpg --batch --no-tty --keyserver keys.openpgp.org --send-keys $KEY_ID
-        exit 0
+#    - name: Import GPG key and upload to keyserver
+#      run: |
+#        echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --no-tty --import
+#        KEY_ID=$(gpg --list-keys --keyid-format LONG | grep pub | awk '{print $2}' | cut -d'/' -f2)
+#        echo "Key ID is: $KEY_ID"
+#        gpg --batch --no-tty --keyserver keyserver.ubuntu.com --send-keys $KEY_ID
+#        gpg --batch --no-tty --keyserver keys.openpgp.org --send-keys $KEY_ID
+#        exit 0
 
     - name: Set up JDK 11
       uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
@@ -115,7 +112,7 @@ jobs:
       run: mvn -pl . git-changelog-maven-plugin:git-changelog
 
     - name: Publish to Central
-      run: mvn deploy --batch-mode --no-transfer-progress -DskipTests # remove skipTests when working
+      run: mvn deploy --batch-mode --no-transfer-progress
       env:
         CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
         CENTRAL_TOKEN: ${{ secrets.CENTRAL_TOKEN }}
