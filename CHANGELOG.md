@@ -1,78 +1,21 @@
 # Changelog
 
-## [Unreleased]
 
-## Next
+## v0.0.1 (2026-03-29)
 
-* Getting started guide - from nothing to end-to-end-encrypted chat session in
-< 5 minutes
-* fluid client APIs for sharing data - e.g.
-share(value).with(atSign/s).as(keyName)
-* extend client REPL so that you can call AtClient methods (e.g. the
-share() above) interactively
+### Features
+- release workflow to publish tagged versions
+- add support for populating and using sharedKeyEnc (and associated fields)
+- support for binary key values (#374)
+- updated build to jdk 11 (#355)
+- migrate to multimodule, consolidate dependency management and plugin configuration into parent pom. (#350)
+- adds spotless and checkstyle plugins to maven build lifecycle. reformats and adjusts code to pass checkstyle, spotless and codeql rulesfeat: removed lint from markdown files
+- support for apkam authentication model plus the onboarding and enrollment workflow. added support for ivNonce field in key metadata, enhanced implementation to use random IVs when encrypting/decrypting data, writing/reading iv to/from meta data. added version field to atKeys JSON
 
-## May 29 2022
+### Bug Fixes
+- replace boilerplate code and consolidate common classes
+- corrected javadoc. javadoc plugin is now configured to fail on error. checkstyle has been expanded to enforce class comments (#356)
+- removed direct output to stderr and stdout in core library code, CLI and examples still use System.out/err, replaced with slf4j using lombok annotations
+- enhance KeyStringUtil so that it parses namespaces (#326)
 
-* Retry bug fixed in Register CLI
-* Config yaml parameters restructured and backwards compatibility provided
-so as not to break existing usage.
-* New parameter added to validateOtp method in RegisterUtil.java. The usage
-of this parameter is provided in java docs of the respective method.
 
-## May 18 2022
-
-* A new CLI tool Register has been introduced which can acquire a free atsign
-and register it to the provided email.
-* Register CLI also handles calling the Onboard client with the cram secret
-which was received during the registration process.
-
-## May 03 2022
-
-* Better event distribution
-* Improved Monitor's event generation
-* Added 'userDefined' to the AtEventType enum, to allow the event bus to be
-used by application code
-* Caches shared keys after first retrieval
-* AtClientImpl listens for updateNotification events, decrypts the ciphertext
-on-the-fly, and publishes a decryptedUpdateNotification which is more useful
-for application code
-* Enhanced REPL to optionally listen to only decryptedUpdateNotification;
-added command-line flag to listen to both
-
-## Apr 29 2022
-
-* **at_client** : Initial implementation of Java client library for the
-atPlatform. README will come soon but here's a very brief summary which
-will get you going if you already know the basics of the atPlatform and have
-used the Dart/Flutter packages.
-
-### Using Maven
-
-The Maven target you want is 'install' which will put things in the 'target'
-output directory
-
-### CLI tools
-
-Will give you the best overview of how to use the library as a whole. There
-are five CLIs in the initial commit:
-
-* **Activate** - generate keys for a new @-sign. If you already have a .keys
-file, you can reuse it. Currently, the Java library expects keys for @alice
-to be in ./keys/@alice.keys.
-* **REPL** - you can use this to type @-protocol commands and see responses;
-but the best thing about the REPL currently is that it shows the data
-notifications as they are received. The REPL code has th eessentials of what
-a 'receiving' client needs to do - i.e.
-  * create an AtClient
-  * add an event listener which
-    * receives data update/delete notification events (the event data contains
-    the ciphertext)
-    * calls 'get' to decrypt
-  * **Share** - a simple 'sender' client - shares some data with another @-sign
-  * **Get** - gets data which was shared by another @-sign
-  * **Delete** - deletes data that this Atsign previously shared with another
-
-**Note:**
-As of May 3 2022, the Java client library can still be considered a 1.0.0-Beta
-version - i.e. there may occasionally be breaking changes, based on feedback
-from users of the library, until we get to a final version 1.0.0
