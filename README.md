@@ -166,6 +166,28 @@ config/java-format.xml
 2. Add **CheckStyle-IDEA** plugin and configure in
 **Settings -> Tools -> Checkstyle** by adding config/checkstyle.xml
 
+
+## Releases
+
+The workflow [release.yml](.github/workflows/release.yml) can be triggered from the GitHub UI.
+This will perform the following...
+
+* Modify the pom versions
+* Update the READMEs and CHANGELOG
+* Commit those changes and create a tag that corresponds to the version
+* Deploy the artifact to Maven Central https://central.sonatype.com/search?q=atsign
+* Increment the pom versions to the next SNAPSHOT
+* Commit those changes
+* Push the commits and tag
+
+The workflow accepts the following overrides...
+
+* **release_version** the version/tag to publish/tag (e.g. 1.2.0).
+  If this is not specified then this is inferred from the current SNAPSHOT version.
+* **next_version** the version for the next dev cycle (e.g. 1.2.1-SNAPSHOT).
+  If this is not specified then this is inferred from the release version.
+  NOTE: it is not necessary to provide the -SNAPSHOT suffix.
+
 ## Contributions welcome
 
 All of our software is open with intent. We welcome contributions - we want
