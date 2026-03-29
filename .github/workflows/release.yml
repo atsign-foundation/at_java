@@ -11,9 +11,6 @@ on:
         description: 'The next dev version (will infer from release version)'
         required: false
         default: ''
-  push:
-    branches:
-      - java_release_process
 
 permissions:
   contents: write
