@@ -12,9 +12,6 @@ on:
         required: false
         default: ''
 
-permissions:
-  contents: write
-
 concurrency:
   group: release
   cancel-in-progress: false
@@ -22,6 +19,9 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
 
     - name: Checkout
