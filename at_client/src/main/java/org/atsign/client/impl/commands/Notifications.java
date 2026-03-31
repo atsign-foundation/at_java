@@ -3,6 +3,7 @@ package org.atsign.client.impl.commands;
 import static org.atsign.client.api.AtEvents.AtEventType.*;
 import static org.atsign.client.impl.commands.AtExceptions.throwOnReadyException;
 import static org.atsign.client.impl.commands.AuthenticationCommands.authenticateWithPkam;
+import static org.atsign.client.impl.common.Preconditions.checkNotNull;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -35,14 +36,17 @@ public class Notifications {
    * with pkam prior to sending the monitor command.
    *
    * @param atSign The {@link AtSign} to authenticate.
+   * @param options optional arguments that influence the server behavior.
    * @param keys The {@link AtKeys} to authenticate with.
    * @param consumer A consumer that will be invoked with each notification.
+   * @return A consumer that can be provided as OnReady argument.
    */
   public static Consumer<AtCommandExecutor> monitor(AtSign atSign,
+                                                    MonitorOptions options,
                                                     AtKeys keys,
                                                     Map<String, Object> config,
                                                     Consumer<String> consumer) {
-    return throwOnReadyException(executor -> monitor(executor, atSign, keys, config, consumer));
+    return throwOnReadyException(executor -> monitor(executor, atSign, options, keys, config, consumer));
   }
 
   /**
@@ -50,16 +54,18 @@ public class Notifications {
    *
    * @param executor The {@link AtCommandExecutor} to use.
    * @param atSign The {@link AtSign} to authenticate.
+   * @param options optional arguments that influence the server behavior.
    * @param keys The {@link AtKeys} to authenticate with.
    * @param consumer A consumer that will be invoked with each notification.
    * @throws AtException If any of the commands fail.
    */
   public static void monitor(AtCommandExecutor executor,
                              AtSign atSign,
+                             MonitorOptions options,
                              AtKeys keys,
                              Consumer<String> consumer)
       throws AtException {
-    monitor(executor, atSign, keys, null, consumer);
+    monitor(executor, atSign, options, keys, null, consumer);
   }
 
   /**
@@ -67,13 +73,16 @@ public class Notifications {
    *
    * @param executor The {@link AtCommandExecutor} to use.
    * @param atSign The {@link AtSign} to authenticate.
+   * @param options optional arguments that influence the server behavior.
    * @param keys The {@link AtKeys} to authenticate with.
    * @param config The map of configuration values to send with the from command.
    * @param consumer A consumer that will be invoked with each notification.
+   *        notifications.
    * @throws AtException If any of the commands fail.
    */
   public static void monitor(AtCommandExecutor executor,
                              AtSign atSign,
+                             MonitorOptions options,
                              AtKeys keys,
                              Map<String, Object> config,
                              Consumer<String> consumer)
@@ -84,7 +93,8 @@ public class Notifications {
       authenticateWithPkam(executor, atSign, keys, config);
 
       // send monitor command
-      executor.sendSync("monitor", consumer);
+      String command = CommandBuilders.monitorCommandBuilder().options(options).build();
+      executor.sendSync(command, consumer);
 
     } catch (ExecutionException | InterruptedException e) {
       throw new RuntimeException(e);
@@ -113,15 +123,19 @@ public class Notifications {
 
     private final AtSign atSign;
 
-    public EventBusBridge(AtEvents.AtEventBus eventBus, AtSign atSign) {
-      this.eventBus = eventBus;
-      this.atSign = atSign;
+    private final MonitorOptions monitorOptions;
+
+    public EventBusBridge(AtEvents.AtEventBus eventBus, AtSign atSign, MonitorOptions monitorOptions) {
+      this.eventBus = checkNotNull(eventBus);
+      this.atSign = checkNotNull(atSign);
+      this.monitorOptions = monitorOptions;
     }
 
     @Override
     public void accept(String s) {
       try {
         Map<String, Object> eventData = matchNotification(s);
+        monitorOptions.epochMillis(inferMonitorOptionsEpochMillis(eventData));
         AtEvents.AtEventType eventType = toEventType(eventData);
         if (eventType == monitorException) {
           eventData.put("key", "__monitorException__");
@@ -131,6 +145,16 @@ public class Notifications {
         eventBus.publishEvent(eventType, eventData);
       } catch (Exception e) {
         log.error("unexpected exception processing : {}", s, e);
+      }
+    }
+
+    private static long inferMonitorOptionsEpochMillis(Map<String, Object> eventData) {
+      Number eventEpochMillis = (Number) eventData.get("epochMillis");
+      if (eventEpochMillis == null) {
+        log.warn("received event with no epochMillis : {}", eventData);
+        return 0;
+      } else {
+        return eventEpochMillis.longValue() + 1;
       }
     }
 
@@ -151,5 +175,6 @@ public class Notifications {
       }
       return monitorException;
     }
+
   }
 }

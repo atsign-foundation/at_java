@@ -41,6 +41,11 @@ public class EncryptionUtils {
    */
   public static final String HASHING_ALGO_SHA512 = "sha512";
 
+  /**
+   * The checksum algo
+   */
+  public static final String MD5 = "MD5";
+
   static {
     Security.addProvider(new BouncyCastleProvider());
   }

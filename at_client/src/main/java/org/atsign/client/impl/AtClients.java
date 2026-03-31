@@ -4,8 +4,14 @@ import static org.atsign.client.impl.common.Preconditions.checkNotNull;
 
 import java.io.File;
 import java.util.Map;
+import java.util.function.Consumer;
 
-import org.atsign.client.api.*;
+import org.atsign.client.api.AtClient;
+import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.AtKeys;
+import org.atsign.client.api.AtSign;
+import org.atsign.client.impl.commands.MonitorOptions;
+import org.atsign.client.impl.commands.Notifications;
 import org.atsign.client.impl.common.ReconnectStrategy;
 import org.atsign.client.impl.common.SimpleAtEventBus;
 import org.atsign.client.impl.common.SimpleReconnectStrategy;
@@ -14,6 +20,7 @@ import org.atsign.client.impl.exceptions.AtException;
 import org.atsign.client.impl.util.KeysUtils;
 
 import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Utility methods for instantiating {@link AtClient} implementations that are included in this
@@ -29,6 +36,7 @@ import lombok.Builder;
  * </pre>
  *
  */
+@Slf4j
 public class AtClients {
 
   @Builder(builderClassName = "AtClientBuilder")
@@ -36,6 +44,8 @@ public class AtClients {
                                         AtSign atSign,
                                         AtKeys keys,
                                         String keysPath,
+                                        boolean withMonitoring,
+                                        MonitorOptions monitorOptions,
                                         Map<String, Object> config,
                                         Long timeoutMillis,
                                         Long awaitReadyMillis,
@@ -47,10 +57,23 @@ public class AtClients {
     checkNotNull(atSign, "atSign not set");
     keys = keys != null ? keys : loadKeys(keysPath, atSign);
 
+    SimpleAtEventBus eventBus = new SimpleAtEventBus();
+
+    if (monitorOptions == null) {
+      monitorOptions = MonitorOptions.builder().multiplexed(true).build();
+    }
+
+    Consumer<AtCommandExecutor> onReady = null;
+    if (withMonitoring) {
+      Notifications.EventBusBridge eventBusBridge = new Notifications.EventBusBridge(eventBus, atSign, monitorOptions);
+      onReady = Notifications.monitor(atSign, monitorOptions, keys, config, eventBusBridge);
+    }
+
     AtCommandExecutor executor = AtCommandExecutors.builder()
         .url(url)
         .atSign(atSign)
         .keys(keys)
+        .onReady(onReady)
         .config(config)
         .timeoutMillis(timeoutMillis)
         .awaitReadyMillis(awaitReadyMillis)
@@ -59,11 +82,11 @@ public class AtClients {
         .isVerbose(isVerbose)
         .build();
 
-    SimpleAtEventBus eventBus = new SimpleAtEventBus();
-
     return AtClientImpl.builder()
         .atSign(atSign)
         .keys(keys)
+        .withMonitoring(withMonitoring)
+        .monitorOptions(monitorOptions)
         .config(config)
         .executor(executor)
         .eventBus(eventBus)
@@ -95,6 +118,7 @@ public class AtClients {
    *   .url(...)           // the url for the root server or proxy (optional)
    *   .keys(...)          // the AtKeys that this client will use (optional)
    *   .keysPath(...)      // the location for the AtKeys that this client will use (optional)
+   *   .withMonitoring()   // if true then monitoring is automatically started
    *   .config(...)        // the config map that will be passed during authentication (optional)
    *   .timeoutMillis()    // timeout after which commands will complete exceptionally (optional)
    *   .awaitReadyMillis() // how long to wait for executor to become ready during build() (optional)

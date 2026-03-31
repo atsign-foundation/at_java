@@ -275,7 +275,7 @@ public class SharedKeyCommands {
           .hash(EncryptionUtils.digest(otherPublicKey, HASHING_ALGO_SHA512))
           .hashingAlgo(HASHING_ALGO_SHA512)
           .build();
-      String checksum = digest(otherPublicKey, "MD5");
+      String checksum = digest(otherPublicKey, MD5);
 
       // compose an update command to store this key encrypted with the other (sharedWith) atsign's public key
       String encryptedForOther = rsaEncryptToBase64(aesKey, otherPublicKey);
@@ -308,13 +308,13 @@ public class SharedKeyCommands {
     }
   }
 
-  private static String getEncryptKey(AtCommandExecutor executor, AtSign sharedBy) throws AtException {
+  public static String getEncryptKey(AtCommandExecutor executor, AtSign atSign) throws AtException {
     try {
 
       // send plookup for atsign's public encryption key
       String plookupCommand = CommandBuilders.plookupCommandBuilder()
           .keyName(AtKeyNames.PUBLIC_ENCRYPT)
-          .sharedBy(sharedBy)
+          .sharedBy(atSign)
           .build();
       String plookupResponse = executor.sendSync(plookupCommand);
 

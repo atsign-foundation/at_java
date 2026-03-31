@@ -52,6 +52,7 @@ public class AtClientImpl implements AtClient {
 
   private final AtSign atSign;
   private final AtKeys keys;
+  private MonitorOptions monitorOptions;
   private final Map<String, Object> config;
   private final AtCommandExecutor executor;
   private final AtEventBus eventBus;
@@ -71,16 +72,20 @@ public class AtClientImpl implements AtClient {
   @Builder
   public AtClientImpl(AtSign atSign,
                       AtKeys keys,
+                      boolean withMonitoring,
+                      MonitorOptions monitorOptions,
                       Map<String, Object> config,
                       AtCommandExecutor executor,
                       AtEventBus eventBus) {
     this.atSign = checkNotNull(atSign, "atSign not set");
     this.keys = checkNotNull(keys, "keys not set");
+    this.monitorOptions = monitorOptions != null ? monitorOptions : MonitorOptions.builder().build();
     this.config = config;
     this.executor = checkNotNull(executor, "executor not set");
     this.eventBus = checkNotNull(eventBus, "eventBus not set");
     this.eventBus.addEventListener(this::handleEvent, EnumSet.allOf(AtEventType.class));
-    this.eventBusBridge = new Notifications.EventBusBridge(eventBus, atSign);
+    this.isMonitoring.set(withMonitoring);
+    this.eventBusBridge = new Notifications.EventBusBridge(eventBus, atSign, this.monitorOptions);
     checkNotNull(keys.getEncryptPrivateKey(), "keys have not been fully enrolled");
   }
 
@@ -103,7 +108,6 @@ public class AtClientImpl implements AtClient {
     // required for javadoc
   }
 
-
   @Override
   public void close() throws Exception {
     executor.close();
@@ -112,7 +116,7 @@ public class AtClientImpl implements AtClient {
   @Override
   public void startMonitor() {
     isMonitoring.compareAndSet(false, true);
-    executor.onReady(Notifications.monitor(atSign, keys, config, eventBusBridge::accept));
+    executor.onReady(Notifications.monitor(atSign, monitorOptions, keys, config, eventBusBridge));
   }
 
   @Override

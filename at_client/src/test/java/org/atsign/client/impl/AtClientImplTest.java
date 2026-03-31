@@ -109,7 +109,7 @@ class AtClientImplTest {
 
     // verify monitor is called
     ArgumentCaptor<Consumer<String>> monitorCaptor = ArgumentCaptor.forClass(Consumer.class);
-    verify(executor).sendSync(eq("monitor"), monitorCaptor.capture());
+    verify(executor).sendSync(eq("monitor:multiplexed"), monitorCaptor.capture());
 
     // invoke the consumer and verify that eventBus is invoked
     monitorCaptor.getValue().accept("notification:{\"id\":\"-1\",\"from\":\"@gary\"}");
