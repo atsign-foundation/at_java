@@ -41,7 +41,7 @@ public class Delete {
           .name(keyName)
           .build();
 
-      atClient.delete(key).get();
+      atClient.delete(key);
     }
   }
 }

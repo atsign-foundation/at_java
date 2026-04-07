@@ -259,29 +259,29 @@ public class SharedAtKeySteps {
   private void putKeyValue(AtClient atClient, AtSign sharedBy, String name, AtSign sharedWith, String value)
       throws Exception {
     Keys.SharedKey key = createKey(sharedBy, name, sharedWith);
-    atClient.put(key, value).get();
+    atClient.put(key, value);
   }
 
   private void putKeyValue(AtClient atClient, AtSign sharedBy, String name, AtSign sharedWith, byte[] value)
       throws Exception {
     Keys.SharedKey key = createKey(sharedBy, name, sharedWith);
-    atClient.put(key, value).get();
+    atClient.put(key, value);
   }
 
   private String getKeyValue(AtClient atClient, AtSign sharedBy, String name, AtSign sharedWith) throws Exception {
     Keys.SharedKey key = createKey(sharedBy, name, sharedWith);
-    return atClient.get(key).get();
+    return atClient.get(key);
   }
 
   private byte[] getBinaryKeyValue(AtClient atClient, AtSign sharedBy, String name, AtSign sharedWith)
       throws Exception {
     Keys.SharedKey key = createKey(sharedBy, name, sharedWith);
-    return atClient.getBinary(key).get();
+    return atClient.getBinary(key);
   }
 
   private void deleteKeyValue(AtClient atClient, AtSign sharedBy, String name, AtSign sharedWith) throws Exception {
     Keys.SharedKey key = createKey(sharedBy, name, sharedWith);
-    atClient.delete(key).get();
+    atClient.delete(key);
   }
 
   private Keys.SharedKey createKey(AtSign sharedBy, String s, AtSign sharedWith) {

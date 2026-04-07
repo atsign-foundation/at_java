@@ -29,7 +29,7 @@ public class SharedKeyGetSelfExample {
       SharedKey sk = Keys.sharedKeyBuilder().sharedBy(sharedBy).sharedWith(sharedWith).name(KEY_NAME).build();
 
       // 5. get the key
-      String response = atClient.get(sk).get();
+      String response = atClient.get(sk);
       System.out.println(response);
 
     } catch (Exception e) {

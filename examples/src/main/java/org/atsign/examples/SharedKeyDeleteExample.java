@@ -30,7 +30,7 @@ public class SharedKeyDeleteExample {
       SharedKey sk = Keys.sharedKeyBuilder().sharedBy(sharedBy).sharedWith(sharedWith).name(KEY_NAME).build();
 
       // 5. delete the key
-      atClient.delete(sk).get();
+      atClient.delete(sk);
 
     } catch (Exception e) {
       System.err.println("Failed to create AtClient instance " + e);

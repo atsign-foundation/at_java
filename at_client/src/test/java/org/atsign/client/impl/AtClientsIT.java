@@ -52,7 +52,7 @@ class AtClientsIT {
         .atSign(atSign)
         .reconnect(ReconnectStrategy.NONE);
     try (AtClient client = builder.build()) {
-      assertThat(client.getAtKeys(".*", false).get(), is(not(empty())));
+      assertThat(client.getAtKeys(".*", false), is(not(empty())));
     }
   }
 
@@ -64,7 +64,7 @@ class AtClientsIT {
         .keys(keys)
         .reconnect(ReconnectStrategy.NONE);
     try (AtClient client = builder.build()) {
-      assertThat(client.getAtKeys(".*", false).get(), is(not(empty())));
+      assertThat(client.getAtKeys(".*", false), is(not(empty())));
     }
   }
 
@@ -76,7 +76,7 @@ class AtClientsIT {
         .keysPath(keysFile.getParentFile().getAbsolutePath())
         .reconnect(ReconnectStrategy.NONE);
     try (AtClient client = builder.build()) {
-      assertThat(client.getAtKeys(".*", false).get(), is(not(empty())));
+      assertThat(client.getAtKeys(".*", false), is(not(empty())));
     }
   }
 
@@ -88,7 +88,7 @@ class AtClientsIT {
         .keysPath(keysFile.getAbsolutePath())
         .reconnect(ReconnectStrategy.NONE);
     try (AtClient client = builder.build()) {
-      assertThat(client.getAtKeys(".*", false).get(), is(not(empty())));
+      assertThat(client.getAtKeys(".*", false), is(not(empty())));
     }
   }
 

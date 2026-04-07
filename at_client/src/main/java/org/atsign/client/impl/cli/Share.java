@@ -43,7 +43,7 @@ public class Share {
           .ttr((long) ttr)
           .build();
 
-      atClient.put(key, toShare).get();
+      atClient.put(key, toShare);
     }
   }
 

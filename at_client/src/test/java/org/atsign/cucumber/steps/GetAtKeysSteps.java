@@ -164,7 +164,7 @@ public class GetAtKeysSteps {
 
   private static void assertGetAtKeysNotContains(String regex, DataTable table, AtClient atClient) throws Exception {
     assertThat("expect single column datatable of keys (no heading)", table.width(), equalTo(1));
-    Set<String> actual = atClient.getAtKeys(regex, false).get().stream()
+    Set<String> actual = atClient.getAtKeys(regex, false).stream()
         .map(Keys.AtKey::toString)
         .collect(Collectors.toSet());
 
@@ -198,7 +198,7 @@ public class GetAtKeysSteps {
     List<List<String>> raw = new ArrayList<>();
     raw.add(headings);
     boolean lookupValue = headings.contains("Value");
-    atClient.getAtKeys(".*", fetchMetaData).get().stream()
+    atClient.getAtKeys(".*", fetchMetaData).stream()
         .forEach(k -> raw.add(toDataTableRow(raw.get(0), k, lookupValue ? lookupStringValue(atClient, k) : null)));
     DataTableFormatter.builder()
         .prefixRow("  ")
@@ -210,11 +210,11 @@ public class GetAtKeysSteps {
   private String lookupStringValue(AtClient atClient, Keys.AtKey key) {
     try {
       if (key instanceof Keys.SharedKey) {
-        return atClient.get((Keys.SharedKey) key).get();
+        return atClient.get((Keys.SharedKey) key);
       } else if (key instanceof Keys.PublicKey) {
-        return atClient.get((Keys.PublicKey) key).get();
+        return atClient.get((Keys.PublicKey) key);
       } else if (key instanceof Keys.SelfKey) {
-        return atClient.get((Keys.SelfKey) key).get();
+        return atClient.get((Keys.SelfKey) key);
       } else {
         return key.getClass().getSimpleName();
       }
@@ -327,7 +327,7 @@ public class GetAtKeysSteps {
 
   private List<Map<String, String>> getAtKeysAsListOfMaps(AtClient client, String regex) throws Exception {
     List<Map<String, String>> actual = new ArrayList<>();
-    for (Keys.AtKey key : client.getAtKeys(regex, true).get()) {
+    for (Keys.AtKey key : client.getAtKeys(regex, true)) {
       List<String> values = toDataTableRow(HEADINGS_INCLUDING_METADATA, key, null);
       Map<String, String> map = new HashMap<>();
       for (int i = 0; i < HEADINGS_INCLUDING_METADATA.size(); i++) {

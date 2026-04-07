@@ -30,7 +30,7 @@ public class SelfKeyPutExample {
       SelfKey sk = Keys.selfKeyBuilder().sharedBy(atSign).name(KEY_NAME).ttl(ttl).build();
 
       // 5. put the key
-      atClient.put(sk, VALUE).get();
+      atClient.put(sk, VALUE);
 
     } catch (Exception e) {
       System.err.println("Failed to connect to remote server " + e);

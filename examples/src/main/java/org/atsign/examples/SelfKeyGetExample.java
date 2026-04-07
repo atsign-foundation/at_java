@@ -28,7 +28,7 @@ public class SelfKeyGetExample {
       SelfKey sk = Keys.selfKeyBuilder().sharedBy(atSign).name(KEY_NAME).build();
 
       // 5. get the key
-      String response = atClient.get(sk).get();
+      String response = atClient.get(sk);
       System.out.println(response);
       _printMetadata(sk.metadata());
 

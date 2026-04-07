@@ -102,13 +102,13 @@ public class REPL {
               String fullKeyName = parts[1];
               Keys.AtKey key = Keys.keyBuilder().rawKey(fullKeyName).build();
               if (key instanceof PublicKey) {
-                String value = client.get((PublicKey) key).get();
+                String value = client.get((PublicKey) key);
                 System.out.println("  => \033[31m" + value + "\033[0m");
               } else if (key instanceof SelfKey) {
-                String value = client.get((SelfKey) key).get();
+                String value = client.get((SelfKey) key);
                 System.out.println("  => \033[31m" + value + "\033[0m");
               } else if (key instanceof SharedKey) {
-                String value = client.get((SharedKey) key).get();
+                String value = client.get((SharedKey) key);
                 System.out.println("  => \033[31m" + value + "\033[0m");
               } else if (key instanceof Keys.PrivateHiddenKey) {
                 throw new UnsupportedOperationException("PrivateHiddenKey is not implemented yet");
@@ -120,11 +120,11 @@ public class REPL {
               String value = command.substring(verb.length() + fullKeyName.length() + 2).trim();
               Keys.AtKey key = Keys.keyBuilder().rawKey(fullKeyName).build();
               if (key instanceof PublicKey) {
-                client.put((PublicKey) key, value).get();
+                client.put((PublicKey) key, value);
               } else if (key instanceof SelfKey) {
-                client.put((SelfKey) key, value).get();
+                client.put((SelfKey) key, value);
               } else if (key instanceof SharedKey) {
-                client.put((SharedKey) key, value).get();
+                client.put((SharedKey) key, value);
               } else if (key instanceof Keys.PrivateHiddenKey) {
                 throw new UnsupportedOperationException("PrivateHiddenKey is not implemented yet");
               } else {
@@ -135,17 +135,17 @@ public class REPL {
               if (parts.length > 1) {
                 regex = parts[1];
               }
-              List<Keys.AtKey> value = client.getAtKeys(regex, false).get();
+              List<Keys.AtKey> value = client.getAtKeys(regex, false);
               System.out.println("  => \033[31m" + value + "\033[0m");
             } else if ("delete".equals(verb)) {
               String fullKeyName = parts[1];
               Keys.AtKey key = Keys.keyBuilder().rawKey(fullKeyName).build();
               if (key instanceof PublicKey) {
-                client.delete((PublicKey) key).get();
+                client.delete((PublicKey) key);
               } else if (key instanceof SelfKey) {
-                client.delete((SelfKey) key).get();
+                client.delete((SelfKey) key);
               } else if (key instanceof SharedKey) {
-                client.delete((SharedKey) key).get();
+                client.delete((SharedKey) key);
               } else if (key instanceof Keys.PrivateHiddenKey) {
                 throw new UnsupportedOperationException("PrivateHiddenKey is not implemented yet");
               } else {
@@ -211,7 +211,7 @@ public class REPL {
           try {
             sharedKey = Keys.sharedKeyBuilder().rawKey((String) eventData.get("key")).build();
             String encryptedValue = (String) eventData.get("value");
-            decryptedValue = client.get(sharedKey).get();
+            decryptedValue = client.get(sharedKey);
             System.out.println("  => Notification ==> \033[31m Key: [" + sharedKey + "]  ==> EncryptedValue ["
                 + encryptedValue + "]  ==> DecryptedValue [" + decryptedValue + "]" + "\033[0m");
             writePrompt();
