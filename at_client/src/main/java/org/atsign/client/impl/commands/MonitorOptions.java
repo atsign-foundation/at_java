@@ -21,14 +21,6 @@ public class MonitorOptions {
   private boolean strict;
 
   /**
-   * multiplexed the server will understand that this is a connection which the client is using
-   * not just for notifications but also for request-response interactions. In this case, the
-   * server will only send notifications when there is no request currently being handled
-   */
-  @Builder.Default
-  private boolean multiplexed = true;
-
-  /**
    * server will only send notifications received at or after that timestamp
    */
   private long epochMillis;

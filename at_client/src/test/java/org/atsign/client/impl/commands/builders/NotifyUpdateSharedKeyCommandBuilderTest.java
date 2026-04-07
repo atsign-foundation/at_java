@@ -56,7 +56,7 @@ class NotifyUpdateSharedKeyCommandBuilderTest {
     String command = builder.build("message");
     String expected = new StringBuilder()
         .append("notify:id:.+:update:messageType:key")
-        .append(":priority:low:strategy:all:notifier:SYSTEM:ttln:\\d+")
+        .append(":notifier:SYSTEM:ttln:\\d+")
         .append(":isEncrypted:true:sharedKeyEnc:.+:pubKeyCS:.+:pubKeyHash:.+:hashingAlgo:sha512:ivNonce:.+")
         .append(":" + key.rawKey())
         .append(":(.+)")
@@ -67,7 +67,7 @@ class NotifyUpdateSharedKeyCommandBuilderTest {
   @Test
   void testUniqueId() throws Exception {
     Set<String> ids = new HashSet<>();
-    Matcher idMatcher = Pattern.compile("notify:id:([^:])").matcher("");
+    Matcher idMatcher = Pattern.compile("notify:id:([^:]+)").matcher("");
 
     idMatcher.reset(builder.build("message"));
     assertThat(idMatcher.find(), is(true));

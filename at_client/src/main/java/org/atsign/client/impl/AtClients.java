@@ -60,7 +60,7 @@ public class AtClients {
     SimpleAtEventBus eventBus = new SimpleAtEventBus();
 
     if (monitorOptions == null) {
-      monitorOptions = MonitorOptions.builder().multiplexed(true).build();
+      monitorOptions = MonitorOptions.builder().build();
     }
 
     Consumer<AtCommandExecutor> onReady = null;

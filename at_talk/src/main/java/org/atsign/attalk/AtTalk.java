@@ -16,6 +16,7 @@ import org.atsign.client.api.AtSign;
 import org.atsign.client.api.Keys;
 import org.atsign.client.impl.AtClients;
 import org.atsign.client.impl.cli.AtSignConverter;
+import org.atsign.client.impl.commands.MonitorOptions;
 import org.atsign.client.impl.commands.builders.NotifyUpdateSharedKeyCommandBuilder;
 import org.atsign.client.impl.exceptions.AtException;
 import org.fusesource.jansi.Ansi;
@@ -53,7 +54,6 @@ public class AtTalk implements Callable<Integer> {
   @Option(names = {"-v", "--verbose"}, description = "logs sent and received at commands as INFO")
   private boolean verbose;
   private Keys.SharedKey key;
-  private boolean hasConsole;
   private NotifyUpdateSharedKeyCommandBuilder builder;
 
   public static void main(String[] args) {
@@ -145,6 +145,7 @@ public class AtTalk implements Callable<Integer> {
         .keysPath(keysPath)
         .atSign(atSign)
         .withMonitoring(true)
+        .monitorOptions(MonitorOptions.builder().selfNotification(true).build())
         .isVerbose(verbose)
         .build();
   }

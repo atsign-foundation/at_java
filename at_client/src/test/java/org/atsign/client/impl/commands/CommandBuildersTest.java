@@ -135,27 +135,23 @@ public class CommandBuildersTest {
 
     MonitorOptions options = MonitorOptions.builder().build();
     command = CommandBuilders.monitorCommandBuilder().options(options).build();
-    assertThat(command, equalTo("monitor:multiplexed"));
-
-    options = MonitorOptions.builder().multiplexed(false).build();
-    command = CommandBuilders.monitorCommandBuilder().options(options).build();
     assertThat(command, equalTo("monitor"));
 
-    options = MonitorOptions.builder().multiplexed(false).strict(true).build();
+    options = MonitorOptions.builder().strict(true).build();
     command = CommandBuilders.monitorCommandBuilder().options(options).build();
     assertThat(command, equalTo("monitor:strict"));
 
-    options = MonitorOptions.builder().multiplexed(false).strict(true).regex(".*bob.*").build();
+    options = MonitorOptions.builder().strict(true).regex(".*bob.*").build();
     command = CommandBuilders.monitorCommandBuilder().options(options).build();
     assertThat(command, equalTo("monitor:strict .*bob.*"));
 
     options = MonitorOptions.builder().selfNotification(true).build();
     command = CommandBuilders.monitorCommandBuilder().options(options).build();
-    assertThat(command, equalTo("monitor:selfNotifications:multiplexed"));
+    assertThat(command, equalTo("monitor:selfNotifications"));
 
     options = MonitorOptions.builder().epochMillis(12345000L).build();
     command = CommandBuilders.monitorCommandBuilder().options(options).build();
-    assertThat(command, equalTo("monitor:multiplexed:12345000"));
+    assertThat(command, equalTo("monitor:12345000"));
   }
 
   @Test

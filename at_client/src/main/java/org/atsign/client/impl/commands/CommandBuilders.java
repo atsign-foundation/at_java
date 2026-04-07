@@ -124,7 +124,6 @@ public class CommandBuilders {
     if (options != null) {
       builder.append(options.strict() ? ":strict" : "")
           .append(options.selfNotification() ? ":selfNotifications" : "")
-          .append(options.multiplexed() ? ":multiplexed" : "")
           .append(options.epochMillis() > 0 ? ":" + options.epochMillis() : "")
           .append(options.regex() != null ? " " + options.regex().trim() : "");
     }
@@ -456,20 +455,6 @@ public class CommandBuilders {
   }
 
   /**
-   * The priority of key change operation
-   */
-  public enum NotifyPriority {
-    low, medium, high
-  }
-
-  /**
-   * The strategy of key change operation
-   */
-  public enum NotifyStrategy {
-    all, latest
-  }
-
-  /**
    * A builder to compose an At Protocol command with the
    * <b>notify:(update|delete):messageType:key</b> verb.
    * The <b>notify:(update|delete):messageType:key</b> verb is used to send key change notifications
@@ -483,8 +468,7 @@ public class CommandBuilders {
    * @throws IllegalArgumentException If mandatory fields are not set or if field values conflict.
    */
   @Builder(builderMethodName = "notifyKeyChangeCommandBuilder", builderClassName = "NotifyKeyChangeCommandBuilder")
-  public static String notifyKeyChange(String id, NotifyOperation operation, NotifyPriority priority,
-                                       NotifyStrategy strategy, Integer latestN, String notifier,
+  public static String notifyKeyChange(String id, NotifyOperation operation, Integer latestN, String notifier,
                                        Metadata metadata, AtKey key, String value, Long ttln) {
 
     checkNotNull(operation, "operation not set");
@@ -499,8 +483,6 @@ public class CommandBuilders {
         .append(id != null ? ":id:" + id : "")
         .append(":" + operation)
         .append(":messageType:key")
-        .append(priority != null ? ":priority:" + priority : "")
-        .append(strategy != null ? ":strategy:" + strategy : "")
         .append(latestN != null ? ":latestN:" + latestN : "")
         .append(notifier != null ? ":notifier:" + notifier : "")
         .append(ttln != null ? ":ttln:" + ttln : "")

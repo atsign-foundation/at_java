@@ -27,8 +27,6 @@ public class NotifyUpdateSharedKeyCommandBuilder {
     metadataBuilder = Metadata.builder().isEncrypted(true);
     commandBuilder = CommandBuilders.notifyKeyChangeCommandBuilder()
         .operation(CommandBuilders.NotifyOperation.update)
-        .priority(CommandBuilders.NotifyPriority.low)
-        .strategy(CommandBuilders.NotifyStrategy.all)
         .notifier("SYSTEM")
         .ttln(TimeUnit.MINUTES.toMillis(1));
   }
