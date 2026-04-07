@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.atsign</groupId>
     <artifactId>at_java_parent</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.3-SNAPSHOT</version>
   </parent>
 
   <artifactId>at_talk</artifactId>
@@ -160,6 +160,14 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.sonatype.central</groupId>
+        <artifactId>central-publishing-maven-plugin</artifactId>
+        <configuration>
+          <skipPublishing>true</skipPublishing>
+        </configuration>
       </plugin>
 
     </plugins>

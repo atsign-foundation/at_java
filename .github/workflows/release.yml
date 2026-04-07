@@ -1,16 +1,19 @@
+# This workflow will create a release branch, run the release script and push the commits for PR
+
 name: Release
 
 on:
   workflow_dispatch:
     inputs:
-      release_version:
-        description: 'The release version (will infer from current -SNAPSHOT)'
+      version:
+        description: 'The pom version for the release'
         required: false
-        default: ''
       next_version:
-        description: 'The next dev version (will infer from release version)'
+        description: 'The pom version for the next version'
         required: false
-        default: ''
+  push:
+    branches:
+    - java_release_process
 
 concurrency:
   group: release
@@ -23,106 +26,24 @@ jobs:
       contents: write
 
     steps:
-
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         fetch-depth: 0
-
-#    - name: Import GPG key and upload to keyserver
-#      run: |
-#        echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --no-tty --import
-#        KEY_ID=$(gpg --list-keys --keyid-format LONG | grep pub | awk '{print $2}' | cut -d'/' -f2)
-#        echo "Key ID is: $KEY_ID"
-#        gpg --batch --no-tty --keyserver keyserver.ubuntu.com --send-keys $KEY_ID
-#        gpg --batch --no-tty --keyserver keys.openpgp.org --send-keys $KEY_ID
-#        exit 0
-
     - name: Set up JDK 11
       uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
       with:
         java-version: '11'
         distribution: 'temurin'
-        server-id: central # Value of the distributionManagement/repository/id field of the pom.xml
-        server-username: "CENTRAL_USERNAME" # env variable for username in deploy
-        server-password: "CENTRAL_TOKEN" # env variable for token in deploy
-        gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }} # Value of the GPG private key to import
-        gpg-passphrase: "GPG_PASSPHRASE" # env variable for GPG private key passphrase
-
+        cache: maven
     - name: Add virtual env entry to hosts file
       run: echo "127.0.0.1    vip.ve.atsign.zone" | sudo tee -a /etc/hosts
-
     - name: Configure git
       run: |
         git config user.name 'library-action[bot]'
         git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-
-    - name: Read project version
-      id: version
+        git checkout -b at_java_release_${{github.run_number}}
+    - name: Run release script and push commits
       run: |
-        VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
-        echo "current=$VERSION" >> $GITHUB_OUTPUT
-
-    - name: Compute versions
-      id: compute
-      run: |
-        if [ -n "${{ inputs.release_version }}" ]; then
-          RELEASE=${{ inputs.release_version }}
-        else
-          CURRENT="${{ steps.version.outputs.current }}"
-          if [[ "$CURRENT" != *-SNAPSHOT ]]; then
-          echo "Project is not a SNAPSHOT version"
-          exit 1
-          fi
-          RELEASE=${CURRENT%-SNAPSHOT}
-        fi
-        if [ -n "${{ inputs.next_version }}" ]; then
-          NEXT="${{ inputs.next_version }}"
-          [[ "NEXT" != *-SNAPSHOT ]] && NEXT="${NEXT}-SNAPSHOT"
-        else
-          BASE=${RELEASE%.*}
-          PATCH=${RELEASE##*.}
-          NEXT_PATCH=$((PATCH + 1))
-          NEXT="$BASE.$NEXT_PATCH-SNAPSHOT"
-        fi
-        echo "release=$RELEASE" >> $GITHUB_OUTPUT
-        echo "next=$NEXT" >> $GITHUB_OUTPUT
-        echo "Release version: $RELEASE"
-        echo "Next snapshot: $NEXT"
-
-    - name: Update README
-      run: |
-        find . -type f -name "README.md" -exec \
-          sed -i -E \
-            -e "s|<version>.+[0-9]</version>|<version>${{ steps.compute.outputs.release }}</version>|" \
-            -e "s|<version>.+-SNAPSHOT</version>|<version>${{ steps.compute.outputs.next }}</version>|" \
-        {} \;
-
-    - name: Set release version
-      run: |
-        mvn -B versions:set -DnewVersion=${{ steps.compute.outputs.release }}
-        mvn -B versions:commit
-        git commit -am "build: release ${{ steps.compute.outputs.release }}"
-
-    - name: Tag release
-      run: |
-        git tag -a v${{ steps.compute.outputs.release }} -m "build: release ${{ steps.compute.outputs.release }}"
-
-    - name: Regenerate CHANGELOG.md
-      run: mvn -pl . git-changelog-maven-plugin:git-changelog
-
-    - name: Publish to Central
-      run: mvn deploy --batch-mode --no-transfer-progress
-      env:
-        CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
-        CENTRAL_TOKEN: ${{ secrets.CENTRAL_TOKEN }}
-        GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-
-    - name: Set next snapshot
-      run: |
-        mvn -B versions:set -DnewVersion=${{ steps.compute.outputs.next }}
-        mvn -B versions:commit
-        git commit -am "chore: next release ${{ steps.compute.outputs.next }}"
-
-    - name: Push commits and tags
-      run: git push --follow-tags
+        ./release.sh ${{ github.event.inputs.version }} ${{ github.event.inputs.next_version }}
+        git push --set-upstream origin java_release_${{github.run_number}}
