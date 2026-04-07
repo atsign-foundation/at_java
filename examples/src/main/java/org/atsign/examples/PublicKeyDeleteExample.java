@@ -27,7 +27,7 @@ public class PublicKeyDeleteExample {
       PublicKey pk = Keys.publicKeyBuilder().sharedBy(atSign).name(KEY_NAME).build();
 
       // 5. delete the key
-      atClient.delete(pk).get();
+      atClient.delete(pk);
 
     } catch (Exception e) {
       System.err.println(e);

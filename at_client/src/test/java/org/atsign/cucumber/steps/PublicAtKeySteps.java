@@ -4,7 +4,6 @@ import static org.atsign.cucumber.steps.ParameterTypes.toBytes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 
 import io.cucumber.datatable.DataTable;
@@ -14,6 +13,7 @@ import org.atsign.client.api.Keys;
 
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import org.atsign.client.impl.exceptions.AtException;
 
 public class PublicAtKeySteps {
 
@@ -253,30 +253,30 @@ public class PublicAtKeySteps {
   }
 
   private void putKeyValue(AtClient atClient, AtSign sharedBy, String name, String value)
-      throws InterruptedException, ExecutionException {
+      throws AtException {
     Keys.PublicKey key = toKey(sharedBy, name);
-    atClient.put(key, value).get();
+    atClient.put(key, value);
   }
 
   private void putKeyValue(AtClient atClient, AtSign sharedBy, String name, byte[] value)
-      throws InterruptedException, ExecutionException {
+      throws AtException {
     Keys.PublicKey key = toKey(sharedBy, name);
-    atClient.put(key, value).get();
+    atClient.put(key, value);
   }
 
   private String getKeyValue(AtClient atClient, AtSign sharedBy, String name) throws Exception {
     Keys.PublicKey key = toKey(sharedBy, name);
-    return atClient.get(key).get();
+    return atClient.get(key);
   }
 
   private byte[] getBinaryKeyValue(AtClient atClient, AtSign sharedBy, String name) throws Exception {
     Keys.PublicKey key = toKey(sharedBy, name);
-    return atClient.getBinary(key).get();
+    return atClient.getBinary(key);
   }
 
   private void deleteKeyValue(AtClient atClient, AtSign owner, String name) throws Exception {
     Keys.PublicKey key = toKey(owner, name);
-    atClient.delete(key).get();
+    atClient.delete(key);
   }
 
   private Keys.PublicKey toKey(AtSign sharedBy, String s) {

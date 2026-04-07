@@ -196,13 +196,13 @@ class AtClientImplTest {
     AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
 
     Keys.SelfKey key1 = Keys.selfKeyBuilder().sharedBy(atSign).name("key1").build();
-    assertThat(client.get(key1).get(), equalTo("hello me"));
+    assertThat(client.get(key1), equalTo("hello me"));
 
     Keys.SelfKey key2 = Keys.selfKeyBuilder().sharedBy(atSign).name("key2").build();
-    assertThrows(Exception.class, () -> client.get(key2).get());
+    assertThrows(Exception.class, () -> client.get(key2));
 
     Keys.SelfKey key3 = Keys.selfKeyBuilder().sharedBy(atSign).name("key3").build();
-    assertThrows(Exception.class, () -> client.get(key3).get());
+    assertThrows(Exception.class, () -> client.get(key3));
   }
 
   @Test
@@ -222,16 +222,16 @@ class AtClientImplTest {
     AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
 
     Keys.SelfKey key1 = Keys.selfKeyBuilder().sharedBy(atSign).name("key1").build();
-    assertThat(client.getBinary(key1).get(), equalTo(bytes));
+    assertThat(client.getBinary(key1), equalTo(bytes));
 
     Keys.SelfKey key2 = Keys.selfKeyBuilder().sharedBy(atSign).name("key2").build();
-    assertThrows(Exception.class, () -> client.getBinary(key2).get());
+    assertThrows(Exception.class, () -> client.getBinary(key2));
 
     Keys.SelfKey key3 = Keys.selfKeyBuilder().sharedBy(atSign).name("key3").build();
-    assertThrows(Exception.class, () -> client.getBinary(key3).get());
+    assertThrows(Exception.class, () -> client.getBinary(key3));
 
     Keys.SelfKey key4 = Keys.selfKeyBuilder().sharedBy(atSign).name("key4").build();
-    Exception ex = assertThrows(Exception.class, () -> client.getBinary(key4).get());
+    Exception ex = assertThrows(Exception.class, () -> client.getBinary(key4));
     assertThat(ex.getMessage(), containsString("metadata.isBinary not set to true"));
   }
 
@@ -245,13 +245,13 @@ class AtClientImplTest {
 
     AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
     Keys.SelfKey key1 = Keys.selfKeyBuilder().sharedBy(atSign).name("key1").build();
-    client.put(key1, "hello world").get();
+    client.put(key1, "hello world");
 
     Keys.SelfKey key2 = Keys.selfKeyBuilder().sharedBy(atSign).name("key2").build();
-    assertThrows(Exception.class, () -> client.put(key2, "hello world").get());
+    assertThrows(Exception.class, () -> client.put(key2, "hello world"));
 
     Keys.SelfKey key3 = Keys.selfKeyBuilder().sharedBy(atSign).name("key3").build();
-    assertThrows(Exception.class, () -> client.put(key3, "hello world").get());
+    assertThrows(Exception.class, () -> client.put(key3, "hello world"));
   }
 
   @Test
@@ -267,13 +267,13 @@ class AtClientImplTest {
 
     AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
     Keys.SelfKey key1 = Keys.selfKeyBuilder().sharedBy(atSign).name("key1").build();
-    client.put(key1, bytes).get();
+    client.put(key1, bytes);
 
     Keys.SelfKey key2 = Keys.selfKeyBuilder().sharedBy(atSign).name("key2").build();
-    assertThrows(Exception.class, () -> client.put(key2, bytes).get());
+    assertThrows(Exception.class, () -> client.put(key2, bytes));
 
     Keys.SelfKey key3 = Keys.selfKeyBuilder().sharedBy(atSign).name("key3").build();
-    assertThrows(Exception.class, () -> client.put(key3, bytes).get());
+    assertThrows(Exception.class, () -> client.put(key3, bytes));
   }
 
   @Test
@@ -286,13 +286,13 @@ class AtClientImplTest {
 
     AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
     Keys.SelfKey key1 = Keys.selfKeyBuilder().sharedBy(atSign).name("key1").build();
-    client.delete(key1).get();
+    client.delete(key1);
 
     Keys.SelfKey key2 = Keys.selfKeyBuilder().sharedBy(atSign).name("key2").build();
-    assertThrows(Exception.class, () -> client.delete(key2).get());
+    assertThrows(Exception.class, () -> client.delete(key2));
 
     Keys.SelfKey key3 = Keys.selfKeyBuilder().sharedBy(atSign).name("key3").build();
-    assertThrows(Exception.class, () -> client.delete(key3).get());
+    assertThrows(Exception.class, () -> client.delete(key3));
   }
 
   @Test
@@ -307,16 +307,16 @@ class AtClientImplTest {
     AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
 
     Keys.PublicKey key1 = Keys.publicKeyBuilder().sharedBy(atSign).name("key1").build();
-    assertThat(client.get(key1).get(), equalTo("hello world"));
+    assertThat(client.get(key1), equalTo("hello world"));
 
     Keys.PublicKey key2 = Keys.publicKeyBuilder().sharedBy(atSign).name("key2").build();
-    assertThrows(Exception.class, () -> client.get(key2).get());
+    assertThrows(Exception.class, () -> client.get(key2));
 
     Keys.PublicKey key3 = Keys.publicKeyBuilder().sharedBy(atSign).name("key3").build();
-    assertThrows(Exception.class, () -> client.get(key3).get());
+    assertThrows(Exception.class, () -> client.get(key3));
 
     Keys.PublicKey key4 = Keys.publicKeyBuilder().sharedBy(createAtSign("another")).name("key4").build();
-    assertThat(client.get(key4).get(), equalTo("greetings from another world"));
+    assertThat(client.get(key4), equalTo("greetings from another world"));
   }
 
   @Test
@@ -337,19 +337,19 @@ class AtClientImplTest {
     AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
 
     Keys.PublicKey key1 = Keys.publicKeyBuilder().sharedBy(atSign).name("key1").build();
-    assertThat(client.getBinary(key1).get(), equalTo(bytes1));
+    assertThat(client.getBinary(key1), equalTo(bytes1));
 
     Keys.PublicKey key2 = Keys.publicKeyBuilder().sharedBy(atSign).name("key2").build();
-    assertThrows(Exception.class, () -> client.getBinary(key2).get());
+    assertThrows(Exception.class, () -> client.getBinary(key2));
 
     Keys.PublicKey key3 = Keys.publicKeyBuilder().sharedBy(atSign).name("key3").build();
-    assertThrows(Exception.class, () -> client.getBinary(key3).get());
+    assertThrows(Exception.class, () -> client.getBinary(key3));
 
     Keys.PublicKey key4 = Keys.publicKeyBuilder().sharedBy(createAtSign("another")).name("key4").build();
-    assertThat(client.getBinary(key4).get(), equalTo(bytes2));
+    assertThat(client.getBinary(key4), equalTo(bytes2));
 
     Keys.PublicKey key5 = Keys.publicKeyBuilder().sharedBy(atSign).name("key5").build();
-    assertThrows(Exception.class, () -> client.getBinary(key5).get());
+    assertThrows(Exception.class, () -> client.getBinary(key5));
   }
 
   @Test
@@ -362,13 +362,13 @@ class AtClientImplTest {
 
     AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
     Keys.PublicKey key1 = Keys.publicKeyBuilder().sharedBy(atSign).name("key1").build();
-    client.put(key1, "hello world").get();
+    client.put(key1, "hello world");
 
     Keys.PublicKey key2 = Keys.publicKeyBuilder().sharedBy(atSign).name("key2").build();
-    assertThrows(Exception.class, () -> client.put(key2, "hello world").get());
+    assertThrows(Exception.class, () -> client.put(key2, "hello world"));
 
     Keys.PublicKey key3 = Keys.publicKeyBuilder().sharedBy(atSign).name("key3").build();
-    assertThrows(Exception.class, () -> client.put(key3, "hello world").get());
+    assertThrows(Exception.class, () -> client.put(key3, "hello world"));
   }
 
   @Test
@@ -385,13 +385,13 @@ class AtClientImplTest {
 
     AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
     Keys.PublicKey key1 = Keys.publicKeyBuilder().sharedBy(atSign).name("key1").build();
-    client.put(key1, bytes).get();
+    client.put(key1, bytes);
 
     Keys.PublicKey key2 = Keys.publicKeyBuilder().sharedBy(atSign).name("key2").build();
-    assertThrows(Exception.class, () -> client.put(key2, bytes).get());
+    assertThrows(Exception.class, () -> client.put(key2, bytes));
 
     Keys.PublicKey key3 = Keys.publicKeyBuilder().sharedBy(atSign).name("key3").build();
-    assertThrows(Exception.class, () -> client.put(key3, bytes).get());
+    assertThrows(Exception.class, () -> client.put(key3, bytes));
   }
 
   @Test
@@ -404,13 +404,13 @@ class AtClientImplTest {
 
     AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
     Keys.PublicKey key1 = Keys.publicKeyBuilder().sharedBy(atSign).name("key1").build();
-    client.delete(key1).get();
+    client.delete(key1);
 
     Keys.PublicKey key2 = Keys.publicKeyBuilder().sharedBy(atSign).name("key2").build();
-    assertThrows(Exception.class, () -> client.delete(key2).get());
+    assertThrows(Exception.class, () -> client.delete(key2));
 
     Keys.PublicKey key3 = Keys.publicKeyBuilder().sharedBy(atSign).name("key3").build();
-    assertThrows(Exception.class, () -> client.delete(key3).get());
+    assertThrows(Exception.class, () -> client.delete(key3));
   }
 
 
@@ -436,16 +436,16 @@ class AtClientImplTest {
     AtSign atSign2 = createAtSign("another");
 
     Keys.SharedKey key1 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key1").build();
-    assertThat(client.get(key1).get(), equalTo("hello from me"));
+    assertThat(client.get(key1), equalTo("hello from me"));
 
     Keys.SharedKey key2 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key2").build();
-    assertThrows(Exception.class, () -> client.get(key2).get());
+    assertThrows(Exception.class, () -> client.get(key2));
 
     Keys.SharedKey key3 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key3").build();
-    assertThrows(Exception.class, () -> client.get(key3).get());
+    assertThrows(Exception.class, () -> client.get(key3));
 
     Keys.SharedKey key4 = Keys.sharedKeyBuilder().sharedBy(atSign2).sharedWith(atSign).name("key4").build();
-    assertThat(client.get(key4).get(), equalTo("greetings from another world"));
+    assertThat(client.get(key4), equalTo("greetings from another world"));
   }
 
   @Test
@@ -476,19 +476,19 @@ class AtClientImplTest {
     AtSign atSign2 = createAtSign("another");
 
     Keys.SharedKey key1 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key1").build();
-    assertThat(client.getBinary(key1).get(), equalTo(bytes1));
+    assertThat(client.getBinary(key1), equalTo(bytes1));
 
     Keys.SharedKey key2 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key2").build();
-    assertThrows(Exception.class, () -> client.getBinary(key2).get());
+    assertThrows(Exception.class, () -> client.getBinary(key2));
 
     Keys.SharedKey key3 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key3").build();
-    assertThrows(Exception.class, () -> client.getBinary(key3).get());
+    assertThrows(Exception.class, () -> client.getBinary(key3));
 
     Keys.SharedKey key4 = Keys.sharedKeyBuilder().sharedBy(atSign2).sharedWith(atSign).name("key4").build();
-    assertThat(client.getBinary(key4).get(), equalTo(bytes2));
+    assertThat(client.getBinary(key4), equalTo(bytes2));
 
     Keys.SharedKey key5 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key5").build();
-    assertThrows(Exception.class, () -> client.getBinary(key5).get());
+    assertThrows(Exception.class, () -> client.getBinary(key5));
   }
 
   @Test
@@ -505,13 +505,13 @@ class AtClientImplTest {
     AtSign atSign2 = createAtSign("another");
 
     Keys.SharedKey key1 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key1").build();
-    client.put(key1, "hello world").get();
+    client.put(key1, "hello world");
 
     Keys.SharedKey key2 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key2").build();
-    assertThrows(Exception.class, () -> client.put(key2, "hello world").get());
+    assertThrows(Exception.class, () -> client.put(key2, "hello world"));
 
     Keys.SharedKey key3 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key3").build();
-    assertThrows(Exception.class, () -> client.put(key3, "hello world").get());
+    assertThrows(Exception.class, () -> client.put(key3, "hello world"));
   }
 
   @Test
@@ -531,13 +531,13 @@ class AtClientImplTest {
     AtSign atSign2 = createAtSign("another");
 
     Keys.SharedKey key1 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key1").build();
-    client.put(key1, bytes).get();
+    client.put(key1, bytes);
 
     Keys.SharedKey key2 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key2").build();
-    assertThrows(Exception.class, () -> client.put(key2, bytes).get());
+    assertThrows(Exception.class, () -> client.put(key2, bytes));
 
     Keys.SharedKey key3 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key3").build();
-    assertThrows(Exception.class, () -> client.put(key3, bytes).get());
+    assertThrows(Exception.class, () -> client.put(key3, bytes));
   }
 
   @Test
@@ -552,13 +552,13 @@ class AtClientImplTest {
     AtSign atSign2 = createAtSign("another");
 
     Keys.SharedKey key1 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key1").build();
-    client.delete(key1).get();
+    client.delete(key1);
 
     Keys.SharedKey key2 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key2").build();
-    assertThrows(Exception.class, () -> client.delete(key2).get());
+    assertThrows(Exception.class, () -> client.delete(key2));
 
     Keys.SharedKey key3 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key3").build();
-    assertThrows(Exception.class, () -> client.delete(key3).get());
+    assertThrows(Exception.class, () -> client.delete(key3));
   }
 
 }

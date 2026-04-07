@@ -28,7 +28,7 @@ public class SelfKeyDeleteExample {
       SelfKey sk = Keys.selfKeyBuilder().sharedBy(atSign).name(KEY_NAME).build();
 
       // 5. delete the key
-      atClient.delete(sk).get();
+      atClient.delete(sk);
 
     } catch (Exception e) {
       System.err.println("Failed to connect to remote server " + e);

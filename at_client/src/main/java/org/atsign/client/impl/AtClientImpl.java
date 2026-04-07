@@ -142,104 +142,98 @@ public class AtClientImpl implements AtClient {
   }
 
   @Override
-  public CompletableFuture<String> get(SharedKey sharedKey) {
-    return wrapAsync(() -> SharedKeyCommands.get(executor, atSign, keys, sharedKey));
+  public String get(SharedKey sharedKey) throws AtException {
+    return SharedKeyCommands.get(executor, atSign, keys, sharedKey);
   }
 
   @Override
-  public CompletableFuture<byte[]> getBinary(SharedKey sharedKey) {
-    return wrapAsync(() -> Base2e15Utils.decode(SharedKeyCommands.get(executor, atSign, keys, sharedKey, true)));
+  public byte[] getBinary(SharedKey sharedKey) throws AtException {
+    return Base2e15Utils.decode(SharedKeyCommands.get(executor, atSign, keys, sharedKey, true));
   }
 
   @Override
-  public CompletableFuture<Void> put(SharedKey sharedKey, String value) {
-    return wrapAsync(() -> SharedKeyCommands.put(executor, atSign, keys, sharedKey, value));
+  public void put(SharedKey sharedKey, String value) throws AtException {
+    SharedKeyCommands.put(executor, atSign, keys, sharedKey, value);
   }
 
   @Override
-  public CompletableFuture<Void> delete(SharedKey sharedKey) {
-    return wrapAsync(() -> KeyCommands.deleteKey(executor, sharedKey));
+  public void delete(SharedKey sharedKey) throws AtException {
+    KeyCommands.deleteKey(executor, sharedKey);
   }
 
   @Override
-  public CompletableFuture<String> get(SelfKey selfKey) {
-    return wrapAsync(() -> SelfKeyCommands.get(executor, atSign, keys, selfKey));
+  public String get(SelfKey selfKey) throws AtException {
+    return SelfKeyCommands.get(executor, atSign, keys, selfKey);
   }
 
   @Override
-  public CompletableFuture<byte[]> getBinary(SelfKey selfKey) {
-    return wrapAsync(() -> Base2e15Utils.decode(SelfKeyCommands.get(executor, atSign, keys, selfKey, true)));
+  public byte[] getBinary(SelfKey selfKey) throws AtException {
+    return Base2e15Utils.decode(SelfKeyCommands.get(executor, atSign, keys, selfKey, true));
   }
 
   @Override
-  public CompletableFuture<Void> put(SelfKey selfKey, String value) {
-    return wrapAsync(() -> SelfKeyCommands.put(executor, atSign, keys, selfKey, value));
+  public void put(SelfKey selfKey, String value) throws AtException {
+    SelfKeyCommands.put(executor, atSign, keys, selfKey, value);
   }
 
   @Override
-  public CompletableFuture<Void> delete(SelfKey selfKey) {
-    return wrapAsync(() -> KeyCommands.deleteKey(executor, selfKey));
+  public void delete(SelfKey selfKey) throws AtException {
+    KeyCommands.deleteKey(executor, selfKey);
   }
 
   @Override
-  public CompletableFuture<String> get(PublicKey publicKey) {
-    return wrapAsync(() -> PublicKeyCommands.get(executor, atSign, publicKey, null));
+  public String get(PublicKey publicKey) throws AtException {
+    return get(publicKey, null);
   }
 
   @Override
-  public CompletableFuture<String> get(PublicKey publicKey, GetRequestOptions options) {
-    return wrapAsync(() -> PublicKeyCommands.get(executor, atSign, publicKey, options));
+  public String get(PublicKey publicKey, GetRequestOptions options) throws AtException {
+    return PublicKeyCommands.get(executor, atSign, publicKey, options);
   }
 
   @Override
-  public CompletableFuture<byte[]> getBinary(PublicKey publicKey) {
-    return wrapAsync(() -> Base2e15Utils.decode(PublicKeyCommands.get(executor, atSign, publicKey, true, null)));
+  public byte[] getBinary(PublicKey publicKey) throws AtException {
+    return getBinary(publicKey, null);
   }
 
   @Override
-  public CompletableFuture<byte[]> getBinary(PublicKey publicKey, GetRequestOptions options) {
-    return wrapAsync(() -> Base2e15Utils.decode(PublicKeyCommands.get(executor, atSign, publicKey, true, options)));
+  public byte[] getBinary(PublicKey publicKey, GetRequestOptions options) throws AtException {
+    return Base2e15Utils.decode(PublicKeyCommands.get(executor, atSign, publicKey, true, options));
   }
 
   @Override
-  public CompletableFuture<Void> put(PublicKey publicKey, String value) {
-    return wrapAsync(() -> PublicKeyCommands.put(executor, atSign, keys, publicKey, value));
+  public void put(PublicKey publicKey, String value) throws AtException {
+    PublicKeyCommands.put(executor, atSign, keys, publicKey, value);
   }
 
   @Override
-  public CompletableFuture<Void> delete(PublicKey publicKey) {
-    return wrapAsync(() -> KeyCommands.deleteKey(executor, publicKey));
+  public void delete(PublicKey publicKey) throws AtException {
+    KeyCommands.deleteKey(executor, publicKey);
   }
 
   @Override
-  public CompletableFuture<Void> put(SharedKey sharedKey, byte[] value) {
-    return put(setIsBinary(sharedKey), Base2e15Utils.encode(value));
+  public void put(SharedKey sharedKey, byte[] value) throws AtException {
+    put(setIsBinary(sharedKey), Base2e15Utils.encode(value));
   }
 
   @Override
-  public CompletableFuture<Void> put(SelfKey selfKey, byte[] value) {
-    return put(setIsBinary(selfKey), Base2e15Utils.encode(value));
+  public void put(SelfKey selfKey, byte[] value) throws AtException {
+    put(setIsBinary(selfKey), Base2e15Utils.encode(value));
   }
 
   @Override
-  public CompletableFuture<Void> put(PublicKey publicKey, byte[] value) {
-    return put(setIsBinary(publicKey), Base2e15Utils.encode(value));
+  public void put(PublicKey publicKey, byte[] value) throws AtException {
+    put(setIsBinary(publicKey), Base2e15Utils.encode(value));
   }
 
   @Override
-  public CompletableFuture<List<AtKey>> getAtKeys(String regex) {
+  public List<AtKey> getAtKeys(String regex) throws AtException {
     return getAtKeys(regex, true);
   }
 
   @Override
-  public CompletableFuture<List<AtKey>> getAtKeys(String regex, boolean fetchMetadata) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return KeyCommands.getKeys(executor, regex, fetchMetadata);
-      } catch (Exception e) {
-        throw new CompletionException(e);
-      }
-    });
+  public List<AtKey> getAtKeys(String regex, boolean fetchMetadata) throws AtException {
+    return KeyCommands.getKeys(executor, regex, fetchMetadata);
   }
 
   private void handleEvent(AtEventType eventType, Map<String, Object> eventData) {
@@ -301,7 +295,7 @@ public class AtClientImpl implements AtClient {
     String run() throws AtException, ExecutionException, InterruptedException;
   }
 
-  private static CompletableFuture<String> wrapAsync(AtCommandThatReturnsString command) {
+  public static CompletableFuture<String> wrapAsync(AtCommandThatReturnsString command) {
     return CompletableFuture.supplyAsync(() -> {
       try {
         return command.run();
@@ -320,7 +314,7 @@ public class AtClientImpl implements AtClient {
     byte[] run() throws AtException, ExecutionException, InterruptedException;
   }
 
-  private static CompletableFuture<byte[]> wrapAsync(AtCommandThatReturnsByteArray command) {
+  public static CompletableFuture<byte[]> wrapAsync(AtCommandThatReturnsByteArray command) {
     return CompletableFuture.supplyAsync(() -> {
       try {
         return command.run();
@@ -338,7 +332,7 @@ public class AtClientImpl implements AtClient {
     void run() throws AtException, ExecutionException, InterruptedException;
   }
 
-  private static CompletableFuture<Void> wrapAsync(AtCommandThatReturnsVoid command) {
+  public static CompletableFuture<Void> wrapAsync(AtCommandThatReturnsVoid command) {
     return CompletableFuture.supplyAsync(() -> {
       try {
         command.run();

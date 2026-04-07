@@ -38,7 +38,7 @@ public class Scan {
 
     try (AtClient atClient = AtClients.builder().url(rootUrl).atSign(atSign).keys(keys).build()) {
 
-      List<AtKey> response = atClient.getAtKeys(regex).get();
+      List<AtKey> response = atClient.getAtKeys(regex);
 
       String input;
       Scanner scanner = new Scanner(System.in);

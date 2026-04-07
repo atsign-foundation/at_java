@@ -27,7 +27,7 @@ public class PublicKeyGetExample {
       PublicKey pk = Keys.publicKeyBuilder().sharedBy(atSign).name(KEY_NAME).build();
 
       // 5. get the value associated with the key
-      String response = atClient.get(pk).get();
+      String response = atClient.get(pk);
       System.out.println(response);
 
     } catch (Exception e) {

@@ -4,7 +4,6 @@ import static org.atsign.cucumber.steps.ParameterTypes.toBytes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 
 import io.cucumber.datatable.DataTable;
@@ -14,6 +13,7 @@ import org.atsign.client.api.Keys;
 
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import org.atsign.client.impl.exceptions.AtException;
 
 public class SelfAtKeySteps {
 
@@ -175,30 +175,30 @@ public class SelfAtKeySteps {
   }
 
   private void putKeyValue(AtClient atClient, AtSign atSign, String name, String value)
-      throws InterruptedException, ExecutionException {
+      throws AtException {
     Keys.SelfKey key = createKey(atSign, name);
-    atClient.put(key, value).get();
+    atClient.put(key, value);
   }
 
   private void putKeyValue(AtClient atClient, AtSign atSign, String name, byte[] value)
-      throws InterruptedException, ExecutionException {
+      throws AtException {
     Keys.SelfKey key = createKey(atSign, name);
-    atClient.put(key, value).get();
+    atClient.put(key, value);
   }
 
   private String getKeyValue(AtClient atClient, AtSign atSign, String name) throws Exception {
     Keys.SelfKey key = createKey(atSign, name);
-    return atClient.get(key).get();
+    return atClient.get(key);
   }
 
   private byte[] getBinaryKeyValue(AtClient atClient, AtSign atSign, String name) throws Exception {
     Keys.SelfKey key = createKey(atSign, name);
-    return atClient.getBinary(key).get();
+    return atClient.getBinary(key);
   }
 
   private void deleteKeyValue(AtClient atClient, AtSign atSign, String name) throws Exception {
     Keys.SelfKey key = createKey(atSign, name);
-    atClient.delete(key).get();
+    atClient.delete(key);
   }
 
   private Keys.SelfKey createKey(AtSign owner, String s) {

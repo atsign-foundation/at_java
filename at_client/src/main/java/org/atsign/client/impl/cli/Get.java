@@ -41,7 +41,7 @@ public class Get {
           .name(keyName)
           .build();
 
-      String response = atClient.get(key).get();
+      String response = atClient.get(key);
 
       System.out.printf("get response : %s", response);
     }
