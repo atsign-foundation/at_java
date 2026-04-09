@@ -1,0 +1,36 @@
+# Changelog
+
+{{#tags}}
+
+{{#ifReleaseTag .}}
+## {{name}} ({{releaseDate}})
+
+{{#ifContainsType commits type='feat'}}
+### Features
+{{#commits}}
+{{#ifCommitType . type='feat'}}
+- {{#eachCommitScope .}}**{{.}}**: {{/eachCommitScope}}{{{commitDescription .}}}
+  {{/ifCommitType}}
+  {{/commits}}
+  {{/ifContainsType}}
+
+{{#ifContainsType commits type='fix'}}
+### Bug Fixes
+{{#commits}}
+{{#ifCommitType . type='fix'}}
+- {{#eachCommitScope .}}**{{.}}**: {{/eachCommitScope}}{{{commitDescription .}}}
+  {{/ifCommitType}}
+  {{/commits}}
+  {{/ifContainsType}}
+
+{{#ifContainsBreaking commits}}
+### Breaking Changes
+{{#commits}}
+{{#ifCommitBreaking .}}
+- {{#eachCommitScope .}}**{{.}}**: {{/eachCommitScope}}{{{commitDescription .}}}
+  {{/ifCommitBreaking}}
+  {{/commits}}
+  {{/ifContainsBreaking}}
+
+{{/ifReleaseTag}}
+{{/tags}}

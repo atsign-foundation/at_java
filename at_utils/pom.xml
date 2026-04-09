@@ -11,6 +11,7 @@
   </parent>
 
   <artifactId>at_utils</artifactId>
+  <description>atsign Java utils</description>
 
   <properties>
     <config.spotless>../config/java-format.xml</config.spotless>
@@ -66,6 +67,9 @@
       <plugin>
         <groupId>org.sonatype.central</groupId>
         <artifactId>central-publishing-maven-plugin</artifactId>
+        <configuration>
+          <skipPublishing>true</skipPublishing>
+        </configuration>
       </plugin>
 
       <plugin>

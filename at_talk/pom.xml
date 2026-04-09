@@ -10,6 +10,7 @@
   </parent>
 
   <artifactId>at_talk</artifactId>
+  <description>at talk example</description>
 
   <properties>
     <config.spotless>../config/java-format.xml</config.spotless>
@@ -160,6 +161,14 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.sonatype.central</groupId>
+        <artifactId>central-publishing-maven-plugin</artifactId>
+        <configuration>
+          <skipPublishing>true</skipPublishing>
+        </configuration>
       </plugin>
 
     </plugins>

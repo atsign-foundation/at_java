@@ -68,6 +68,9 @@
 
     <!-- integration tests rely on at_demo_data package for keys that virtual env was built with -->
     <version.at_demo_data>1.2.0</version.at_demo_data>
+
+    <changelog.from>startchangelog</changelog.from>
+    <changelog.tag>Unreleased</changelog.tag>
   </properties>
 
   <modules>
@@ -277,6 +280,7 @@
           <extensions>true</extensions>
           <configuration>
             <publishingServerId>central</publishingServerId>
+            <autoPublish>true</autoPublish>
           </configuration>
         </plugin>
 
@@ -409,12 +413,76 @@
     </pluginManagement>
 
     <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+      </plugin>
+
       <plugin>
         <groupId>org.sonatype.central</groupId>
         <artifactId>central-publishing-maven-plugin</artifactId>
       </plugin>
-    </plugins>
 
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>3.4.0</version>
+        <executions>
+          <execution>
+            <id>timestamp-property</id>
+            <goals>
+              <goal>timestamp-property</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <name>currentDate</name>
+              <pattern>yyyy-MM-dd</pattern>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>se.bjurr.gitchangelog</groupId>
+        <artifactId>git-changelog-maven-plugin</artifactId>
+        <version>2.1.0</version>
+        <configuration>
+          <templateFile>config/CHANGELOG.mustache</templateFile>
+          <file>target/CHANGELOG.new.md</file>
+          <ignoreCommitsIfMessageMatches>
+            ^(?!(feat|fix|docs|style|refactor|test|chore|perf|revert)).*
+          </ignoreCommitsIfMessageMatches>
+          <fromRef>${changelog.from}</fromRef>
+          <untaggedName>${changelog.tag}</untaggedName>
+          <extendedVariables>
+            <releaseDate>${currentDate}</releaseDate>
+          </extendedVariables>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.cyclonedx</groupId>
+        <artifactId>cyclonedx-maven-plugin</artifactId>
+        <version>2.9.0</version>
+        <configuration>
+          <skip>false</skip>
+          <skipNotDeployed>false</skipNotDeployed>
+          <outputName>${project.artifactId}-bom</outputName>
+          <outputFormat>xml</outputFormat>
+          <includeBomSerialNumber>true</includeBomSerialNumber>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>makeBom</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
   </build>
 
 </project>
