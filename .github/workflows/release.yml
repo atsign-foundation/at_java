@@ -45,5 +45,5 @@ jobs:
         git checkout -b at_java_release_${{github.run_number}}
     - name: Run release script and push commits
       run: |
-        ./release.sh ${{ github.event.inputs.version }} ${{ github.event.inputs.next_version }}
+        bash ./release.sh ${{ github.event.inputs.version }} ${{ github.event.inputs.next_version }}
         git push --set-upstream origin java_release_${{github.run_number}}

@@ -73,38 +73,6 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
   exit 1
 fi
 
-echo "checking branch is up to date..."
-git fetch origin
-LOCAL=$(git rev-parse @)
-REMOTE=$(git rev-parse @{u})
-BASE=$(git merge-base @ @{u})
-
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
-
-if [ "$BRANCH" = "trunk" ]; then
-  echo "branch is trunk, do this on a branch"
-  exit 1
-elif [ "$LOCAL" = "$BASE" ]; then
-  echo "branch is behind origin/$BRANCH, pull or rebase first"
-  exit 1
-elif [ "$LOCAL" != "$REMOTE" ] && [ "$REMOTE" != "$BASE" ]; then
-  echo "branch has diverged from origin/$BRANCH"
-  exit 1
-fi
-
-echo "checking no SNAPSHOT dependencies..."
-if mvn -q dependency:list | grep SNAPSHOT; then
-  echo "snapshot dependencies detected, cannot release"
-  exit 1
-fi
-
-echo "running tests..."
-mvn -B verify > target/release-tests.log 2>&1 || {
-    cat target/release-tests.log
-    echo "tests failed"
-    exit 1
-}
-
 echo "re-generating CHANGELOG..."
 PREVIOUS_TAG=$(grep -m1 '^## v[0-9]\+\.[0-9]\+\.[0-9]\+' CHANGELOG.md | sed -E 's/^## (v[0-9]+\.[0-9]+\.[0-9]+).*/\1/')
 CURRENT_DATE=$(date +%Y-%m-%d)
@@ -134,6 +102,19 @@ mvn -B versions:set -DnewVersion="${VERSION}" > target/release.log 2>&1 || {
 }
 mvn -B versions:commit
 
+echo "running tests..."
+mvn -B verify > target/release-tests.log 2>&1 || {
+    cat target/release-tests.log
+    echo "tests failed"
+    exit 1
+}
+
+echo "checking no SNAPSHOT dependencies..."
+if mvn -q dependency:list | grep SNAPSHOT; then
+  echo "snapshot dependencies detected, cannot release"
+  exit 1
+fi
+
 git commit -am "build: release ${VERSION}..."
 RELEASE_SHA=$(git rev-parse HEAD)
 
@@ -152,5 +133,5 @@ echo
 echo "Release $VERSION prepared successfully."
 echo "Next steps: "
 echo "  1. Push commits and raise a PR."
-echo "  2. Once that PR is approved then create a GitHub release create a ${TAG} with target ${RELEASE_SHA}."
+echo "  2. Once that PR is approved then create a GitHub release for a new tag ${TAG} with target ${RELEASE_SHA}."
 echo
