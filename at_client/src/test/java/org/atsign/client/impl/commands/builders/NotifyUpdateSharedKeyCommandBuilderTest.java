@@ -85,7 +85,7 @@ class NotifyUpdateSharedKeyCommandBuilderTest {
   @Test
   void testThatByDefaultSharedKeyIsUniqueForEachBuild() throws Exception {
     Set<String> sharedKeyEncs = new HashSet<>();
-    Matcher sharedKeyEncMatcher = Pattern.compile("sharedKeyEnc:([^:])").matcher("");
+    Matcher sharedKeyEncMatcher = Pattern.compile("sharedKeyEnc:([^:]+)").matcher("");
 
     sharedKeyEncMatcher.reset(builder.build("message"));
     assertThat(sharedKeyEncMatcher.find(), is(true));
@@ -105,7 +105,7 @@ class NotifyUpdateSharedKeyCommandBuilderTest {
   void testThatSharedKeyIsNotUniqueForEachBuildWhenReuseSharedKeyIsTrue() throws Exception {
     builder.reuseSharedKey(true);
     Set<String> sharedKeyEncs = new HashSet<>();
-    Matcher sharedKeyEncMatcher = Pattern.compile("sharedKeyEnc:([^:])").matcher("");
+    Matcher sharedKeyEncMatcher = Pattern.compile("sharedKeyEnc:([^:]+)").matcher("");
 
     sharedKeyEncMatcher.reset(builder.build("message"));
     assertThat(sharedKeyEncMatcher.find(), is(true));
