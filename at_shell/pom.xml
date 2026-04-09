@@ -11,6 +11,7 @@
   </parent>
 
   <artifactId>at_shell</artifactId>
+  <description>atsign Java shell</description>
 
   <properties>
     <config.spotless>../config/java-format.xml</config.spotless>

@@ -124,7 +124,7 @@ public class Main {
 
    public static void main(String[] args) throws Exception {
 
-      AtSign atSign = AtSign.createAtSign("18prettyopera");
+      AtSign atSign = AtSign.createAtSign("atsign1");
 
       try (AtClient client = AtClients.builder().atSign(atSign).build()) {
 
@@ -133,9 +133,9 @@ public class Main {
                  .name("greeting")
                  .build();
 
-         client.put(key, "hello").get();
+         client.put(key, "hello");
 
-         AtSign anotherAtSign = AtSign.createAtSign("41malakoff");
+         AtSign anotherAtSign = AtSign.createAtSign("atsign2");
 
          Keys.SharedKey anotherKey = Keys.sharedKeyBuilder()
                  .sharedBy(atSign)
@@ -143,7 +143,7 @@ public class Main {
                  .name("greeting")
                  .build();
 
-         client.put(anotherKey, "hola").get();
+         client.put(anotherKey, "hola");
 
       }
 
@@ -165,18 +165,18 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        AtSign atSign = AtSign.createAtSign("41malakoff");
+        AtSign atSign = AtSign.createAtSign("atsign2");
 
         try (AtClient client = AtClients.builder().atSign(atSign).build()) {
 
-            AtSign anotherAtSign = AtSign.createAtSign("18prettyopera");
+            AtSign anotherAtSign = AtSign.createAtSign("atsign1");
 
             Keys.PublicKey key = Keys.publicKeyBuilder()
                     .sharedBy(anotherAtSign)
                     .name("greeting")
                     .build();
 
-            System.out.println(client.get(key).get());
+            System.out.println(client.get(key));
 
             Keys.SharedKey anotherKey = Keys.sharedKeyBuilder()
                     .sharedBy(anotherAtSign)
@@ -184,7 +184,7 @@ public class Main {
                     .name("greeting")
                     .build();
 
-            System.out.println(client.get(anotherKey).get());
+            System.out.println(client.get(anotherKey));
 
         }
 
