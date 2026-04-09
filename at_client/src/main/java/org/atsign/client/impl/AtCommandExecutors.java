@@ -56,6 +56,7 @@ public class AtCommandExecutors {
   public static AtCommandExecutor createCommandExecutor(String url,
                                                         AtSign atSign,
                                                         AtKeys keys,
+                                                        Consumer<AtCommandExecutor> onReady,
                                                         Map<String, Object> config,
                                                         Long timeoutMillis,
                                                         Long awaitReadyMillis,
@@ -73,9 +74,9 @@ public class AtCommandExecutors {
         .isVerbose(isVerbose)
         .timeoutMillis(defaultIfNotSet(timeoutMillis, DEFAULT_TIMEOUT_MILLIS))
         .awaitReadyMillis(defaultIfNotSet(awaitReadyMillis, DEFAULT_TIMEOUT_MILLIS))
-        .reconnect(defaultIfNotSet(reconnect))
+        .reconnect(defaultIfNotSet(reconnect, SimpleReconnectStrategy.builder().build()))
         .queueLimit(queueLimit)
-        .onReady(createOnReady(atSign, keys, createClientConfig(config)))
+        .onReady(defaultIfNotSet(onReady, createOnReady(atSign, keys, createClientConfig(config))))
         .build();
   }
 
@@ -138,8 +139,8 @@ public class AtCommandExecutors {
     return onReady;
   }
 
-  private static ReconnectStrategy defaultIfNotSet(ReconnectStrategy reconnect) {
-    return reconnect != null ? reconnect : SimpleReconnectStrategy.builder().build();
+  private static <T> T defaultIfNotSet(T value, T defaultValue) {
+    return value != null ? value : defaultValue;
   }
 
   private static long defaultIfNotSet(Long l, long defaultValue) {

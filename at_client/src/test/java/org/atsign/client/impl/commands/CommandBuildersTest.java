@@ -128,6 +128,33 @@ public class CommandBuildersTest {
   }
 
   @Test
+  public void testMonitorBuilderGeneratesExpectedOutput() {
+
+    String command = CommandBuilders.monitorCommandBuilder().build();
+    assertThat(command, equalTo("monitor"));
+
+    MonitorOptions options = MonitorOptions.builder().build();
+    command = CommandBuilders.monitorCommandBuilder().options(options).build();
+    assertThat(command, equalTo("monitor"));
+
+    options = MonitorOptions.builder().strict(true).build();
+    command = CommandBuilders.monitorCommandBuilder().options(options).build();
+    assertThat(command, equalTo("monitor:strict"));
+
+    options = MonitorOptions.builder().strict(true).regex(".*bob.*").build();
+    command = CommandBuilders.monitorCommandBuilder().options(options).build();
+    assertThat(command, equalTo("monitor:strict .*bob.*"));
+
+    options = MonitorOptions.builder().selfNotification(true).build();
+    command = CommandBuilders.monitorCommandBuilder().options(options).build();
+    assertThat(command, equalTo("monitor:selfNotifications"));
+
+    options = MonitorOptions.builder().epochMillis(12345000L).build();
+    command = CommandBuilders.monitorCommandBuilder().options(options).build();
+    assertThat(command, equalTo("monitor:12345000"));
+  }
+
+  @Test
   public void testUpdateBuilderThrowsExceptionsWhenMandatoryFieldsAreNotSet() {
 
     IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
@@ -984,59 +1011,60 @@ public class CommandBuildersTest {
     IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                                                () -> CommandBuilders.notifyKeyChangeCommandBuilder()
                                                    .operation(NotifyOperation.update)
-                                                   .sender(createAtSign("sender"))
-                                                   .recipient(createAtSign("recipient"))
                                                    .build());
     assertThat(ex.getMessage(), containsString("key not set"));
 
+    SharedKey key = Keys.sharedKeyBuilder()
+        .name("key1")
+        .sharedBy(createAtSign("alice"))
+        .sharedWith(createAtSign("bob"))
+        .build();
+
     ex = assertThrows(IllegalArgumentException.class,
-                      () -> CommandBuilders.notifyKeyChangeCommandBuilder().key("key").build());
+                      () -> CommandBuilders.notifyKeyChangeCommandBuilder().key(key).build());
     assertThat(ex.getMessage(), containsString("operation not set"));
 
-    // Test setting the value when ttr has been set
+    // Test setting the value when ttln has been set
     ex = assertThrows(IllegalArgumentException.class, () -> CommandBuilders.notifyKeyChangeCommandBuilder()
         .operation(NotifyOperation.update)
-        .sender(createAtSign("sender"))
-        .recipient(createAtSign("recipient"))
-        .key("phone")
-        .ttr(10000L)
+        .key(key)
+        .ttln(10000L)
         .build());
-    assertThat(ex.getMessage(), containsString("value not set (mandatory when ttr is set)"));
+    assertThat(ex.getMessage(), containsString("value not set (mandatory when ttln is set)"));
 
-    // Test setting invalid ttr
+    // Test setting invalid ttln
     ex = assertThrows(IllegalArgumentException.class, () -> CommandBuilders.notifyKeyChangeCommandBuilder()
         .operation(NotifyOperation.update)
-        .sender(createAtSign("sender"))
-        .recipient(createAtSign("recipient"))
-        .key("phone")
-        .ttr(-100L)
+        .key(key)
+        .ttln(-100L)
         .build());
-    assertThat(ex.getMessage(), containsString("ttr < -1"));
+    assertThat(ex.getMessage(), containsString("ttln < -1"));
 
     // test command
     String command = CommandBuilders.notifyKeyChangeCommandBuilder()
         .operation(NotifyOperation.update)
-        .sender(createAtSign("sender"))
-        .recipient(createAtSign("recipient"))
-        .key("phone")
+        .id("1")
+        .key(key)
         .build();
-    assertThat(command, equalTo("notify:update:messageType:key:@recipient:phone@sender"));
+    assertThat(command, equalTo("notify:id:1:update:messageType:key:@bob:key1@alice"));
 
     // test command with a fully formed key
     command = CommandBuilders.notifyKeyChangeCommandBuilder()
         .operation(NotifyOperation.update)
-        .key("@recipient:phone@sender")
+        .id("1")
+        .key(key)
         .build();
-    assertThat(command, equalTo("notify:update:messageType:key:@recipient:phone@sender"));
+    assertThat(command, equalTo("notify:id:1:update:messageType:key:@bob:key1@alice"));
 
     // test command when ttr and value are present
     command = CommandBuilders.notifyKeyChangeCommandBuilder()
         .operation(NotifyOperation.update)
-        .key("@recipient:phone@sender")
-        .ttr(1000L)
+        .id("1")
+        .key(key)
+        .ttln(1000L)
         .value("cache_me")
         .build();
-    assertThat(command, equalTo("notify:update:messageType:key:ttr:1000:@recipient:phone@sender:cache_me"));
+    assertThat(command, equalTo("notify:id:1:update:messageType:key:ttln:1000:@bob:key1@alice:cache_me"));
   }
 
   @Test

@@ -16,10 +16,7 @@ import org.atsign.client.impl.netty.NettyAtCommandExecutor;
 import org.atsign.client.impl.netty.NettyAtCommandExecutor.NettyAtCommandExecutorBuilder;
 import org.atsign.client.impl.util.KeysUtils;
 
-import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.Option;
-
-import static org.atsign.client.api.AtSign.createAtSign;
 
 /**
  * Base class for Command Line Interface utilities. Holds common fields such as root server
@@ -122,10 +119,4 @@ public abstract class AbstractCli<T extends AbstractCli<T>> {
     }
   }
 
-  static class AtSignConverter implements ITypeConverter<AtSign> {
-    @Override
-    public AtSign convert(String s) {
-      return createAtSign(s);
-    }
-  }
 }

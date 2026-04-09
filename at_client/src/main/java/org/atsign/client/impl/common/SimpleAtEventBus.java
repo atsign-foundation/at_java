@@ -1,17 +1,17 @@
 package org.atsign.client.impl.common;
 
+import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.extern.slf4j.Slf4j;
 
 import static org.atsign.client.api.AtEvents.AtEventBus;
 import static org.atsign.client.api.AtEvents.AtEventListener;
 import static org.atsign.client.api.AtEvents.AtEventType;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 /**
  * Simple implementation of {@link AtEventBus} which will asynchronously dispatch
@@ -20,9 +20,17 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class SimpleAtEventBus implements AtEventBus {
 
-  private final ExecutorService executor = Executors.newCachedThreadPool();
+  private final ExecutorService executor;
 
-  final Map<AtEventListener, Set<AtEventType>> eventListeners = new HashMap<>();
+  final Map<AtEventListener, Set<AtEventType>> eventListeners = new ConcurrentHashMap<>();
+
+  public SimpleAtEventBus(ExecutorService executor) {
+    this.executor = executor;
+  }
+
+  public SimpleAtEventBus() {
+    this(Executors.newSingleThreadExecutor(new DefaultThreadFactory("eventbus", true)));
+  }
 
   @SuppressWarnings("unused")
   public Map<AtEventListener, Set<AtEventType>> getEventListeners() {
@@ -31,21 +39,23 @@ public class SimpleAtEventBus implements AtEventBus {
 
   @Override
   public int publishEvent(AtEventType eventType, Map<String, Object> eventData) {
-    Set<Map.Entry<AtEventListener, Set<AtEventType>>> listenerEntries = eventListeners.entrySet();
-    int listenerCount = 0;
-    for (Map.Entry<AtEventListener, Set<AtEventType>> next : listenerEntries) {
+    List<AtEventListener> listeners = eventListeners.entrySet().stream()
+        .filter(entry -> entry.getValue().contains(eventType))
+        .map(Map.Entry::getKey)
+        .collect(Collectors.toList());
+    executor.submit(() -> invokeListeners(eventType, eventData, listeners));
+    return listeners.size();
+  }
+
+  private static void invokeListeners(AtEventType eventType, Map<String, Object> eventData,
+                                      List<AtEventListener> listeners) {
+    for (AtEventListener listener : listeners) {
       try {
-        Set<AtEventType> eventTypes = next.getValue();
-        if (eventTypes.contains(eventType)) {
-          AtEventListener listener = next.getKey();
-          listenerCount++;
-          executor.submit(() -> listener.handleEvent(eventType, eventData));
-        }
+        listener.handleEvent(eventType, eventData);
       } catch (Exception e) {
-        log.error("caught exception from one of its event listeners", e);
+        log.error("event listener exception", e);
       }
     }
-    return listenerCount;
   }
 
   @Override

@@ -21,6 +21,7 @@ import org.atsign.client.api.AtEvents;
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.impl.AtClients;
 import org.atsign.client.impl.commands.DataResponses;
+import org.atsign.client.impl.commands.MonitorOptions;
 import org.atsign.client.impl.common.EnrollmentId;
 import org.atsign.client.impl.util.KeysUtils;
 import org.atsign.client.impl.exceptions.AtException;
@@ -333,18 +334,14 @@ public class AtClientContext {
         .url(rootHostAndPort)
         .atSign(atSign)
         .keys(keys)
+        .withMonitoring(withMonitor)
+        .monitorOptions(MonitorOptions.builder().epochMillis(System.currentTimeMillis()).build())
         .isVerbose(isVerbose())
         .build();
     AtClientEventListener listener = new AtClientEventListener(qualifiedAtSign);
     atClient.addEventListener(listener, ALL_EVENT_TYPES);
     clients.put(qualifiedAtSign, atClient);
     listeners.put(qualifiedAtSign, listener);
-    if (withMonitor) {
-      atClient.startMonitor();
-      // wait for and old notifications to arrive and then clear listener
-      Thread.sleep(SECONDS.toMillis(2));
-      listener.clear();
-    }
     return atClient;
   }
 

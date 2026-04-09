@@ -22,7 +22,6 @@ import org.atsign.client.impl.AtEndpointSupplier;
 import org.atsign.client.impl.common.ReconnectStrategy;
 import org.atsign.client.impl.common.CommandElement;
 import org.atsign.client.impl.common.CommandQueue;
-import org.atsign.client.impl.common.Preconditions;
 import org.atsign.client.impl.exceptions.AtException;
 import org.atsign.client.impl.exceptions.AtOnReadyException;
 import org.atsign.client.impl.exceptions.AtSecondaryConnectException;
@@ -139,7 +138,7 @@ public class NettyAtCommandExecutor implements AtCommandExecutor {
                                    Clock clock,
                                    Logger log)
       throws AtException {
-    this.endpointSupplier = Preconditions.checkNotNull(endpoint, "endpoint is not set");
+    this.endpointSupplier = checkNotNull(endpoint, "endpoint is not set");
     this.maxFrameLength = defaultIfUnset(maxFrameLength, DEFAULT_MAX_FRAME_LENGTH);
     this.reconnectStrategy = defaultIfNull(reconnect, ReconnectStrategy.NONE);
     this.onReadyConsumer.set(defaultIfNull(onReady, c -> {

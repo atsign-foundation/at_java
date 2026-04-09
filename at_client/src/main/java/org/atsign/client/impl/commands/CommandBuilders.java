@@ -2,22 +2,20 @@ package org.atsign.client.impl.commands;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
+import static org.atsign.client.api.Metadata.*;
 import static org.atsign.client.impl.common.Preconditions.*;
 import static org.atsign.client.impl.util.StringUtils.isBlank;
-import static org.atsign.client.api.Metadata.*;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.atsign.client.api.AtSign;
 import org.atsign.client.api.Keys;
+import org.atsign.client.api.Keys.AtKey;
 import org.atsign.client.api.Metadata;
 import org.atsign.client.impl.common.EnrollmentId;
-import org.atsign.client.impl.util.JsonUtils;
 import org.atsign.client.impl.common.TypedString;
-import org.atsign.client.api.Keys.AtKey;
-import org.atsign.client.api.Metadata.MetadataBuilder;
-
+import org.atsign.client.impl.util.JsonUtils;
 
 import lombok.Builder;
 
@@ -109,6 +107,27 @@ public class CommandBuilders {
         .append(enrollmentId != null ? ":enrollmentId:" + enrollmentId : "")
         .append(':').append(digest)
         .toString();
+  }
+
+
+  /**
+   * A builder to compose an At Protocol command with the <b>monitor</b> verb. The <b>monitor</b> verb
+   * is used to subscribe for notification messages.
+   *
+   * @param options optional arguments that control the server behavior
+   * @return A correctly formed <b>monitor</b> verb command.
+   * @throws IllegalArgumentException If mandatory fields are not set.
+   */
+  @Builder(builderMethodName = "monitorCommandBuilder", builderClassName = "MonitorCommandBuilder")
+  public static String monitor(MonitorOptions options) {
+    StringBuilder builder = new StringBuilder("monitor");
+    if (options != null) {
+      builder.append(options.strict() ? ":strict" : "")
+          .append(options.selfNotification() ? ":selfNotifications" : "")
+          .append(options.epochMillis() > 0 ? ":" + options.epochMillis() : "")
+          .append(options.regex() != null ? " " + options.regex().trim() : "");
+    }
+    return builder.toString();
   }
 
   /**
@@ -439,40 +458,48 @@ public class CommandBuilders {
    * A builder to compose an At Protocol command with the
    * <b>notify:(update|delete):messageType:key</b> verb.
    * The <b>notify:(update|delete):messageType:key</b> verb is used to send key change notifications
-   * to other
-   * {@link AtSign}s.
+   * to other {@link AtSign}s.
    *
    * @param operation Update or Delete.
-   * @param recipient The {@link AtSign} to send the notification to.
-   * @param sender The {@link AtSign} that is sending the notification.
-   * @param key The namespace qualified key name.
+   * @param key The key to send the notification for.
    * @param value The updated value for the key.
-   * @param ttr Sets the time to refresh (milliseconds).
+   * @param ttln Sets the time to live (milliseconds).
    * @return A correctly formed <b>notify:messageType:key</b> verb command.
    * @throws IllegalArgumentException If mandatory fields are not set or if field values conflict.
    */
   @Builder(builderMethodName = "notifyKeyChangeCommandBuilder", builderClassName = "NotifyKeyChangeCommandBuilder")
-  public static String notifyKeyChange(NotifyOperation operation, AtSign recipient, AtSign sender, String key,
-                                       String value,
-                                       Long ttr) {
+  public static String notifyKeyChange(String id, NotifyOperation operation, Integer latestN, String notifier,
+                                       Metadata metadata, AtKey key, String value, Long ttln) {
 
-    checkNotBlank(key, "key not set");
     checkNotNull(operation, "operation not set");
+    checkNotNull(key, "key not set");
 
-    if (ttr != null) {
-      checkTrue(ttr >= -1, "ttr < -1");
-      checkNotBlank(value, "value not set (mandatory when ttr is set)");
+    if (ttln != null) {
+      checkTrue(ttln >= -1, "ttln < -1");
+      checkNotBlank(value, "value not set (mandatory when ttln is set)");
     }
 
-    return new StringBuilder("notify:")
-        .append(operation)
-        .append(":messageType:key:")
-        .append(ttr != null ? "ttr:" + ttr + ":" : "")
-        .append(recipient != null ? recipient + ":" : "")
-        .append(key)
-        .append(sender != null ? sender : "")
+    return new StringBuilder("notify")
+        .append(id != null ? ":id:" + id : "")
+        .append(":" + operation)
+        .append(":messageType:key")
+        .append(latestN != null ? ":latestN:" + latestN : "")
+        .append(notifier != null ? ":notifier:" + notifier : "")
+        .append(ttln != null ? ":ttln:" + ttln : "")
+        .append(metadata != null ? metadata : "")
+        .append(":" + key.rawKey())
         .append(!isBlank(value) ? ":" + value : "")
         .toString();
+  }
+
+  /**
+   * A builder to compose an At Protocol command with the
+   * <b>notify:(update|delete):messageType:key</b> verb.
+   * The <b>notify:(update|delete):messageType:key</b> verb is used to send key change notifications
+   * to other {@link AtSign}s.
+   */
+  public static class NotifyKeyChangeCommandBuilder {
+    // required for javadoc
   }
 
   /**

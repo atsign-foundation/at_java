@@ -33,7 +33,7 @@ class NotificationsTest {
     stubAuthentication(executor, atSign);
 
     Consumer<String> consumer = mock(Consumer.class);
-    Notifications.monitor(executor, atSign, keys, consumer);
+    Notifications.monitor(executor, atSign, null, keys, consumer);
 
     verify(executor).sendSync(eq("monitor"), eq(consumer));
   }
@@ -50,7 +50,7 @@ class NotificationsTest {
     }).when(executor).sendSync(eq("monitor"), Mockito.any(Consumer.class));
 
     Exception ex =
-        assertThrows(Exception.class, () -> Notifications.monitor(atSign, keys, null, consumer).accept(executor));
+        assertThrows(Exception.class, () -> Notifications.monitor(atSign, null, keys, null, consumer).accept(executor));
     assertThat(ex, instanceOf(AtOnReadyException.class));
   }
 
@@ -70,7 +70,10 @@ class NotificationsTest {
   @Test
   void testEventBusBridgePublishesExpectedEventForStatsNotification() {
     AtEvents.AtEventBus eventBus = mock(AtEvents.AtEventBus.class);
-    Notifications.EventBusBridge consumer = new Notifications.EventBusBridge(eventBus, createAtSign("colin"));
+    MonitorOptions monitorOptions = MonitorOptions.builder().build();
+    Notifications.EventBusBridge consumer = new Notifications.EventBusBridge(eventBus,
+        createAtSign("colin"),
+        monitorOptions);
 
     consumer.accept("notification: {\"id\":\"-1\",\"from\":\"@gary\",\"to\":\"@gary\"" +
         ",\"key\":\"statsNotification.@gary\",\"value\":\"229\"" +
@@ -82,12 +85,16 @@ class NotificationsTest {
     assertThat(captor.getValue().get("id"), equalTo("-1"));
     assertThat(captor.getValue().get("operation"), equalTo("update"));
     assertThat(captor.getValue().get("epochMillis"), equalTo(100000));
+    assertThat(monitorOptions.epochMillis(), equalTo(100001L));
   }
 
   @Test
   void testEventBusBridgePublishesExpectedEventForSharedKeyNotification() {
     AtEvents.AtEventBus eventBus = mock(AtEvents.AtEventBus.class);
-    Notifications.EventBusBridge consumer = new Notifications.EventBusBridge(eventBus, createAtSign("gary"));
+    MonitorOptions monitorOptions = MonitorOptions.builder().build();
+    Notifications.EventBusBridge consumer = new Notifications.EventBusBridge(eventBus,
+        createAtSign("gary"),
+        monitorOptions);
 
     consumer.accept("notification: {\"id\":\"0480060d\",\"from\":\"@colin\"" +
         ",\"to\":\"@gary\",\"key\":\"@gary:shared_key@colin\"" +
@@ -106,7 +113,10 @@ class NotificationsTest {
   @Test
   void testEventBusBridgePublishesExpectedEventForUpdateNotification() {
     AtEvents.AtEventBus eventBus = mock(AtEvents.AtEventBus.class);
-    Notifications.EventBusBridge consumer = new Notifications.EventBusBridge(eventBus, createAtSign("gary"));
+    MonitorOptions monitorOptions = MonitorOptions.builder().build();
+    Notifications.EventBusBridge consumer = new Notifications.EventBusBridge(eventBus,
+        createAtSign("gary"),
+        monitorOptions);
 
     consumer.accept("notification: {\"id\":\"cc72371c\",\"from\":\"@colin\",\"to\":\"@gary\"" +
         ",\"key\":\"@gary:test@colin\",\"value\":\"C8gg7hDuJ4BVk6hrgu2GCQ==\",\"operation\":\"update\"" +
@@ -125,7 +135,10 @@ class NotificationsTest {
   @Test
   void testEventBusBridgeCatchesUnexpectedExceptions() {
     AtEvents.AtEventBus eventBus = mock(AtEvents.AtEventBus.class);
-    Notifications.EventBusBridge consumer = new Notifications.EventBusBridge(eventBus, createAtSign("gary"));
+    MonitorOptions monitorOptions = MonitorOptions.builder().build();
+    Notifications.EventBusBridge consumer = new Notifications.EventBusBridge(eventBus,
+        createAtSign("gary"),
+        monitorOptions);
 
     consumer.accept("xyz");
 
@@ -135,7 +148,10 @@ class NotificationsTest {
   @Test
   void testEventBusBridgePublishesExpectedEventForDeleteNotification() {
     AtEvents.AtEventBus eventBus = mock(AtEvents.AtEventBus.class);
-    Notifications.EventBusBridge consumer = new Notifications.EventBusBridge(eventBus, createAtSign("gary"));
+    MonitorOptions monitorOptions = MonitorOptions.builder().build();
+    Notifications.EventBusBridge consumer = new Notifications.EventBusBridge(eventBus,
+        createAtSign("gary"),
+        monitorOptions);
 
     consumer.accept("notification: {\"id\":\"41b265d8\",\"from\":\"@colin\",\"to\":\"@gary\"" +
         ",\"key\":\"@gary:test@colin\",\"value\":null,\"operation\":\"delete\",\"epochMillis\":1773077405537" +
@@ -153,7 +169,10 @@ class NotificationsTest {
   @Test
   void testEventBusBridgePublishesExpectedEventForUnrecognizedNotification() {
     AtEvents.AtEventBus eventBus = mock(AtEvents.AtEventBus.class);
-    Notifications.EventBusBridge consumer = new Notifications.EventBusBridge(eventBus, createAtSign("gary"));
+    MonitorOptions monitorOptions = MonitorOptions.builder().build();
+    Notifications.EventBusBridge consumer = new Notifications.EventBusBridge(eventBus,
+        createAtSign("gary"),
+        monitorOptions);
 
     consumer.accept("notification: {\"id\":\"41b265d8\",\"from\":\"@colin\",\"to\":\"@gary\"" +
         ",\"key\":\"@gary:test@colin\",\"value\":null,\"operation\":\"unrecognized\",\"epochMillis\":1773077405537" +
@@ -180,6 +199,5 @@ class NotificationsTest {
       }
     });
   }
-
 
 }
