@@ -12,7 +12,7 @@ If you are using maven, add the following to your pom.xml
   <dependency>
     <groupId>org.atsign</groupId>
     <artifactId>at_client</artifactId>
-    <version>1.0.0</version>
+    <version>0.0.3</version>
   </dependency>
 </dependencies>
 ```
@@ -49,7 +49,7 @@ The latest snapshot version can be added as a maven dependency like this...
 <dependency>
   <groupId>org.atsign</groupId>
   <artifactId>at_client</artifactId>
-  <version>1.0.1-SNAPSHOT</version>
+  <version>0.0.4-SNAPSHOT</version>
 </dependency>
 </dependencies>
 ```
@@ -77,7 +77,7 @@ as a dependency in your pom.xml.
   <dependency>
     <groupId>org.slf4j</groupId>
     <artifactId>slf4j-simple</artifactId>
-    <version>2.0.13</version>
+    <version>0.0.3</version>
   </dependency>
 ```
 

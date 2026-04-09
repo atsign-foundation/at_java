@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.3 (2026-04-09)
+
+### Features
+- at_talk cli plus monitor modifications
+- remove CompletableFuture pattern from AtClient interface
+
+### Bug Fixes
+- cherry picked fix for test with bug
+- incremented version for jackson and netty to vulnerabilities free versions
+
 ## v0.0.1 (2026-03)
 
 ### Features
@@ -15,5 +25,4 @@
 push- replace boilerplate code and consolidate common classes
 - corrected javadoc. javadoc plugin is now configured to fail on error. checkstyle has been expanded to enforce class comments (#356)
 - removed direct output to stderr and stdout in core library code, CLI and examples still use System.out/err, replaced with slf4j using lombok annotations
-
 
