@@ -166,6 +166,60 @@ config/java-format.xml
 2. Add **CheckStyle-IDEA** plugin and configure in
 **Settings -> Tools -> Checkstyle** by adding config/checkstyle.xml
 
+
+## Releases
+
+This script can be used to prepare a release
+
+```bash
+bash ./release.sh
+```
+
+By default, it will create a release for the current snapshot version and
+increment the patch number for the next dev release. e.g if the
+current pom version is 1.2.3-SNAPSHOT, then the release version will be
+1.2.3 and the next version will be 1.2.4-SNAPSHOT.
+
+However, you can provide the release version and the next version explicitly.
+
+This example illustrates overriding the release version with a specific version
+
+```bash
+bash ./release.sh 1.2.3
+```
+
+This overrides the release version to be the next minor version. e.g if the
+current pom version is 1.2.3-SNAPSHOT then the release version will be
+1.3.0 and the next version will be 1.3.1-SNAPSHOT.
+
+```bash
+bash ./release.sh minor
+```
+This overrides the release version to be the next minor version. e.g if the
+current pom version is 1.2.3-SNAPSHOT then the release version will be
+2.0.0 and the next version will be 2.0.1-SNAPSHOT.
+
+```bash
+bash ./release.sh major
+```
+
+The script will prepare the working branch as a release branch. This means
+it will make 2 commits. 
+
+1. One which updates the pom versions to the release version
+2. And a subsequent commit that updates the pom version to the next version.
+
+This branch should be pushed as for a PR. Once that is approved and merged
+a GitHUb release should be created with a corresponding release tag. The
+target for the tag should be the first commit.
+
+The [maven-deploy.yml](../at_java/.github/workflows/maven-deploy.yml) workflow
+will be triggered by the tag. This will build and deploy to maven central.
+
+The workflow [release.yml](../at_java/.github/workflows/release.yml) can be
+triggered from the GitHub UI. This will automatically create a branch, run 
+the release script and push the branch.
+
 ## Contributions welcome
 
 All of our software is open with intent. We welcome contributions - we want

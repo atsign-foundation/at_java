@@ -1,0 +1,46 @@
+# This workflow will create a release branch, run the release script and push the commits for PR
+
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The pom version (or MAJOR / MINOR) for the release'
+        required: false
+      next_version:
+        description: 'The pom version (or MAJOR / MINOR) for the next version'
+        required: false
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        fetch-depth: 0
+    - name: Set up JDK 11
+      uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        cache: maven
+    - name: Add virtual env entry to hosts file
+      run: echo "127.0.0.1    vip.ve.atsign.zone" | sudo tee -a /etc/hosts
+    - name: Configure git
+      run: |
+        git config user.name 'library-action[bot]'
+        git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+        git checkout -b java_release_${{github.run_number}}
+    - name: Run release script and push commits
+      run: |
+        bash ./release.sh ${{ github.event.inputs.version }} ${{ github.event.inputs.next_version }}
+        git push --set-upstream origin java_release_${{github.run_number}}
