@@ -1,8 +1,14 @@
 package org.atsign.client.api;
 
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
+import java.util.Base64;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.atsign.client.impl.util.JsonUtils;
 
 import lombok.Builder;
@@ -50,6 +56,14 @@ public class Metadata {
   String skeEncKeyName;
   String skeEncAlgo;
   Boolean immutable;
+  /**
+   * Provider-owned crypto metadata for the pluggable encryption/decryption model. Mirrors the
+   * canonical at_commons {@code AppMetadata}: an SDK-owned {@code providerId} that routes the
+   * value to the crypto provider able to decrypt it, plus opaque {@code additional} entries the
+   * SDK preserves but does not interpret. Serialised LAST in the metadata fragment as
+   * {@code :appMetadata:<base64(JSON)>} and as a flat JSON object in metadata maps.
+   */
+  AppMetadata appMetadata;
 
   /**
    * A builder for instantiating {@link Metadata} instances. Note: Metadata is immutable so if you
@@ -90,6 +104,7 @@ public class Metadata {
         .append(skeEncKeyName != null ? ":skeEncKeyName:" + skeEncKeyName : "")
         .append(skeEncAlgo != null ? ":skeEncAlgo:" + skeEncAlgo : "")
         .append(immutable != null ? ":immutable:" + immutable : "")
+        .append(appMetadata != null ? ":appMetadata:" + appMetadata.encode() : "")
         .toString();
   }
 
@@ -457,5 +472,121 @@ public class Metadata {
   public static class PublicKeyHash {
     String hash;
     String hashingAlgo;
+  }
+
+  /**
+   * Encode {@link AppMetadata} to its base64(JSON) wire form. Mirrors canonical
+   * {@code Metadata.encodeAppMetadata} (at_commons at_key.dart).
+   *
+   * @param appMetadata value to encode
+   * @return base64(JSON) string
+   */
+  public static String encodeAppMetadata(AppMetadata appMetadata) {
+    return appMetadata.encode();
+  }
+
+  /**
+   * Decode an {@code appMetadata} value that may arrive as a base64(JSON) String (the wire form),
+   * a flat JSON object ({@code Map}, the metadata-map form), or an already-parsed
+   * {@link AppMetadata}. Mirrors canonical {@code Metadata.decodeAppMetadata}.
+   *
+   * @param value wire value, or null
+   * @return the parsed value, or null when absent
+   */
+  public static AppMetadata decodeAppMetadata(Object value) {
+    return AppMetadata.decode(value);
+  }
+
+  /**
+   * Provider-owned crypto metadata for the pluggable encryption/decryption model, mirroring the
+   * canonical Dart {@code AppMetadata} (at_commons). The SDK owns {@code providerId} — the
+   * routing key that selects the crypto provider able to decrypt the value — and preserves any
+   * {@code additional} provider-owned entries opaquely. On the wire it is base64(JSON)-encoded
+   * (see {@link #encode()}); in metadata maps it is the flat JSON object
+   * {@code {"providerId":…, …additional}} (see {@link #toJson()}).
+   */
+  @Value
+  @Builder
+  public static class AppMetadata {
+    String providerId;
+    Map<String, Object> additional;
+
+    /**
+     * @return the flat JSON object form — {@code providerId} plus any {@code additional} entries,
+     *         serialised flat (not nested under an {@code additional} key), matching canonical.
+     */
+    @JsonValue
+    public Map<String, Object> toJson() {
+      Map<String, Object> map = new LinkedHashMap<>();
+      map.put("providerId", providerId);
+      if (additional != null) {
+        map.putAll(additional);
+      }
+      return map;
+    }
+
+    /**
+     * Build from the flat JSON object form; every key other than {@code providerId} is collected
+     * into {@code additional}. Used by Jackson when deserialising a metadata map.
+     *
+     * @param json flat map with a String {@code providerId} and opaque extras
+     * @return the parsed value
+     * @throws IllegalArgumentException if {@code providerId} is missing or blank
+     */
+    @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
+    public static AppMetadata fromJson(Map<String, Object> json) {
+      Object providerId = json.get("providerId");
+      if (!(providerId instanceof String) || ((String) providerId).trim().isEmpty()) {
+        throw new IllegalArgumentException("Invalid appMetadata.providerId: " + providerId);
+      }
+      Map<String, Object> additional = new LinkedHashMap<>();
+      for (Map.Entry<String, Object> entry : json.entrySet()) {
+        if (!"providerId".equals(entry.getKey())) {
+          additional.put(entry.getKey(), entry.getValue());
+        }
+      }
+      return AppMetadata.builder()
+          .providerId((String) providerId)
+          .additional(additional.isEmpty() ? null : additional)
+          .build();
+    }
+
+    /**
+     * @return the base64(JSON) wire encoding of {@link #toJson()}.
+     */
+    public String encode() {
+      return Base64.getEncoder()
+          .encodeToString(JsonUtils.writeValueAsString(toJson()).getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Decode an {@code appMetadata} value arriving as a base64(JSON) String, a flat JSON
+     * {@code Map}, or an already-parsed {@link AppMetadata}. Absent (null or the literal
+     * {@code "null"}) yields null.
+     *
+     * @param value wire value
+     * @return the parsed value, or null when absent
+     * @throws IllegalArgumentException if the value is a non-decodable shape
+     */
+    @SuppressWarnings("unchecked")
+    public static AppMetadata decode(Object value) {
+      if (value == null || "null".equals(value)) {
+        return null;
+      }
+      if (value instanceof AppMetadata) {
+        return (AppMetadata) value;
+      }
+      if (value instanceof Map) {
+        return fromJson((Map<String, Object>) value);
+      }
+      if (value instanceof String && !((String) value).isEmpty()) {
+        byte[] decoded = Base64.getDecoder().decode((String) value);
+        Object json = JsonUtils.readValue(new String(decoded, StandardCharsets.UTF_8), Object.class);
+        if (json instanceof Map) {
+          return fromJson((Map<String, Object>) json);
+        }
+      }
+      throw new IllegalArgumentException("Invalid appMetadata: " + value);
+    }
   }
 }

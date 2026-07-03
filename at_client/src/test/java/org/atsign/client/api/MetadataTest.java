@@ -571,4 +571,77 @@ class MetadataTest {
     assertThat(b.build().immutable(), is(true));
   }
 
+  // ---- AppMetadata (pluggable-encryption provider metadata) ----
+
+  @Test
+  void testAppMetadataToJsonIsFlatProviderIdPlusAdditional() {
+    Metadata.AppMetadata am = Metadata.AppMetadata.builder()
+        .providerId("legacy")
+        .additional(java.util.Map.of("v", 2))
+        .build();
+    java.util.Map<String, Object> json = am.toJson();
+    assertThat(json.get("providerId"), equalTo("legacy"));
+    assertThat(json.get("v"), equalTo(2));
+    // additional is flattened, NOT nested under an "additional" key
+    assertThat(json.containsKey("additional"), is(false));
+  }
+
+  @Test
+  void testAppMetadataFromJsonRoutesNonProviderIdKeysToAdditional() {
+    Metadata.AppMetadata am = Metadata.AppMetadata
+        .fromJson(new java.util.LinkedHashMap<>(java.util.Map.of("providerId", "p1", "x", "y")));
+    assertThat(am.providerId(), equalTo("p1"));
+    assertThat(am.additional().get("x"), equalTo("y"));
+  }
+
+  @Test
+  void testAppMetadataFromJsonWithOnlyProviderIdHasNullAdditional() {
+    Metadata.AppMetadata am = Metadata.AppMetadata
+        .fromJson(new java.util.LinkedHashMap<>(java.util.Map.of("providerId", "p1")));
+    assertThat(am.additional(), is(nullValue()));
+  }
+
+  @Test
+  void testAppMetadataFromJsonThrowsWhenProviderIdMissingOrBlank() {
+    assertThrows(IllegalArgumentException.class,
+                 () -> Metadata.AppMetadata.fromJson(new java.util.LinkedHashMap<>()));
+    assertThrows(IllegalArgumentException.class, () -> Metadata.AppMetadata
+        .fromJson(new java.util.LinkedHashMap<>(java.util.Map.of("providerId", "  "))));
+  }
+
+  @Test
+  void testAppMetadataEncodeDecodeRoundTrips() {
+    Metadata.AppMetadata am = Metadata.AppMetadata.builder().providerId("prov").build();
+    String encoded = am.encode();
+    // base64 of a JSON object — decode must reconstruct the same value
+    assertThat(Metadata.AppMetadata.decode(encoded), equalTo(am));
+    // canonical parity: the static Metadata helpers delegate to encode/decode
+    assertThat(Metadata.encodeAppMetadata(am), equalTo(encoded));
+    assertThat(Metadata.decodeAppMetadata(encoded), equalTo(am));
+  }
+
+  @Test
+  void testAppMetadataDecodeAcceptsMapAndAppMetadataAndNull() {
+    Metadata.AppMetadata am = Metadata.AppMetadata.builder().providerId("prov").build();
+    assertThat(Metadata.AppMetadata.decode(am), sameInstance(am));
+    assertThat(Metadata.AppMetadata.decode(java.util.Map.of("providerId", "prov")), equalTo(am));
+    assertThat(Metadata.AppMetadata.decode(null), is(nullValue()));
+    assertThat(Metadata.AppMetadata.decode("null"), is(nullValue()));
+  }
+
+  @Test
+  void testToStringEncodesAppMetadataAsBase64Fragment() {
+    Metadata.AppMetadata am = Metadata.AppMetadata.builder().providerId("prov").build();
+    Metadata md = Metadata.builder().appMetadata(am).build();
+    assertThat(md.toString(), containsString(":appMetadata:" + am.encode()));
+  }
+
+  @Test
+  void testMetadataFromJsonDeserialisesNestedAppMetadataObject() {
+    // The metadata-map form carries appMetadata as a flat JSON object (not base64).
+    Metadata md = Metadata.fromJson("{\"appMetadata\":{\"providerId\":\"prov\",\"v\":1}}");
+    assertThat(md.appMetadata().providerId(), equalTo("prov"));
+    assertThat(md.appMetadata().additional().get("v"), equalTo(1));
+  }
+
 }
