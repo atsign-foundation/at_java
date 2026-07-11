@@ -76,6 +76,8 @@ public class AtCommandExecutors {
         .awaitReadyMillis(defaultIfNotSet(awaitReadyMillis, DEFAULT_TIMEOUT_MILLIS))
         .reconnect(defaultIfNotSet(reconnect, SimpleReconnectStrategy.builder().build()))
         .queueLimit(queueLimit)
+        .atSign(atSign)
+        .clientConfig(createClientConfig(config))
         .onReady(defaultIfNotSet(onReady, createOnReady(atSign, keys, createClientConfig(config))))
         .build();
   }

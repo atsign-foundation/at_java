@@ -59,10 +59,14 @@ public class AuthenticationCommands {
       throws AtException {
     try {
 
+      // reuse the challenge from the initial from: if the executor already sent one, otherwise
       // send a from command and expect to receive a challenge
-      String fromCommand = CommandBuilders.fromCommandBuilder().atSign(atSign).config(config).build();
-      String fromResponse = executor.sendSync(fromCommand);
-      String challenge = matchDataStringNoWhitespace(throwExceptionIfError(fromResponse));
+      String challenge = executor.getFromChallenge();
+      if (challenge == null) {
+        String fromCommand = CommandBuilders.fromCommandBuilder().atSign(atSign).config(config).build();
+        String fromResponse = executor.sendSync(fromCommand);
+        challenge = matchDataStringNoWhitespace(throwExceptionIfError(fromResponse));
+      }
 
       // send a pkam command with the signed challenge
       String signature = EncryptionUtils.signSHA256RSA(challenge, keys.getApkamPrivateKey());
@@ -95,10 +99,14 @@ public class AuthenticationCommands {
       throws AtException {
     try {
 
+      // reuse the challenge from the initial from: if the executor already sent one, otherwise
       // send a from command and expect to receive a challenge
-      String fromCommand = CommandBuilders.fromCommandBuilder().atSign(atSign).build();
-      String fromResponse = executor.sendSync(fromCommand);
-      String challenge = matchDataStringNoWhitespace(throwExceptionIfError(fromResponse));
+      String challenge = executor.getFromChallenge();
+      if (challenge == null) {
+        String fromCommand = CommandBuilders.fromCommandBuilder().atSign(atSign).build();
+        String fromResponse = executor.sendSync(fromCommand);
+        challenge = matchDataStringNoWhitespace(throwExceptionIfError(fromResponse));
+      }
 
       // send a cram command
       String cramDigest = createDigest(cramSecret, challenge);

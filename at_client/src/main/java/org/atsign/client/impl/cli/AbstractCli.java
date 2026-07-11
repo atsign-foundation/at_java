@@ -106,6 +106,7 @@ public abstract class AbstractCli<T extends AbstractCli<T>> {
         .build();
     return NettyAtCommandExecutor.builder()
         .endpoint(endpoint)
+        .atSign(atSign)
         .reconnect(reconnect)
         .isVerbose(verbose);
   }

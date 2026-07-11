@@ -2,12 +2,15 @@ package org.atsign.client.impl.netty;
 
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.atsign.client.impl.commands.DataResponses.matchDataStringNoWhitespace;
+import static org.atsign.client.impl.commands.ErrorResponses.throwExceptionIfError;
 import static org.atsign.client.impl.common.CommandElement.isPrompt;
 import static org.atsign.client.impl.common.Preconditions.checkNotNull;
 
 import java.io.IOException;
 import java.time.Clock;
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -18,7 +21,9 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 
 import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.AtSign;
 import org.atsign.client.impl.AtEndpointSupplier;
+import org.atsign.client.impl.commands.CommandBuilders;
 import org.atsign.client.impl.common.ReconnectStrategy;
 import org.atsign.client.impl.common.CommandElement;
 import org.atsign.client.impl.common.CommandQueue;
@@ -102,6 +107,12 @@ public class NettyAtCommandExecutor implements AtCommandExecutor {
 
   private volatile long lastReadMillis;
 
+  private final AtSign atSign;
+
+  private final Map<String, Object> clientConfig;
+
+  private final AtomicReference<String> fromChallenge = new AtomicReference<>();
+
   /**
    * Builder method for instantiating instances of a Netty based implementation of
    * {@link AtCommandExecutor}
@@ -135,9 +146,13 @@ public class NettyAtCommandExecutor implements AtCommandExecutor {
                                    Integer queueLimit,
                                    Long awaitReadyMillis,
                                    Boolean isVerbose,
+                                   AtSign atSign,
+                                   Map<String, Object> clientConfig,
                                    Clock clock,
                                    Logger log)
       throws AtException {
+    this.atSign = atSign;
+    this.clientConfig = clientConfig;
     this.endpointSupplier = checkNotNull(endpoint, "endpoint is not set");
     this.maxFrameLength = defaultIfUnset(maxFrameLength, DEFAULT_MAX_FRAME_LENGTH);
     this.reconnectStrategy = defaultIfNull(reconnect, ReconnectStrategy.NONE);
@@ -466,6 +481,7 @@ public class NettyAtCommandExecutor implements AtCommandExecutor {
       threadFactory.markCurrentThreadOnReadyThread();
       try {
         readyingLock.lock();
+        sendFromIfRequired();
         onReadyConsumer.get().accept(this);
       } catch (AtOnReadyException e) {
         log.error("onReady exception", e);
@@ -482,6 +498,49 @@ public class NettyAtCommandExecutor implements AtCommandExecutor {
       }
       threadFactory.clearCurrentThreadOnReadyThread();
     };
+  }
+
+  /**
+   * Sends {@code from:@atSign} as the first command once the connection is ready, so the
+   * connection's atSign is established before any other verb (including a {@code scan} sent by
+   * an onReady consumer prior to authenticating). The challenge returned by the server is
+   * retained so that CRAM / PKAM authentication can reuse it instead of issuing a second
+   * {@code from:}. When no atSign was supplied to the builder this is a no-op and
+   * {@link #getFromChallenge()} returns {@code null}.
+   *
+   * <p>
+   * Runs on the onReady thread, where {@link #sendSync(String)} is permitted. On reconnect
+   * the ready sequence re-runs, so the challenge is refreshed on each connect.
+   */
+  private void sendFromIfRequired() {
+    if (atSign == null) {
+      return;
+    }
+    try {
+      String fromCommand = CommandBuilders.fromCommandBuilder()
+          .atSign(atSign)
+          .config(clientConfig)
+          .build();
+      String fromResponse = sendSync(fromCommand);
+      String challenge = matchDataStringNoWhitespace(throwExceptionIfError(fromResponse));
+      fromChallenge.set(challenge);
+    } catch (AtException | ExecutionException | InterruptedException | RuntimeException e) {
+      throw new AtOnReadyException("from command failed : " + e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Returns the challenge from the initial {@code from:} and clears it, so it is consumed at most
+   * once. The server's {@code from:} challenge is single-use — whichever authentication (CRAM or
+   * PKAM) sends its digest first consumes it — so a second authentication on the same connection
+   * (e.g. onboarding, which does CRAM then PKAM) must issue its own {@code from:} and gets
+   * {@code null} here to signal that fallback. The challenge is also cleared on disconnect —
+   * it is only valid for the server session that issued it — so a caller can never consume a
+   * challenge from a connection that has since dropped.
+   */
+  @Override
+  public String getFromChallenge() {
+    return fromChallenge.getAndSet(null);
   }
 
   private void onResponse(String msg) {
@@ -522,6 +581,8 @@ public class NettyAtCommandExecutor implements AtCommandExecutor {
     @Override
     public void channelInactive(ChannelHandlerContext context) {
       channel = null;
+      // a from: challenge is only valid for the server session that just ended
+      fromChallenge.set(null);
       if (status.get().isClosedOrClosing()) {
         log.debug("connection closed");
       } else {

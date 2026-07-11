@@ -83,4 +83,19 @@ public interface AtCommandExecutor extends AutoCloseable {
    * @return this (to allow chaining / fluent style invocation)
    */
   AtCommandExecutor onReady(Consumer<AtCommandExecutor> consumer);
+
+  /**
+   * Returns the challenge from the {@code from:} command that this executor issued as its first
+   * command once the connection became ready, so that CRAM / PKAM authentication can reuse it
+   * rather than sending a second {@code from:}. The challenge is consumed at most once — the
+   * server's {@code from:} challenge is single-use, so a second authentication on the same
+   * connection (e.g. onboarding, which does CRAM then PKAM) gets {@code null} and falls back to
+   * sending its own {@code from:}. Also returns {@code null} when this executor was not configured
+   * with an atSign (and therefore did not send an initial {@code from:}).
+   *
+   * @return the retained {@code from:} challenge, or {@code null} if none is available
+   */
+  default String getFromChallenge() {
+    return null;
+  }
 }
