@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -47,17 +48,13 @@ class CliIT {
 
   @Test
   public void testShareUsage() throws Exception {
-    int shareCode = runMainExpectSystemExit(() -> Share.main(new String[] {VIRTUAL_ENV_ROOT}));
-    assertThat(shareCode, not(equalTo(0)));
-
-    int scanCode = runMainExpectSystemExit(() -> Scan.main(new String[] {VIRTUAL_ENV_ROOT}));
-    assertThat(scanCode, not(equalTo(0)));
-
-    int getCode = runMainExpectSystemExit(() -> Get.main(new String[] {VIRTUAL_ENV_ROOT}));
-    assertThat(getCode, not(equalTo(0)));
-
-    int deleteCode = runMainExpectSystemExit(() -> Delete.main(new String[] {VIRTUAL_ENV_ROOT}));
-    assertThat(deleteCode, not(equalTo(0)));
+    // Each CLI prints usage and exits non-zero when given too few args. Run each main in a
+    // forked JVM and read its real exit code: System.exit can no longer be trapped in-process
+    // now that the Security Manager is gone (JDK 24, JEP 486).
+    assertThat(runMainInSubprocess(Share.class, VIRTUAL_ENV_ROOT), not(equalTo(0)));
+    assertThat(runMainInSubprocess(Scan.class, VIRTUAL_ENV_ROOT), not(equalTo(0)));
+    assertThat(runMainInSubprocess(Get.class, VIRTUAL_ENV_ROOT), not(equalTo(0)));
+    assertThat(runMainInSubprocess(Delete.class, VIRTUAL_ENV_ROOT), not(equalTo(0)));
   }
 
   @Test
@@ -113,12 +110,19 @@ class CliIT {
     assertThrows(AssertionError.class, () -> findLines(secondScanStdout, "\\s+0:\\s+.*" + keyname + ".*"));
   }
 
-  public static int runMainExpectSystemExit(Statement statement, String... stdin) throws Exception {
-    AtomicReference<String> stdout = new AtomicReference<>();
-    return SystemLambda.catchSystemExit(() -> stdout.set(SystemLambda.tapSystemErr(() -> {
-      SystemLambda.SystemInStub stub = SystemLambda.withTextFromSystemIn(String.join("\n", List.of(stdin)));
-      stub.execute(statement);
-    })));
+  /**
+   * Runs a CLI {@code main} in a forked JVM and returns its exit code. The code under test calls
+   * {@link System#exit}, which can no longer be intercepted in-process now that the Security
+   * Manager has been removed (JDK 24, JEP 486) and {@code System.setSecurityManager} throws. The
+   * child inherits this JVM's classpath and stdio.
+   */
+  public static int runMainInSubprocess(Class<?> mainClass, String... args) throws Exception {
+    List<String> command = new ArrayList<>(List.of(
+                                                   System.getProperty("java.home") + "/bin/java",
+                                                   "-cp", System.getProperty("java.class.path"),
+                                                   mainClass.getName()));
+    command.addAll(List.of(args));
+    return new ProcessBuilder(command).inheritIO().start().waitFor();
   }
 
   public static List<String> runMain(Statement statement, String... stdin) throws Exception {
