@@ -200,10 +200,10 @@ class NettyAtCommandExecutorTest {
       // the executor issues from: itself as its first command once ready
       assertThat(server.poll(), equalTo("from:@alice"));
       // so the first authentication reuses that challenge instead of sending a second from:
-      assertThat(executor.getFromChallenge(), equalTo(FROM_CHALLENGE));
+      assertThat(executor.getContext().consumeChallenge(), equalTo(FROM_CHALLENGE));
       // but it is single-use: a second authentication on the same connection gets null and
       // falls back to issuing its own from:
-      assertThat(executor.getFromChallenge(), nullValue());
+      assertThat(executor.getContext().consumeChallenge(), nullValue());
     }
   }
 
@@ -214,7 +214,7 @@ class NettyAtCommandExecutorTest {
       // no atSign was supplied to the builder, so no initial from: is sent...
       assertThat(server.peek(), nullValue());
       // ...and there is no retained challenge, so authentication sends its own from:
-      assertThat(executor.getFromChallenge(), nullValue());
+      assertThat(executor.getContext().consumeChallenge(), nullValue());
     }
   }
 
@@ -231,7 +231,7 @@ class NettyAtCommandExecutorTest {
       await().until(() -> !executor.isReady());
       // the challenge was only valid for the session that just ended, so it must not survive
       // the disconnect - otherwise out-of-band auth could sign a challenge the server forgot
-      assertThat(executor.getFromChallenge(), nullValue());
+      assertThat(executor.getContext().consumeChallenge(), nullValue());
     }
   }
 
@@ -248,11 +248,11 @@ class NettyAtCommandExecutorTest {
     connectionBuilder.atSign(AtSign.createAtSign("@alice")).reconnect(reconnectStrategy);
     try (NettyAtCommandExecutor executor = connectionBuilder.build()) {
       await().until(executor::isReady);
-      assertThat(executor.getFromChallenge(), equalTo("challenge-1"));
+      assertThat(executor.getContext().consumeChallenge(), equalTo("challenge-1"));
       server.closeClientSocket();
       // the reconnect re-runs the ready sequence, which issues a fresh from: and retains its
       // challenge in place of the old one
-      await().until(() -> "challenge-2".equals(executor.getFromChallenge()));
+      await().until(() -> "challenge-2".equals(executor.getContext().consumeChallenge()));
     }
   }
 

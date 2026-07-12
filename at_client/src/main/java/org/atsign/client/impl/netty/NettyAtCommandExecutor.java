@@ -21,6 +21,8 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 
 import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.AtCommandExecutorContext;
+import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtSign;
 import org.atsign.client.impl.AtEndpointSupplier;
 import org.atsign.client.impl.commands.CommandBuilders;
@@ -107,11 +109,7 @@ public class NettyAtCommandExecutor implements AtCommandExecutor {
 
   private volatile long lastReadMillis;
 
-  private final AtSign atSign;
-
-  private final Map<String, Object> clientConfig;
-
-  private final AtomicReference<String> fromChallenge = new AtomicReference<>();
+  private final AtCommandExecutorContext context;
 
   /**
    * Builder method for instantiating instances of a Netty based implementation of
@@ -147,12 +145,12 @@ public class NettyAtCommandExecutor implements AtCommandExecutor {
                                    Long awaitReadyMillis,
                                    Boolean isVerbose,
                                    AtSign atSign,
+                                   AtKeys keys,
                                    Map<String, Object> clientConfig,
                                    Clock clock,
                                    Logger log)
       throws AtException {
-    this.atSign = atSign;
-    this.clientConfig = clientConfig;
+    this.context = new AtCommandExecutorContext(atSign, keys, clientConfig);
     this.endpointSupplier = checkNotNull(endpoint, "endpoint is not set");
     this.maxFrameLength = defaultIfUnset(maxFrameLength, DEFAULT_MAX_FRAME_LENGTH);
     this.reconnectStrategy = defaultIfNull(reconnect, ReconnectStrategy.NONE);
@@ -505,42 +503,41 @@ public class NettyAtCommandExecutor implements AtCommandExecutor {
    * connection's atSign is established before any other verb (including a {@code scan} sent by
    * an onReady consumer prior to authenticating). The challenge returned by the server is
    * retained so that CRAM / PKAM authentication can reuse it instead of issuing a second
-   * {@code from:}. When no atSign was supplied to the builder this is a no-op and
-   * {@link #getFromChallenge()} returns {@code null}.
+   * {@code from:}. When no atSign was supplied to the builder this is a no-op and the context's
+   * {@link AtCommandExecutorContext#consumeChallenge() challenge} stays {@code null}.
    *
    * <p>
    * Runs on the onReady thread, where {@link #sendSync(String)} is permitted. On reconnect
    * the ready sequence re-runs, so the challenge is refreshed on each connect.
    */
   private void sendFromIfRequired() {
+    AtSign atSign = context.getAtSign();
     if (atSign == null) {
       return;
     }
     try {
       String fromCommand = CommandBuilders.fromCommandBuilder()
           .atSign(atSign)
-          .config(clientConfig)
+          .config(context.getConfig())
           .build();
       String fromResponse = sendSync(fromCommand);
       String challenge = matchDataStringNoWhitespace(throwExceptionIfError(fromResponse));
-      fromChallenge.set(challenge);
+      context.setChallenge(challenge);
     } catch (AtException | ExecutionException | InterruptedException | RuntimeException e) {
       throw new AtOnReadyException("from command failed : " + e.getMessage(), e);
     }
   }
 
   /**
-   * Returns the challenge from the initial {@code from:} and clears it, so it is consumed at most
-   * once. The server's {@code from:} challenge is single-use — whichever authentication (CRAM or
-   * PKAM) sends its digest first consumes it — so a second authentication on the same connection
-   * (e.g. onboarding, which does CRAM then PKAM) must issue its own {@code from:} and gets
-   * {@code null} here to signal that fallback. The challenge is also cleared on disconnect —
-   * it is only valid for the server session that issued it — so a caller can never consume a
-   * challenge from a connection that has since dropped.
+   * Returns this executor's authentication context — the identity it authenticates as plus the
+   * single-use challenge from the initial {@code from:}. The challenge is retained by
+   * {@link #sendFromIfRequired()} on the ready thread, consumed at most once by whichever
+   * authentication sends its digest first, and cleared on disconnect (see {@code channelInactive})
+   * so a caller can never consume a challenge from a connection that has since dropped.
    */
   @Override
-  public String getFromChallenge() {
-    return fromChallenge.getAndSet(null);
+  public AtCommandExecutorContext getContext() {
+    return context;
   }
 
   private void onResponse(String msg) {
@@ -581,8 +578,9 @@ public class NettyAtCommandExecutor implements AtCommandExecutor {
     @Override
     public void channelInactive(ChannelHandlerContext context) {
       channel = null;
-      // a from: challenge is only valid for the server session that just ended
-      fromChallenge.set(null);
+      // a from: challenge is only valid for the server session that just ended (this method's
+      // `context` parameter is the Netty ChannelHandlerContext, so qualify the executor's field)
+      NettyAtCommandExecutor.this.context.clearChallenge();
       if (status.get().isClosedOrClosing()) {
         log.debug("connection closed");
       } else {

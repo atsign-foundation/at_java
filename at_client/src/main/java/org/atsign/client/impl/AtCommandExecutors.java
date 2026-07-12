@@ -77,8 +77,9 @@ public class AtCommandExecutors {
         .reconnect(defaultIfNotSet(reconnect, SimpleReconnectStrategy.builder().build()))
         .queueLimit(queueLimit)
         .atSign(atSign)
+        .keys(keys)
         .clientConfig(createClientConfig(config))
-        .onReady(defaultIfNotSet(onReady, createOnReady(atSign, keys, createClientConfig(config))))
+        .onReady(defaultIfNotSet(onReady, createOnReady(atSign, keys)))
         .build();
   }
 
@@ -130,10 +131,12 @@ public class AtCommandExecutors {
     return result;
   }
 
-  private static Consumer<AtCommandExecutor> createOnReady(AtSign atSign, AtKeys keys, Map<String, Object> config) {
+  private static Consumer<AtCommandExecutor> createOnReady(AtSign atSign, AtKeys keys) {
     Consumer<AtCommandExecutor> onReady;
     if (atSign != null && keys != null) {
-      onReady = AuthenticationCommands.pkamAuthenticator(atSign, keys, config);
+      // the executor is built with this atSign/keys/config in its context, so the authenticator
+      // reads the identity (and reuses the initial from: challenge) from there
+      onReady = AuthenticationCommands.pkamAuthenticator();
     } else {
       onReady = c -> {
       };

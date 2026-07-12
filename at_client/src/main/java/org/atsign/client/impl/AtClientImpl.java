@@ -122,6 +122,8 @@ public class AtClientImpl implements AtClient {
   @Override
   public void stopMonitor() {
     isMonitoring.compareAndSet(true, false);
+    // this client owns its atSign/keys/config, so authenticate with those directly rather than via
+    // the executor's context (the executor is injected and may not carry this client's identity)
     executor.onReady(AuthenticationCommands.pkamAuthenticator(atSign, keys, config));
   }
 

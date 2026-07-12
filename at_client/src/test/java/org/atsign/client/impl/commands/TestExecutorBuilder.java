@@ -13,6 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.AtCommandExecutorContext;
 import org.atsign.client.impl.util.JsonUtils;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
@@ -62,6 +63,9 @@ public class TestExecutorBuilder {
 
   public AtCommandExecutor build() throws ExecutionException, InterruptedException {
     AtCommandExecutor mock = Mockito.mock(AtCommandExecutor.class);
+    // an EMPTY context yields no challenge, so authentication sends its own from: (which the tests
+    // stub) rather than reusing an initial from: challenge this mock never issued
+    when(mock.getContext()).thenReturn(AtCommandExecutorContext.EMPTY);
     when(mock.sendSync(anyString())).thenAnswer((Answer<String>) invocation -> {
       String command = invocation.getArgument(0);
       for (Map.Entry<Pattern, Object> entry : mapping.entrySet()) {
