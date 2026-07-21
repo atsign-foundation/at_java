@@ -4,16 +4,14 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.AtCommandExecutorContext;
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtSign;
-import org.atsign.client.impl.AtEndpointSupplier;
-import org.atsign.client.impl.AtEndpointSuppliers;
-import org.atsign.client.impl.commands.AuthenticationCommands;
+import org.atsign.client.impl.AtCommandExecutors;
+import org.atsign.client.impl.AtCommandExecutors.AtCommandExecutorBuilder;
 import org.atsign.client.impl.common.SimpleReconnectStrategy;
 import org.atsign.client.impl.exceptions.AtClientConfigException;
 import org.atsign.client.impl.exceptions.AtException;
-import org.atsign.client.impl.netty.NettyAtCommandExecutor;
-import org.atsign.client.impl.netty.NettyAtCommandExecutor.NettyAtCommandExecutorBuilder;
 import org.atsign.client.impl.util.KeysUtils;
 
 import picocli.CommandLine.Option;
@@ -87,26 +85,55 @@ public abstract class AbstractCli<T extends AbstractCli<T>> {
   }
 
   protected AtCommandExecutor createConnection(String rootUrl, AtSign atSign, int retries) throws AtException {
-    return createCommandExecutorBuilder(rootUrl, atSign, retries, verbose).build();
+    // no keys: the builder wires an onReady that issues from:@atSign only (so proxies can route it)
+    return connectionBuilder(rootUrl, retries, verbose).atSign(atSign).build();
   }
 
   protected AtCommandExecutor createAuthenticatedConnection(String rootUrl, AtSign atSign, int retries)
       throws AtException {
-    return createCommandExecutorBuilder(rootUrl, atSign, retries, verbose)
-        .onReady(AuthenticationCommands.pkamAuthenticator(atSign, getKeys(), null))
-        .build();
+    // keys present: the builder wires from:@atSign followed by PKAM (reusing the from: challenge)
+    return connectionBuilder(rootUrl, retries, verbose).atSign(atSign).keys(getKeys()).build();
   }
 
-  private static NettyAtCommandExecutorBuilder createCommandExecutorBuilder(String rootUrl, AtSign atSign, int retries,
-                                                                            boolean verbose) {
-    AtEndpointSupplier endpoint = AtEndpointSuppliers.builder().url(rootUrl).atSign(atSign).build();
+  /**
+   * A connection that carries the given {@code context}, so an imperative flow driving it (e.g.
+   * onboarding) can reach the {@code from:} challenge the connection issues on connect and reuse it
+   * for authentication. The builder wires from:@atSign (plus PKAM if the context has keys) around
+   * that same context instance.
+   */
+  protected AtCommandExecutor createConnection(AtCommandExecutorContext context, int retries) throws AtException {
+    return connectionBuilder(rootUrl, retries, verbose).context(context).build();
+  }
+
+  /**
+   * A connection whose initial {@code from:} is issued by the caller's own first command rather than
+   * on connect — for flows that authenticate imperatively and must control the timing (e.g. a
+   * pending-retry loop), where a connect-time {@code from:} challenge could go stale before it is
+   * used. No onReady {@code from:} is wired, so the caller's first command (its authentication)
+   * establishes the atSign for proxies / gateways.
+   */
+  protected AtCommandExecutor createConnectionForImperativeAuth(String rootUrl, AtSign atSign, int retries)
+      throws AtException {
+    return connectionBuilder(rootUrl, retries, verbose).atSign(atSign).onReady(executor -> {
+    }).build();
+  }
+
+  /**
+   * Creates a keyless {@link AtCommandExecutorContext} for this CLI's atSign, to be passed to
+   * {@link #createConnection(AtCommandExecutorContext, int)} and threaded into an imperative flow
+   * that authenticates on the connection and reuses its {@code from:} challenge.
+   */
+  protected AtCommandExecutorContext newConnectionContext() {
+    return new AtCommandExecutorContext(atSign, null, AtCommandExecutors.createClientConfig(null));
+  }
+
+  private static AtCommandExecutorBuilder connectionBuilder(String rootUrl, int retries, boolean verbose) {
     SimpleReconnectStrategy reconnect = SimpleReconnectStrategy.builder()
         .maxReconnectRetries(retries)
         .reconnectPauseMillis(TimeUnit.SECONDS.toMillis(2))
         .build();
-    return NettyAtCommandExecutor.builder()
-        .endpoint(endpoint)
-        .atSign(atSign)
+    return AtCommandExecutors.builder()
+        .url(rootUrl)
         .reconnect(reconnect)
         .isVerbose(verbose);
   }

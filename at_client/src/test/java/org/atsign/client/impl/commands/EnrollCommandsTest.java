@@ -8,11 +8,15 @@ import static org.atsign.client.api.AtSign.createAtSign;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.matches;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.util.List;
 
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.AtCommandExecutorContext;
 import org.atsign.client.impl.common.EnrollmentId;
 import org.atsign.client.impl.exceptions.AtException;
 import org.atsign.client.api.AtSign;
@@ -63,7 +67,8 @@ public class EnrollCommandsTest {
         .build();
 
     Exception ex = assertThrows(Exception.class,
-                                () -> EnrollCommands.onboard(executor, atSign, keys, "secret", "app", "device", false));
+                                () -> EnrollCommands.onboard(executor, new AtCommandExecutorContext(atSign, null, null),
+                                                             keys, "secret", "app", "device", false));
     assertThat(ex.getMessage(), containsString("not connected to the atsign's at server"));
   }
 
@@ -102,10 +107,41 @@ public class EnrollCommandsTest {
         .stub("update:public:publickey@alice .+", "data:1")
         .build();
 
-    AtKeys newKeys = EnrollCommands.onboard(executor, atSign, keys, "secret", "app", "device", false);
+    AtKeys newKeys = EnrollCommands.onboard(executor, new AtCommandExecutorContext(atSign, null, null), keys, "secret",
+                                            "app", "device", false);
 
     assertThat(newKeys, is(not(sameInstance(keys))));
     assertThat(newKeys.getEnrollmentId(), equalTo(createEnrollmentId("904dcbf7")));
+  }
+
+  @Test
+  public void testOnboardReusesTheConnectionFromChallengeForCram() throws Exception {
+    AtSign atSign = createAtSign("@alice");
+    AtKeys keys = AtKeys.builder()
+        .apkamKeyPair(generateRSAKeyPair())
+        .encryptKeyPair(generateRSAKeyPair())
+        .build();
+
+    // simulate the connection having issued from: on connect (sendFrom) and retained the challenge
+    AtCommandExecutorContext context = new AtCommandExecutorContext(atSign, null, null);
+    context.setChallenge("challenge");
+
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
+        .stub("scan", "data:[\"signing_publickey@alice\"]")
+        .stub("cram:7e91508d5.+", "data:success")
+        .stub("enroll:request.+", "data:{\"enrollmentId\":\"904dcbf7\",\"status\":\"approved\"}")
+        .stub("from:@alice", "data:challenge2")
+        .stub("pkam:[^{].+", "data:success")
+        .stub("update:public:publickey@alice .+", "data:1")
+        .build();
+
+    EnrollCommands.onboard(executor, context, keys, "secret", "app", "device", false);
+
+    // CRAM reused the retained challenge, so exactly ONE from: reaches the wire — PKAM's own (the
+    // challenge is single-use and PKAM authenticates with the freshly-enrolled keys)
+    verify(executor, times(1)).sendSync(matches("from:.*"));
+    verify(executor, times(1)).sendSync(matches("cram:.*"));
+    assertThat(context.consumeChallenge(), is(nullValue()));
   }
 
   @Test

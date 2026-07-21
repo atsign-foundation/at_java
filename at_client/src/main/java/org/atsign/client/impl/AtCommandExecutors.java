@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.AtCommandExecutorContext;
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtSign;
 import org.atsign.client.impl.commands.AuthenticationCommands;
@@ -56,6 +57,7 @@ public class AtCommandExecutors {
   public static AtCommandExecutor createCommandExecutor(String url,
                                                         AtSign atSign,
                                                         AtKeys keys,
+                                                        AtCommandExecutorContext context,
                                                         Consumer<AtCommandExecutor> onReady,
                                                         Map<String, Object> config,
                                                         Long timeoutMillis,
@@ -65,21 +67,27 @@ public class AtCommandExecutors {
                                                         Boolean isVerbose)
       throws AtException {
 
+    // the context is closed over by the onReady consumers the builder wires (see createOnReady); the
+    // command executor itself stays pure transport and knows nothing about it. By default the builder
+    // owns it, but a caller may supply one (via context()) so an imperative flow that authenticates
+    // on the connection can reach the same from: challenge — see EnrollCommands#onboard.
+    if (context == null) {
+      context = new AtCommandExecutorContext(atSign, keys, createClientConfig(config));
+    }
+    AtSign endpointAtSign = context.getAtSign();
+
     if (AtEndpointSuppliers.isProxyUrl(url)) {
-      checkNotNull(atSign, "atSign not set");
+      checkNotNull(endpointAtSign, "atSign not set");
     }
 
     return NettyAtCommandExecutor.builder()
-        .endpoint(AtEndpointSuppliers.builder().url(url).atSign(atSign).build())
+        .endpoint(AtEndpointSuppliers.builder().url(url).atSign(endpointAtSign).build())
         .isVerbose(isVerbose)
         .timeoutMillis(defaultIfNotSet(timeoutMillis, DEFAULT_TIMEOUT_MILLIS))
         .awaitReadyMillis(defaultIfNotSet(awaitReadyMillis, DEFAULT_TIMEOUT_MILLIS))
         .reconnect(defaultIfNotSet(reconnect, SimpleReconnectStrategy.builder().build()))
         .queueLimit(queueLimit)
-        .atSign(atSign)
-        .keys(keys)
-        .clientConfig(createClientConfig(config))
-        .onReady(defaultIfNotSet(onReady, createOnReady(atSign, keys)))
+        .onReady(defaultIfNotSet(onReady, createOnReady(context)))
         .build();
   }
 
@@ -131,15 +139,20 @@ public class AtCommandExecutors {
     return result;
   }
 
-  private static Consumer<AtCommandExecutor> createOnReady(AtSign atSign, AtKeys keys) {
-    Consumer<AtCommandExecutor> onReady;
-    if (atSign != null && keys != null) {
-      // the executor is built with this atSign/keys/config in its context, so the authenticator
-      // reads the identity (and reuses the initial from: challenge) from there
-      onReady = AuthenticationCommands.pkamAuthenticator();
-    } else {
-      onReady = c -> {
+  /**
+   * The default protocol for a newly-ready connection. A connection with no atSign (e.g. one talking
+   * to the atDirectory / root server) sends nothing. Every connection that has an atSign issues
+   * {@code from:@atSign} first so that proxies / gateways can route it; if keys are also present it
+   * then authenticates with PKAM, reusing the challenge from that initial {@code from:}.
+   */
+  private static Consumer<AtCommandExecutor> createOnReady(AtCommandExecutorContext context) {
+    if (context.getAtSign() == null) {
+      return c -> {
       };
+    }
+    Consumer<AtCommandExecutor> onReady = AuthenticationCommands.sendFrom(context);
+    if (context.getKeys() != null) {
+      onReady = onReady.andThen(AuthenticationCommands.pkamAuthenticator(context));
     }
     return onReady;
   }

@@ -83,18 +83,4 @@ public interface AtCommandExecutor extends AutoCloseable {
    * @return this (to allow chaining / fluent style invocation)
    */
   AtCommandExecutor onReady(Consumer<AtCommandExecutor> consumer);
-
-  /**
-   * Returns this executor's {@link AtCommandExecutorContext authentication context}: the identity it
-   * authenticates as together with the single-use challenge from the {@code from:} it issued as its
-   * first command once ready. The authentication commands reuse that challenge rather than sending a
-   * second {@code from:}, and read the identity from the same context. Never {@code null} — an
-   * executor that was not configured with an atSign (and so issued no initial {@code from:}) returns
-   * {@link AtCommandExecutorContext#EMPTY}, whose challenge is always {@code null}.
-   *
-   * @return this executor's authentication context (never {@code null})
-   */
-  default AtCommandExecutorContext getContext() {
-    return AtCommandExecutorContext.EMPTY;
-  }
 }

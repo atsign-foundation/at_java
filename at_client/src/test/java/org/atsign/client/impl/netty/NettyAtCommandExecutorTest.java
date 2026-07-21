@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.atsign.client.api.AtCommandExecutor;
-import org.atsign.client.api.AtSign;
 import org.atsign.client.impl.AtEndpointSupplier;
 import org.atsign.client.impl.common.SimpleReconnectStrategy;
 import org.atsign.client.impl.netty.NettyAtCommandExecutor.NettyAtCommandExecutorBuilder;
@@ -40,8 +39,6 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings("unchecked")
 @Slf4j
 class NettyAtCommandExecutorTest {
-
-  private static final String FROM_CHALLENGE = "_a1b2c3d4@alice:12345678";
 
   private TestServer server;
   private TestEndPointSupplier endPointSupplier;
@@ -189,71 +186,6 @@ class NettyAtCommandExecutorTest {
                                                            }));
     Exception ex = assertThrows(Exception.class, () -> connectionBuilder.build());
     assertThat(ex.getMessage(), containsString("deliberate"));
-  }
-
-  @Test
-  void testFromChallengeIsRetainedAfterInitialFromAndConsumedOnce() throws Exception {
-    stubTestServerWithFromChallenge(server, FROM_CHALLENGE);
-    connectionBuilder.atSign(AtSign.createAtSign("@alice"));
-    try (NettyAtCommandExecutor executor = connectionBuilder.build()) {
-      await().until(executor::isReady);
-      // the executor issues from: itself as its first command once ready
-      assertThat(server.poll(), equalTo("from:@alice"));
-      // so the first authentication reuses that challenge instead of sending a second from:
-      assertThat(executor.getContext().consumeChallenge(), equalTo(FROM_CHALLENGE));
-      // but it is single-use: a second authentication on the same connection gets null and
-      // falls back to issuing its own from:
-      assertThat(executor.getContext().consumeChallenge(), nullValue());
-    }
-  }
-
-  @Test
-  void testNoFromChallengeWhenNoAtSignConfigured() throws Exception {
-    try (NettyAtCommandExecutor executor = connectionBuilder.build()) {
-      await().until(executor::isReady);
-      // no atSign was supplied to the builder, so no initial from: is sent...
-      assertThat(server.peek(), nullValue());
-      // ...and there is no retained challenge, so authentication sends its own from:
-      assertThat(executor.getContext().consumeChallenge(), nullValue());
-    }
-  }
-
-  @Test
-  void testFromChallengeIsClearedOnDisconnect() throws Exception {
-    stubTestServerWithFromChallenge(server, FROM_CHALLENGE);
-    connectionBuilder.atSign(AtSign.createAtSign("@alice"));
-    try (NettyAtCommandExecutor executor = connectionBuilder.build()) {
-      await().until(executor::isReady);
-      // the initial from: retained a challenge (proven by testFromChallengeIsRetained...)
-      assertThat(server.poll(), equalTo("from:@alice"));
-      // drop the connection without consuming the challenge
-      server.closeClientSocket();
-      await().until(() -> !executor.isReady());
-      // the challenge was only valid for the session that just ended, so it must not survive
-      // the disconnect - otherwise out-of-band auth could sign a challenge the server forgot
-      assertThat(executor.getContext().consumeChallenge(), nullValue());
-    }
-  }
-
-  @Test
-  void testFromChallengeIsRefreshedOnReconnect() throws Exception {
-    AtomicInteger fromCount = new AtomicInteger();
-    server.setRequestHandler(request -> {
-      if (request != null && request.startsWith("from:")) {
-        server.writeAndFlush("data:challenge-" + fromCount.incrementAndGet() + "\n@");
-      } else {
-        testServerResponse(server, request);
-      }
-    });
-    connectionBuilder.atSign(AtSign.createAtSign("@alice")).reconnect(reconnectStrategy);
-    try (NettyAtCommandExecutor executor = connectionBuilder.build()) {
-      await().until(executor::isReady);
-      assertThat(executor.getContext().consumeChallenge(), equalTo("challenge-1"));
-      server.closeClientSocket();
-      // the reconnect re-runs the ready sequence, which issues a fresh from: and retains its
-      // challenge in place of the old one
-      await().until(() -> "challenge-2".equals(executor.getContext().consumeChallenge()));
-    }
   }
 
   @Test
@@ -711,16 +643,6 @@ class NettyAtCommandExecutorTest {
 
   private static void stubTestServerConnectAndResponseBehaviour(TestServer server) {
     server.setRequestHandler(s -> testServerResponse(server, s));
-  }
-
-  private static void stubTestServerWithFromChallenge(TestServer server, String challenge) {
-    server.setRequestHandler(request -> {
-      if (request != null && request.startsWith("from:")) {
-        server.writeAndFlush("data:" + challenge + "\n@");
-      } else {
-        testServerResponse(server, request);
-      }
-    });
   }
 
   private static void stubTestServerConnectAndAndAutomaticNotification(TestServer server) {

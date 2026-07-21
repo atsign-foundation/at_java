@@ -27,33 +27,44 @@ import org.atsign.client.impl.exceptions.AtUnauthenticatedException;
  */
 public class AuthenticationCommands {
 
+  /**
+   * Returns an {@code onReady} consumer that issues {@code from:@atSign} as the first command on the
+   * connection and retains the challenge from the response in the given {@code context}. This
+   * establishes the connection's atSign up front so that proxies / gateways can route it, and lets
+   * any authentication that follows on the same connection reuse the challenge (see
+   * {@link #pkamAuthenticator(AtCommandExecutorContext)}) rather than issuing a second {@code from:}.
+   *
+   * @param context the connection context; supplies the atSign / config and receives the challenge
+   * @return an onReady consumer that sends the initial {@code from:}
+   */
+  public static Consumer<AtCommandExecutor> sendFrom(AtCommandExecutorContext context) {
+    return throwOnReadyException(executor -> {
+      String fromCommand = CommandBuilders.fromCommandBuilder()
+          .atSign(context.getAtSign())
+          .config(context.getConfig())
+          .build();
+      String fromResponse = executor.sendSync(fromCommand);
+      context.setChallenge(matchDataStringNoWhitespace(throwExceptionIfError(fromResponse)));
+    });
+  }
+
+  /**
+   * Returns an {@code onReady} consumer that authenticates with PKAM using the identity in the given
+   * {@code context}, reusing the challenge from an initial {@code from:} (as issued by
+   * {@link #sendFrom(AtCommandExecutorContext)}) when one is available and otherwise issuing its own.
+   * This is the standard client path, where the identity is fixed for the connection.
+   *
+   * @param context the connection context; supplies the atSign / keys / config and the challenge
+   * @return an onReady consumer that performs PKAM authentication
+   */
+  public static Consumer<AtCommandExecutor> pkamAuthenticator(AtCommandExecutorContext context) {
+    return throwOnReadyException(executor -> authenticateWithPkam(executor, context.getAtSign(),
+                                                                  context.getKeys(), context.getConfig(),
+                                                                  context.consumeChallenge()));
+  }
+
   public static Consumer<AtCommandExecutor> pkamAuthenticator(AtSign atSign, AtKeys keys, Map<String, Object> config) {
     return throwOnReadyException(executor -> authenticateWithPkam(executor, atSign, keys, config));
-  }
-
-  /**
-   * Returns an onReady consumer that authenticates using the identity carried by the executor's
-   * {@link AtCommandExecutorContext context} — the atSign, keys and config it was built with. This
-   * is the standard client path, where that identity is fixed for the connection. Onboarding, whose
-   * keys are generated mid-flow, uses {@link #pkamAuthenticator(AtSign, AtKeys, Map)} with explicit
-   * keys instead.
-   *
-   * @return an onReady consumer performing PKAM authentication from the executor's context
-   */
-  public static Consumer<AtCommandExecutor> pkamAuthenticator() {
-    return throwOnReadyException(AuthenticationCommands::authenticateWithPkam);
-  }
-
-  /**
-   * Implements the protocol workflow / sequence for PKAM authentication, taking the atSign, keys and
-   * config from the executor's {@link AtCommandExecutorContext context}.
-   *
-   * @param executor The executor with which to send the commands; its context supplies the identity.
-   * @throws AtException If authentication fails.
-   */
-  public static void authenticateWithPkam(AtCommandExecutor executor) throws AtException {
-    AtCommandExecutorContext context = executor.getContext();
-    authenticateWithPkam(executor, context.getAtSign(), context.getKeys(), context.getConfig());
   }
 
   /**
@@ -83,11 +94,32 @@ public class AuthenticationCommands {
                                           AtKeys keys,
                                           Map<String, Object> config)
       throws AtException {
+    authenticateWithPkam(executor, atSign, keys, config, null);
+  }
+
+  /**
+   * Implements the protocol workflow / sequence for PKAM authentication, reusing an already-issued
+   * {@code from:} challenge when one is supplied.
+   *
+   * @param executor The executor with which to send the commands.
+   * @param atSign The asign to authenticate.
+   * @param keys The keys to use to authenticate.
+   * @param config The map of configuration values to send in the from command.
+   * @param reusableChallenge The challenge from an initial {@code from:} to reuse, or {@code null} to
+   *        issue a fresh {@code from:}.
+   * @throws AtException If authentication fails.
+   */
+  private static void authenticateWithPkam(AtCommandExecutor executor,
+                                           AtSign atSign,
+                                           AtKeys keys,
+                                           Map<String, Object> config,
+                                           String reusableChallenge)
+      throws AtException {
     try {
 
-      // reuse the challenge from the initial from: if the executor already sent one, otherwise
+      // reuse the challenge from the initial from: if one was issued on this connection, otherwise
       // send a from command and expect to receive a challenge
-      String challenge = consumeFromChallenge(executor);
+      String challenge = reusableChallenge;
       if (challenge == null) {
         String fromCommand = CommandBuilders.fromCommandBuilder().atSign(atSign).config(config).build();
         String fromResponse = executor.sendSync(fromCommand);
@@ -114,6 +146,24 @@ public class AuthenticationCommands {
   }
 
   /**
+   * Implements the protocol workflow / sequence for CRAM authentication, reusing the challenge from
+   * an initial {@code from:} (as issued by {@link #sendFrom(AtCommandExecutorContext)}) held in the
+   * given {@code context} when one is available and otherwise issuing its own. Used by onboarding,
+   * which issues a {@code from:} on connect, runs a connectivity scan, then authenticates.
+   *
+   * @param executor The executor with which to send the commands.
+   * @param context The connection context; supplies the atSign and the retained challenge.
+   * @param cramSecret The cramSecret that was assigned during At Server provisioning.
+   * @throws AtException If authentication fails.
+   */
+  public static void authenticateWithCram(AtCommandExecutor executor,
+                                          AtCommandExecutorContext context,
+                                          String cramSecret)
+      throws AtException {
+    authenticateWithCram(executor, context.getAtSign(), cramSecret, context.consumeChallenge());
+  }
+
+  /**
    * Implements the protocol workflow / sequence for CRAM authentication.
    *
    * @param executor The executor with which to send the commands.
@@ -123,11 +173,30 @@ public class AuthenticationCommands {
    */
   public static void authenticateWithCram(AtCommandExecutor executor, AtSign atSign, String cramSecret)
       throws AtException {
+    authenticateWithCram(executor, atSign, cramSecret, null);
+  }
+
+  /**
+   * Implements the protocol workflow / sequence for CRAM authentication, reusing an already-issued
+   * {@code from:} challenge when one is supplied.
+   *
+   * @param executor The executor with which to send the commands.
+   * @param atSign The asign to authenticate.
+   * @param cramSecret The cramSecret that was assigned during At Server provisioning.
+   * @param reusableChallenge The challenge from an initial {@code from:} to reuse, or {@code null} to
+   *        issue a fresh {@code from:}.
+   * @throws AtException If authentication fails.
+   */
+  private static void authenticateWithCram(AtCommandExecutor executor,
+                                           AtSign atSign,
+                                           String cramSecret,
+                                           String reusableChallenge)
+      throws AtException {
     try {
 
-      // reuse the challenge from the initial from: if the executor already sent one, otherwise
+      // reuse the challenge from the initial from: if one was issued on this connection, otherwise
       // send a from command and expect to receive a challenge
-      String challenge = consumeFromChallenge(executor);
+      String challenge = reusableChallenge;
       if (challenge == null) {
         String fromCommand = CommandBuilders.fromCommandBuilder().atSign(atSign).build();
         String fromResponse = executor.sendSync(fromCommand);
@@ -156,18 +225,5 @@ public class AuthenticationCommands {
     } catch (RuntimeException | NoSuchAlgorithmException e) {
       throw new AtEncryptionException("failed to generate cramDigest", e);
     }
-  }
-
-  /**
-   * Returns and clears the single-use {@code from:} challenge the executor retained after issuing its
-   * initial {@code from:}, or {@code null} if none is available. A {@code null} context is treated as
-   * "no retained challenge" so authentication falls back to sending its own {@code from:} — the same
-   * behaviour the interface's {@code getContext()} default (an EMPTY context) gives, kept null-safe
-   * so test doubles that leave {@code getContext()} unstubbed behave as they did before the context
-   * replaced the former {@code getFromChallenge()} accessor.
-   */
-  private static String consumeFromChallenge(AtCommandExecutor executor) {
-    AtCommandExecutorContext context = executor.getContext();
-    return context == null ? null : context.consumeChallenge();
   }
 }

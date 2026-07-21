@@ -6,7 +6,11 @@ import static org.atsign.client.api.AtSign.createAtSign;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.matches;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
+import org.atsign.client.api.AtCommandExecutorContext;
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtCommandExecutor;
 import org.atsign.client.impl.exceptions.AtOnReadyException;
@@ -102,5 +106,64 @@ public class AuthenticationCommandsTest {
                                     .accept(executor));
     assertThat(ex, instanceOf(AtOnReadyException.class));
     assertThat(ex.getMessage(), containsString("deliberate"));
+  }
+
+  @Test
+  public void testSendFromIssuesFromAndRetainsChallenge() throws Exception {
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
+        .stub("from:@alice", "data:challenge")
+        .build();
+    AtCommandExecutorContext context = new AtCommandExecutorContext(createAtSign("@alice"), null, null);
+
+    AuthenticationCommands.sendFrom(context).accept(executor);
+
+    verify(executor, times(1)).sendSync(matches("from:.*"));
+    assertThat(context.consumeChallenge(), is("challenge"));
+  }
+
+  @Test
+  public void testPkamAuthenticatorReusesTheInitialFromChallenge() throws Exception {
+    AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).build();
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
+        .stub("from:@alice", "data:challenge")
+        .stub("pkam:[^{].+", "data:success")
+        .build();
+    AtCommandExecutorContext context = new AtCommandExecutorContext(createAtSign("@alice"), keys, null);
+
+    // the from: sender runs first (as wired by createOnReady), then PKAM reuses its challenge
+    AuthenticationCommands.sendFrom(context).accept(executor);
+    AuthenticationCommands.pkamAuthenticator(context).accept(executor);
+
+    // exactly one from: for the whole connection — PKAM did not issue a second one
+    verify(executor, times(1)).sendSync(matches("from:.*"));
+    verify(executor, times(1)).sendSync(matches("pkam:.*"));
+    assertThat(context.consumeChallenge(), is(nullValue()));
+  }
+
+  @Test
+  public void testPkamAuthenticatorIssuesItsOwnFromWhenNoChallengeRetained() throws Exception {
+    AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).build();
+    AtCommandExecutor executor = TestExecutorBuilder.builder()
+        .stub("from:@alice", "data:challenge")
+        .stub("pkam:[^{].+", "data:success")
+        .build();
+    AtCommandExecutorContext context = new AtCommandExecutorContext(createAtSign("@alice"), keys, null);
+
+    // no prior sendFrom: the authenticator must issue its own from: to obtain a challenge
+    AuthenticationCommands.pkamAuthenticator(context).accept(executor);
+
+    verify(executor, times(1)).sendSync(matches("from:.*"));
+    verify(executor, times(1)).sendSync(matches("pkam:.*"));
+  }
+
+  @Test
+  public void testRetainedChallengeIsConsumedAtMostOnce() {
+    AtCommandExecutorContext context = new AtCommandExecutorContext(createAtSign("@alice"), null, null);
+    context.setChallenge("challenge");
+
+    // single-use: the first consumer gets it, a second (e.g. a further auth on the same connection)
+    // gets null and falls back to issuing its own from:
+    assertThat(context.consumeChallenge(), is("challenge"));
+    assertThat(context.consumeChallenge(), is(nullValue()));
   }
 }

@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.AtCommandExecutorContext;
 import org.atsign.client.impl.commands.EnrollCommands;
 import org.atsign.client.impl.commands.ScanCommands;
 import org.atsign.client.impl.common.EnrollmentId;
@@ -180,19 +181,20 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
   }
 
   public EnrollmentId onboard() throws Exception {
-    try (AtCommandExecutor executor = createConnection(rootUrl, atSign, connectionRetries)) {
-      return onboard(executor);
+    AtCommandExecutorContext context = newConnectionContext();
+    try (AtCommandExecutor executor = createConnection(context, connectionRetries)) {
+      return onboard(executor, context);
     }
   }
 
-  public EnrollmentId onboard(AtCommandExecutor executor) throws Exception {
+  public EnrollmentId onboard(AtCommandExecutor executor, AtCommandExecutorContext context) throws Exception {
     File file = getAtKeysFile(keysFile, atSign);
     if (!overwriteKeysFile) {
       checkNotExists(file);
     }
     AtKeys keys = generateAtKeys(true);
     keys = EnrollCommands.onboard(executor,
-                                  atSign,
+                                  context,
                                   keys,
                                   cramSecret,
                                   ensureNotNull(appName, DEFAULT_FIRST_APP),
@@ -292,7 +294,9 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
   }
 
   public void complete() throws Exception {
-    try (AtCommandExecutor executor = createConnection(rootUrl, atSign, connectionRetries)) {
+    // complete authenticates imperatively (and retries on "pending"), so it issues its own from:
+    // rather than reusing a connect-time challenge that could go stale before the retried PKAM
+    try (AtCommandExecutor executor = createConnectionForImperativeAuth(rootUrl, atSign, connectionRetries)) {
       complete(executor);
     }
   }
@@ -304,7 +308,8 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
   }
 
   public void complete(int retries, long sleepDuration, TimeUnit sleepUnit) throws Exception {
-    try (AtCommandExecutor executor = createConnection(rootUrl, atSign, connectionRetries)) {
+    // see complete(): imperative, retried PKAM issues its own from:
+    try (AtCommandExecutor executor = createConnectionForImperativeAuth(rootUrl, atSign, connectionRetries)) {
       complete(executor, retries, sleepDuration, sleepUnit);
     }
   }
