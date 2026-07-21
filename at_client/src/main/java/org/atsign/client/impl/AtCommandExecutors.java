@@ -43,8 +43,11 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <b>NOTE:</b> If the url is prefixed with proxy (e.g. proxy:host:port) then the builder
  * will automatically attempt to connect to an At Server at host:port.
- * <b>NOTE:</b> If atSign and keys are provided then the builder
- * will automatically configure the {@link AtCommandExecutor} to authenticate with PKAM.
+ * <b>NOTE:</b> If an atSign is provided then the builder issues {@code from:@atSign} as the first
+ * command once connected (so proxies / gateways can route the connection); if keys are also
+ * provided
+ * it then authenticates the {@link AtCommandExecutor} with PKAM, reusing that {@code from:}'s
+ * challenge.
  * <b>NOTE:</b> If reconnect is not set then the builder will default to a
  * {@link SimpleReconnectStrategy}
  */
@@ -57,7 +60,6 @@ public class AtCommandExecutors {
   public static AtCommandExecutor createCommandExecutor(String url,
                                                         AtSign atSign,
                                                         AtKeys keys,
-                                                        AtCommandExecutorContext context,
                                                         Consumer<AtCommandExecutor> onReady,
                                                         Map<String, Object> config,
                                                         Long timeoutMillis,
@@ -67,21 +69,16 @@ public class AtCommandExecutors {
                                                         Boolean isVerbose)
       throws AtException {
 
-    // the context is closed over by the onReady consumers the builder wires (see createOnReady); the
-    // command executor itself stays pure transport and knows nothing about it. By default the builder
-    // owns it, but a caller may supply one (via context()) so an imperative flow that authenticates
-    // on the connection can reach the same from: challenge — see EnrollCommands#onboard.
-    if (context == null) {
-      context = new AtCommandExecutorContext(atSign, keys, createClientConfig(config));
-    }
-    AtSign endpointAtSign = context.getAtSign();
-
     if (AtEndpointSuppliers.isProxyUrl(url)) {
-      checkNotNull(endpointAtSign, "atSign not set");
+      checkNotNull(atSign, "atSign not set");
     }
+
+    // the context is closed over by the onReady consumers the builder wires (see createOnReady); the
+    // command executor itself stays pure transport and knows nothing about it
+    AtCommandExecutorContext context = new AtCommandExecutorContext(atSign, keys, createClientConfig(config));
 
     return NettyAtCommandExecutor.builder()
-        .endpoint(AtEndpointSuppliers.builder().url(url).atSign(endpointAtSign).build())
+        .endpoint(AtEndpointSuppliers.builder().url(url).atSign(atSign).build())
         .isVerbose(isVerbose)
         .timeoutMillis(defaultIfNotSet(timeoutMillis, DEFAULT_TIMEOUT_MILLIS))
         .awaitReadyMillis(defaultIfNotSet(awaitReadyMillis, DEFAULT_TIMEOUT_MILLIS))

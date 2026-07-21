@@ -9,6 +9,7 @@ import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtSign;
 import org.atsign.client.impl.AtCommandExecutors;
 import org.atsign.client.impl.AtCommandExecutors.AtCommandExecutorBuilder;
+import org.atsign.client.impl.commands.AuthenticationCommands;
 import org.atsign.client.impl.common.SimpleReconnectStrategy;
 import org.atsign.client.impl.exceptions.AtClientConfigException;
 import org.atsign.client.impl.exceptions.AtException;
@@ -96,35 +97,40 @@ public abstract class AbstractCli<T extends AbstractCli<T>> {
   }
 
   /**
-   * A connection that carries the given {@code context}, so an imperative flow driving it (e.g.
-   * onboarding) can reach the {@code from:} challenge the connection issues on connect and reuse it
-   * for authentication. The builder wires from:@atSign (plus PKAM if the context has keys) around
-   * that same context instance.
+   * A connection that issues from:@atSign on connect (so proxies / gateways can route it), wiring the
+   * {@code from:} over the given {@code context} so the challenge it retains is the one an imperative
+   * flow driving the connection (e.g. onboarding: scan, then CRAM, then PKAM) later consumes. No
+   * on-ready authentication is wired — the caller authenticates imperatively.
    */
-  protected AtCommandExecutor createConnection(AtCommandExecutorContext context, int retries) throws AtException {
-    return connectionBuilder(rootUrl, retries, verbose).context(context).build();
+  protected AtCommandExecutor createConnectionSendingFrom(AtCommandExecutorContext context, int retries)
+      throws AtException {
+    return connectionBuilder(rootUrl, retries, verbose)
+        .atSign(context.getAtSign())
+        .onReady(AuthenticationCommands.sendFrom(context))
+        .build();
   }
 
   /**
-   * A connection whose initial {@code from:} is issued by the caller's own first command rather than
-   * on connect — for flows that authenticate imperatively and must control the timing (e.g. a
-   * pending-retry loop), where a connect-time {@code from:} challenge could go stale before it is
-   * used. No onReady {@code from:} is wired, so the caller's first command (its authentication)
-   * establishes the atSign for proxies / gateways.
+   * A connection that does NOT issue {@code from:} on connect — its initial {@code from:} is issued
+   * by the caller's own first command — for flows that authenticate imperatively and must control the
+   * timing (e.g. a pending-retry loop), where a connect-time {@code from:} challenge could go stale
+   * before it is used. No onReady {@code from:} is wired, so the caller's first command (its
+   * authentication) establishes the atSign for proxies / gateways.
    */
-  protected AtCommandExecutor createConnectionForImperativeAuth(String rootUrl, AtSign atSign, int retries)
+  protected AtCommandExecutor createConnectionDeferringFrom(String rootUrl, AtSign atSign, int retries)
       throws AtException {
     return connectionBuilder(rootUrl, retries, verbose).atSign(atSign).onReady(executor -> {
     }).build();
   }
 
   /**
-   * Creates a keyless {@link AtCommandExecutorContext} for this CLI's atSign, to be passed to
-   * {@link #createConnection(AtCommandExecutorContext, int)} and threaded into an imperative flow
-   * that authenticates on the connection and reuses its {@code from:} challenge.
+   * Creates an {@link AtCommandExecutorContext} carrying this CLI's atSign and the given {@code keys}
+   * (the identity being onboarded), to be passed to
+   * {@link #createConnectionSendingFrom(AtCommandExecutorContext, int)} and threaded into the
+   * imperative onboarding flow, which reuses the connection's {@code from:} challenge.
    */
-  protected AtCommandExecutorContext newConnectionContext() {
-    return new AtCommandExecutorContext(atSign, null, AtCommandExecutors.createClientConfig(null));
+  protected AtCommandExecutorContext newConnectionContext(AtKeys keys) {
+    return new AtCommandExecutorContext(atSign, keys, AtCommandExecutors.createClientConfig(null));
   }
 
   private static AtCommandExecutorBuilder connectionBuilder(String rootUrl, int retries, boolean verbose) {

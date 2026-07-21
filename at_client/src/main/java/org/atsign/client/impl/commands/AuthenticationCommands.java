@@ -160,45 +160,13 @@ public class AuthenticationCommands {
                                           AtCommandExecutorContext context,
                                           String cramSecret)
       throws AtException {
-    authenticateWithCram(executor, context.getAtSign(), cramSecret, context.consumeChallenge());
-  }
-
-  /**
-   * Implements the protocol workflow / sequence for CRAM authentication.
-   *
-   * @param executor The executor with which to send the commands.
-   * @param atSign The asign to authenticate.
-   * @param cramSecret The cramSecret that was assigned during At Server provisioning.
-   * @throws AtException If authentication fails.
-   */
-  public static void authenticateWithCram(AtCommandExecutor executor, AtSign atSign, String cramSecret)
-      throws AtException {
-    authenticateWithCram(executor, atSign, cramSecret, null);
-  }
-
-  /**
-   * Implements the protocol workflow / sequence for CRAM authentication, reusing an already-issued
-   * {@code from:} challenge when one is supplied.
-   *
-   * @param executor The executor with which to send the commands.
-   * @param atSign The asign to authenticate.
-   * @param cramSecret The cramSecret that was assigned during At Server provisioning.
-   * @param reusableChallenge The challenge from an initial {@code from:} to reuse, or {@code null} to
-   *        issue a fresh {@code from:}.
-   * @throws AtException If authentication fails.
-   */
-  private static void authenticateWithCram(AtCommandExecutor executor,
-                                           AtSign atSign,
-                                           String cramSecret,
-                                           String reusableChallenge)
-      throws AtException {
     try {
 
       // reuse the challenge from the initial from: if one was issued on this connection, otherwise
       // send a from command and expect to receive a challenge
-      String challenge = reusableChallenge;
+      String challenge = context.consumeChallenge();
       if (challenge == null) {
-        String fromCommand = CommandBuilders.fromCommandBuilder().atSign(atSign).build();
+        String fromCommand = CommandBuilders.fromCommandBuilder().atSign(context.getAtSign()).build();
         String fromResponse = executor.sendSync(fromCommand);
         challenge = matchDataStringNoWhitespace(throwExceptionIfError(fromResponse));
       }

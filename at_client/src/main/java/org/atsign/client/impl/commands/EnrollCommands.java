@@ -33,10 +33,10 @@ public class EnrollCommands {
    * app/device keys that can approve subsequent enrollments.
    *
    * @param executor The {@link AtCommandExecutor} to use.
-   * @param context The connection context for the executor; supplies the atSign and the {@code from:}
-   *        challenge that CRAM reuses (the connection issues {@code from:} on connect, before the
-   *        connectivity scan below).
-   * @param keys The {@link AtKeys} for the atSign, these should already be populated.
+   * @param context The connection context for the executor; the single source of identity for this
+   *        onboarding — its atSign, the {@link AtKeys} being onboarded (already populated), and the
+   *        {@code from:} challenge that CRAM reuses (the connection issues {@code from:} on connect,
+   *        before the connectivity scan below).
    * @param cramSecret The CRAM secret.
    * @param appName The app name for this first enrollment.
    * @param deviceName The device name for this first enrollment.
@@ -47,13 +47,13 @@ public class EnrollCommands {
    */
   public static AtKeys onboard(AtCommandExecutor executor,
                                AtCommandExecutorContext context,
-                               AtKeys keys,
                                String cramSecret,
                                String appName,
                                String deviceName,
                                boolean deleteCramKey)
       throws AtException {
     AtSign atSign = context.getAtSign();
+    AtKeys keys = context.getKeys();
     try {
 
       // verify that the executor is connected to the atsigns atserver

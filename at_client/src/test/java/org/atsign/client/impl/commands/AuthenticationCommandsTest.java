@@ -29,7 +29,9 @@ public class AuthenticationCommandsTest {
         .stub("cram:7e91508d5.+", "data:success")
         .build();
 
-    AuthenticationCommands.authenticateWithCram(executor, createAtSign("@alice"), "secret");
+    AuthenticationCommands.authenticateWithCram(executor,
+                                                new AtCommandExecutorContext(createAtSign("@alice"), null, null),
+                                                "secret");
   }
 
   @Test
@@ -40,7 +42,11 @@ public class AuthenticationCommandsTest {
         .build();
 
     Exception ex = assertThrows(AtUnauthenticatedException.class,
-                                () -> AuthenticationCommands.authenticateWithCram(executor, createAtSign("@alice"),
+                                () -> AuthenticationCommands.authenticateWithCram(
+                                                                                  executor,
+                                                                                  new AtCommandExecutorContext(
+                                                                                      createAtSign("@alice"), null,
+                                                                                      null),
                                                                                   "secret"));
     assertThat(ex.getMessage(), containsString("deliberate"));
   }

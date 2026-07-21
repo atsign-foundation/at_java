@@ -67,8 +67,8 @@ public class EnrollCommandsTest {
         .build();
 
     Exception ex = assertThrows(Exception.class,
-                                () -> EnrollCommands.onboard(executor, new AtCommandExecutorContext(atSign, null, null),
-                                                             keys, "secret", "app", "device", false));
+                                () -> EnrollCommands.onboard(executor, new AtCommandExecutorContext(atSign, keys, null),
+                                                             "secret", "app", "device", false));
     assertThat(ex.getMessage(), containsString("not connected to the atsign's at server"));
   }
 
@@ -107,7 +107,7 @@ public class EnrollCommandsTest {
         .stub("update:public:publickey@alice .+", "data:1")
         .build();
 
-    AtKeys newKeys = EnrollCommands.onboard(executor, new AtCommandExecutorContext(atSign, null, null), keys, "secret",
+    AtKeys newKeys = EnrollCommands.onboard(executor, new AtCommandExecutorContext(atSign, keys, null), "secret",
                                             "app", "device", false);
 
     assertThat(newKeys, is(not(sameInstance(keys))));
@@ -123,7 +123,7 @@ public class EnrollCommandsTest {
         .build();
 
     // simulate the connection having issued from: on connect (sendFrom) and retained the challenge
-    AtCommandExecutorContext context = new AtCommandExecutorContext(atSign, null, null);
+    AtCommandExecutorContext context = new AtCommandExecutorContext(atSign, keys, null);
     context.setChallenge("challenge");
 
     AtCommandExecutor executor = TestExecutorBuilder.builder()
@@ -135,7 +135,7 @@ public class EnrollCommandsTest {
         .stub("update:public:publickey@alice .+", "data:1")
         .build();
 
-    EnrollCommands.onboard(executor, context, keys, "secret", "app", "device", false);
+    EnrollCommands.onboard(executor, context, "secret", "app", "device", false);
 
     // CRAM reused the retained challenge, so exactly ONE from: reaches the wire — PKAM's own (the
     // challenge is single-use and PKAM authenticates with the freshly-enrolled keys)
