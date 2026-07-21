@@ -10,9 +10,10 @@ import lombok.ToString;
 import lombok.Value;
 
 /**
- * The identity a connection authenticates as — its {@link #getAtSign() atSign},
- * {@link #getKeys() keys} and {@link #getConfig() config} — together with the single-use challenge
- * from the {@code from:} that is issued as the first command once the connection is ready.
+ * The identity a connection authenticates as — its {@code atSign}, {@code keys} and {@code config}
+ * —
+ * together with the single-use challenge from the {@code from:} that is issued as the first command
+ * once the connection is ready.
  *
  * <p>
  * The context is created by the builder (see
