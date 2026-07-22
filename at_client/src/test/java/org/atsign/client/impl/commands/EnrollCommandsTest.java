@@ -67,8 +67,8 @@ public class EnrollCommandsTest {
         .build();
 
     Exception ex = assertThrows(Exception.class,
-        () -> EnrollCommands.onboard(executor, new AtCommandExecutorContext(atSign, keys, null),
-            "secret", "app", "device", false));
+                                () -> EnrollCommands.onboard(executor, new AtCommandExecutorContext(atSign, keys, null),
+                                                             "secret", "app", "device", false));
     assertThat(ex.getMessage(), containsString("not connected to the atsign's at server"));
   }
 
@@ -108,7 +108,7 @@ public class EnrollCommandsTest {
         .build();
 
     AtKeys newKeys = EnrollCommands.onboard(executor, new AtCommandExecutorContext(atSign, keys, null), "secret",
-        "app", "device", false);
+                                            "app", "device", false);
 
     assertThat(newKeys, is(not(sameInstance(keys))));
     assertThat(newKeys.getEnrollmentId(), equalTo(createEnrollmentId("904dcbf7")));
@@ -175,9 +175,9 @@ public class EnrollCommandsTest {
         .build();
 
     String selfEncryptKeysGetResponse = format("data:{\"value\":\"%s\",\"iv\":\"%s\"}",
-        aesEncryptToBase64(AES_KEY, keys.getApkamSymmetricKey(), IV), IV);
+                                               aesEncryptToBase64(AES_KEY, keys.getApkamSymmetricKey(), IV), IV);
     String privateEncryptKeysGetResponse = format("data:{\"value\":\"%s\",\"iv\":\"%s\"}",
-        aesEncryptToBase64(RSA_KEY, keys.getApkamSymmetricKey(), IV), IV);
+                                                  aesEncryptToBase64(RSA_KEY, keys.getApkamSymmetricKey(), IV), IV);
 
     AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("from:@alice", "data:challenge")
@@ -201,13 +201,13 @@ public class EnrollCommandsTest {
         .build();
 
     String fetchResponse = format("data:{\"appName\":\"app1\",\"deviceName\":\"device1\"," +
-            "\"namespace\":{\"ns\":\"rw\"},\"encryptedAPKAMSymmetricKey\":\"%s\",\"status\":\"pending\"}",
-        rsaEncryptToBase64(AES_KEY, keys.getEncryptPublicKey()));
+        "\"namespace\":{\"ns\":\"rw\"},\"encryptedAPKAMSymmetricKey\":\"%s\",\"status\":\"pending\"}",
+                                  rsaEncryptToBase64(AES_KEY, keys.getEncryptPublicKey()));
 
     AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("enroll:fetch\\{\"enrollmentId\":\"12345\"}", fetchResponse)
         .stub("enroll:approve\\{\"enrollmentId\":\"12345\".+",
-            "data:{\"status\":\"approved\",\"enrollmentId\":\"12345\"}")
+              "data:{\"status\":\"approved\",\"enrollmentId\":\"12345\"}")
         .build();
 
     EnrollCommands.approve(executor, keys, createEnrollmentId("12345"));
@@ -217,7 +217,7 @@ public class EnrollCommandsTest {
   public void testDeny() throws Exception {
     AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("enroll:deny\\{\"enrollmentId\":\"12345\".+",
-            "data:{\"status\":\"denied\",\"enrollmentId\":\"12345\"}")
+              "data:{\"status\":\"denied\",\"enrollmentId\":\"12345\"}")
         .build();
 
     EnrollCommands.deny(executor, createEnrollmentId("12345"));
@@ -227,7 +227,7 @@ public class EnrollCommandsTest {
   public void testRevoke() throws Exception {
     AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("enroll:revoke\\{\"enrollmentId\":\"12345\".+",
-            "data:{\"status\":\"revoked\",\"enrollmentId\":\"12345\"}")
+              "data:{\"status\":\"revoked\",\"enrollmentId\":\"12345\"}")
         .build();
 
     EnrollCommands.revoke(executor, createEnrollmentId("12345"));
@@ -237,7 +237,7 @@ public class EnrollCommandsTest {
   public void testUnrevoke() throws Exception {
     AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("enroll:unrevoke\\{\"enrollmentId\":\"12345\".+",
-            "data:{\"status\":\"approved\",\"enrollmentId\":\"12345\"}")
+              "data:{\"status\":\"approved\",\"enrollmentId\":\"12345\"}")
         .build();
 
     EnrollCommands.unrevoke(executor, createEnrollmentId("12345"));
@@ -247,7 +247,7 @@ public class EnrollCommandsTest {
   public void testDelete() throws Exception {
     AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("enroll:delete\\{\"enrollmentId\":\"12345\".+",
-            "data:{\"status\":\"deleted\",\"enrollmentId\":\"12345\"}")
+              "data:{\"status\":\"deleted\",\"enrollmentId\":\"12345\"}")
         .build();
 
     EnrollCommands.delete(executor, createEnrollmentId("12345"));

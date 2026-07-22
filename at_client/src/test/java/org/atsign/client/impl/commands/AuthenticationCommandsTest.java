@@ -30,8 +30,8 @@ public class AuthenticationCommandsTest {
         .build();
 
     AuthenticationCommands.authenticateWithCram(executor,
-        new AtCommandExecutorContext(createAtSign("@alice"), null, null),
-        "secret");
+                                                new AtCommandExecutorContext(createAtSign("@alice"), null, null),
+                                                "secret");
   }
 
   @Test
@@ -42,12 +42,12 @@ public class AuthenticationCommandsTest {
         .build();
 
     Exception ex = assertThrows(AtUnauthenticatedException.class,
-        () -> AuthenticationCommands.authenticateWithCram(
-            executor,
-            new AtCommandExecutorContext(
-                createAtSign("@alice"), null,
-                null),
-            "secret"));
+                                () -> AuthenticationCommands.authenticateWithCram(
+                                                                                  executor,
+                                                                                  new AtCommandExecutorContext(
+                                                                                      createAtSign("@alice"), null,
+                                                                                      null),
+                                                                                  "secret"));
     assertThat(ex.getMessage(), containsString("deliberate"));
   }
 
@@ -94,8 +94,8 @@ public class AuthenticationCommandsTest {
         .build();
 
     Exception ex = assertThrows(AtUnauthenticatedException.class,
-        () -> AuthenticationCommands.authenticateWithPkam(executor, createAtSign("@alice"),
-            keys));
+                                () -> AuthenticationCommands.authenticateWithPkam(executor, createAtSign("@alice"),
+                                                                                  keys));
     assertThat(ex.getMessage(), containsString("deliberate"));
   }
 
@@ -108,8 +108,8 @@ public class AuthenticationCommandsTest {
         .build();
 
     Exception ex = assertThrows(Exception.class,
-        () -> AuthenticationCommands.pkamAuthenticator(createAtSign("@alice"), keys, null)
-            .accept(executor));
+                                () -> AuthenticationCommands.pkamAuthenticator(createAtSign("@alice"), keys, null)
+                                    .accept(executor));
     assertThat(ex, instanceOf(AtOnReadyException.class));
     assertThat(ex.getMessage(), containsString("deliberate"));
   }
