@@ -182,7 +182,7 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
 
   public EnrollmentId onboard() throws Exception {
     AtCommandExecutorContext context = newConnectionContext(generateAtKeys(true));
-    try (AtCommandExecutor executor = createConnectionSendingFrom(context, connectionRetries)) {
+    try (AtCommandExecutor executor = createConnectionSendingFrom(context)) {
       return onboard(executor, context);
     }
   }

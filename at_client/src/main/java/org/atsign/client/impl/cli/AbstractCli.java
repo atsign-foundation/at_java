@@ -10,6 +10,7 @@ import org.atsign.client.api.AtSign;
 import org.atsign.client.impl.AtCommandExecutors;
 import org.atsign.client.impl.AtCommandExecutors.AtCommandExecutorBuilder;
 import org.atsign.client.impl.commands.AuthenticationCommands;
+import org.atsign.client.impl.common.ReconnectStrategy;
 import org.atsign.client.impl.common.SimpleReconnectStrategy;
 import org.atsign.client.impl.exceptions.AtClientConfigException;
 import org.atsign.client.impl.exceptions.AtException;
@@ -101,12 +102,21 @@ public abstract class AbstractCli<T extends AbstractCli<T>> {
    * {@code from:} over the given {@code context} so the challenge it retains is the one an imperative
    * flow driving the connection (e.g. onboarding: scan, then CRAM, then PKAM) later consumes. No
    * on-ready authentication is wired — the caller authenticates imperatively.
+   *
+   * <p>
+   * Reconnect is disabled: because the imperative auth reuses the connect-time {@code from:}
+   * challenge, a mid-flow drop must abort (the one-shot flow is then rerun) rather than reconnect and
+   * authenticate on the new connection with a challenge the previous connection issued — the new
+   * connection's server would reject it. (The challenge is not cleared on close, so reconnect-and-
+   * reuse would be stale.)
    */
-  protected AtCommandExecutor createConnectionSendingFrom(AtCommandExecutorContext context, int retries)
-      throws AtException {
-    return connectionBuilder(rootUrl, retries, verbose)
+  protected AtCommandExecutor createConnectionSendingFrom(AtCommandExecutorContext context) throws AtException {
+    return AtCommandExecutors.builder()
+        .url(rootUrl)
         .atSign(context.getAtSign())
         .onReady(AuthenticationCommands.sendFrom(context))
+        .reconnect(ReconnectStrategy.NONE)
+        .isVerbose(verbose)
         .build();
   }
 
@@ -126,7 +136,7 @@ public abstract class AbstractCli<T extends AbstractCli<T>> {
   /**
    * Creates an {@link AtCommandExecutorContext} carrying this CLI's atSign and the given {@code keys}
    * (the identity being onboarded), to be passed to
-   * {@link #createConnectionSendingFrom(AtCommandExecutorContext, int)} and threaded into the
+   * {@link #createConnectionSendingFrom(AtCommandExecutorContext)} and threaded into the
    * imperative onboarding flow, which reuses the connection's {@code from:} challenge.
    */
   protected AtCommandExecutorContext newConnectionContext(AtKeys keys) {
