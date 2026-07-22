@@ -1,17 +1,8 @@
 package org.atsign.client.impl;
 
 
-import static org.atsign.client.impl.common.Preconditions.checkNotNull;
-
-import java.io.InputStream;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-
+import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
 import org.atsign.client.api.AtCommandExecutor;
 import org.atsign.client.api.AtCommandExecutorContext;
 import org.atsign.client.api.AtKeys;
@@ -22,8 +13,16 @@ import org.atsign.client.impl.common.SimpleReconnectStrategy;
 import org.atsign.client.impl.exceptions.AtException;
 import org.atsign.client.impl.netty.NettyAtCommandExecutor;
 
-import lombok.Builder;
-import lombok.extern.slf4j.Slf4j;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+
+import static org.atsign.client.impl.common.Preconditions.checkNotNull;
 
 /**
  * Utility methods / builders for instantiating {@link AtCommandExecutor} implementations
@@ -45,9 +44,8 @@ import lombok.extern.slf4j.Slf4j;
  * will automatically attempt to connect to an At Server at host:port.
  * <b>NOTE:</b> If an atSign is provided then the builder issues {@code from:@atSign} as the first
  * command once connected (so proxies / gateways can route the connection); if keys are also
- * provided
- * it then authenticates the {@link AtCommandExecutor} with PKAM, reusing that {@code from:}'s
- * challenge.
+ * provided it then authenticates the {@link AtCommandExecutor} with PKAM, reusing that
+ * {@code from:}'s challenge.
  * <b>NOTE:</b> If reconnect is not set then the builder will default to a
  * {@link SimpleReconnectStrategy}
  */

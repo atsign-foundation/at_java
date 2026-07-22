@@ -1,28 +1,21 @@
 package org.atsign.client.api;
 
+import lombok.*;
+
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import lombok.AccessLevel;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
-import lombok.Value;
-
 /**
- * The identity a connection authenticates as — its {@code atSign}, {@code keys} and {@code config}
- * —
+ * The identity a connection authenticates as (its {@code atSign}, {@code keys} and {@code config})
  * together with the single-use challenge from the {@code from:} that is issued as the first command
  * once the connection is ready.
  *
  * <p>
  * The context is created by the builder (see
  * {@code AtCommandExecutors#createCommandExecutor}) and closed over by the {@code onReady}
- * consumers
- * it wires, so the {@code from:} sender can retain the challenge and the authentication that
- * follows
- * on the same connection can reuse it rather than issuing a second {@code from:}. The command
- * executor itself is pure transport and knows nothing about this context.
+ * consumers it wires, so the {@code from:} sender can retain the challenge and the authentication
+ * that follows on the same connection can reuse it rather than issuing a second {@code from:}.
+ * The command executor itself is pure transport and knows nothing about this context.
  *
  * <p>
  * The identity fields are fixed for the life of the context. The challenge is per-connection state:

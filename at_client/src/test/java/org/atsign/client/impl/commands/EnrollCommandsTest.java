@@ -1,27 +1,27 @@
 package org.atsign.client.impl.commands;
 
+import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.AtCommandExecutorContext;
+import org.atsign.client.api.AtKeys;
+import org.atsign.client.api.AtSign;
+import org.atsign.client.impl.common.EnrollmentId;
+import org.atsign.client.impl.exceptions.AtException;
+import org.atsign.client.impl.exceptions.AtServerRuntimeException;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
 import static java.lang.String.format;
 import static java.util.Collections.singletonMap;
-import static org.atsign.client.impl.util.EncryptionUtils.*;
-import static org.atsign.client.impl.common.EnrollmentId.createEnrollmentId;
 import static org.atsign.client.api.AtSign.createAtSign;
+import static org.atsign.client.impl.common.EnrollmentId.createEnrollmentId;
+import static org.atsign.client.impl.util.EncryptionUtils.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.matches;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import java.util.List;
-
-import org.atsign.client.api.AtKeys;
-import org.atsign.client.api.AtCommandExecutor;
-import org.atsign.client.api.AtCommandExecutorContext;
-import org.atsign.client.impl.common.EnrollmentId;
-import org.atsign.client.impl.exceptions.AtException;
-import org.atsign.client.api.AtSign;
-import org.atsign.client.impl.exceptions.AtServerRuntimeException;
-import org.junit.jupiter.api.Test;
 
 public class EnrollCommandsTest {
 
@@ -67,8 +67,8 @@ public class EnrollCommandsTest {
         .build();
 
     Exception ex = assertThrows(Exception.class,
-                                () -> EnrollCommands.onboard(executor, new AtCommandExecutorContext(atSign, keys, null),
-                                                             "secret", "app", "device", false));
+        () -> EnrollCommands.onboard(executor, new AtCommandExecutorContext(atSign, keys, null),
+            "secret", "app", "device", false));
     assertThat(ex.getMessage(), containsString("not connected to the atsign's at server"));
   }
 
@@ -108,7 +108,7 @@ public class EnrollCommandsTest {
         .build();
 
     AtKeys newKeys = EnrollCommands.onboard(executor, new AtCommandExecutorContext(atSign, keys, null), "secret",
-                                            "app", "device", false);
+        "app", "device", false);
 
     assertThat(newKeys, is(not(sameInstance(keys))));
     assertThat(newKeys.getEnrollmentId(), equalTo(createEnrollmentId("904dcbf7")));
@@ -175,9 +175,9 @@ public class EnrollCommandsTest {
         .build();
 
     String selfEncryptKeysGetResponse = format("data:{\"value\":\"%s\",\"iv\":\"%s\"}",
-                                               aesEncryptToBase64(AES_KEY, keys.getApkamSymmetricKey(), IV), IV);
+        aesEncryptToBase64(AES_KEY, keys.getApkamSymmetricKey(), IV), IV);
     String privateEncryptKeysGetResponse = format("data:{\"value\":\"%s\",\"iv\":\"%s\"}",
-                                                  aesEncryptToBase64(RSA_KEY, keys.getApkamSymmetricKey(), IV), IV);
+        aesEncryptToBase64(RSA_KEY, keys.getApkamSymmetricKey(), IV), IV);
 
     AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("from:@alice", "data:challenge")
@@ -201,13 +201,13 @@ public class EnrollCommandsTest {
         .build();
 
     String fetchResponse = format("data:{\"appName\":\"app1\",\"deviceName\":\"device1\"," +
-        "\"namespace\":{\"ns\":\"rw\"},\"encryptedAPKAMSymmetricKey\":\"%s\",\"status\":\"pending\"}",
-                                  rsaEncryptToBase64(AES_KEY, keys.getEncryptPublicKey()));
+            "\"namespace\":{\"ns\":\"rw\"},\"encryptedAPKAMSymmetricKey\":\"%s\",\"status\":\"pending\"}",
+        rsaEncryptToBase64(AES_KEY, keys.getEncryptPublicKey()));
 
     AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("enroll:fetch\\{\"enrollmentId\":\"12345\"}", fetchResponse)
         .stub("enroll:approve\\{\"enrollmentId\":\"12345\".+",
-              "data:{\"status\":\"approved\",\"enrollmentId\":\"12345\"}")
+            "data:{\"status\":\"approved\",\"enrollmentId\":\"12345\"}")
         .build();
 
     EnrollCommands.approve(executor, keys, createEnrollmentId("12345"));
@@ -217,7 +217,7 @@ public class EnrollCommandsTest {
   public void testDeny() throws Exception {
     AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("enroll:deny\\{\"enrollmentId\":\"12345\".+",
-              "data:{\"status\":\"denied\",\"enrollmentId\":\"12345\"}")
+            "data:{\"status\":\"denied\",\"enrollmentId\":\"12345\"}")
         .build();
 
     EnrollCommands.deny(executor, createEnrollmentId("12345"));
@@ -227,7 +227,7 @@ public class EnrollCommandsTest {
   public void testRevoke() throws Exception {
     AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("enroll:revoke\\{\"enrollmentId\":\"12345\".+",
-              "data:{\"status\":\"revoked\",\"enrollmentId\":\"12345\"}")
+            "data:{\"status\":\"revoked\",\"enrollmentId\":\"12345\"}")
         .build();
 
     EnrollCommands.revoke(executor, createEnrollmentId("12345"));
@@ -237,7 +237,7 @@ public class EnrollCommandsTest {
   public void testUnrevoke() throws Exception {
     AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("enroll:unrevoke\\{\"enrollmentId\":\"12345\".+",
-              "data:{\"status\":\"approved\",\"enrollmentId\":\"12345\"}")
+            "data:{\"status\":\"approved\",\"enrollmentId\":\"12345\"}")
         .build();
 
     EnrollCommands.unrevoke(executor, createEnrollmentId("12345"));
@@ -247,7 +247,7 @@ public class EnrollCommandsTest {
   public void testDelete() throws Exception {
     AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("enroll:delete\\{\"enrollmentId\":\"12345\".+",
-              "data:{\"status\":\"deleted\",\"enrollmentId\":\"12345\"}")
+            "data:{\"status\":\"deleted\",\"enrollmentId\":\"12345\"}")
         .build();
 
     EnrollCommands.delete(executor, createEnrollmentId("12345"));

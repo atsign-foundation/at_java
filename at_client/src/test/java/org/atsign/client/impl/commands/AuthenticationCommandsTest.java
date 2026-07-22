@@ -1,24 +1,24 @@
 package org.atsign.client.impl.commands;
 
-import static org.atsign.client.impl.util.EncryptionUtils.generateRSAKeyPair;
-import static org.atsign.client.impl.common.EnrollmentId.createEnrollmentId;
-import static org.atsign.client.api.AtSign.createAtSign;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.matches;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
+import org.atsign.client.api.AtCommandExecutor;
 import org.atsign.client.api.AtCommandExecutorContext;
 import org.atsign.client.api.AtKeys;
-import org.atsign.client.api.AtCommandExecutor;
 import org.atsign.client.impl.exceptions.AtOnReadyException;
 import org.atsign.client.impl.exceptions.AtUnauthenticatedException;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.Map;
+
+import static org.atsign.client.api.AtSign.createAtSign;
+import static org.atsign.client.impl.common.EnrollmentId.createEnrollmentId;
+import static org.atsign.client.impl.util.EncryptionUtils.generateRSAKeyPair;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.matches;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class AuthenticationCommandsTest {
 
@@ -30,8 +30,8 @@ public class AuthenticationCommandsTest {
         .build();
 
     AuthenticationCommands.authenticateWithCram(executor,
-                                                new AtCommandExecutorContext(createAtSign("@alice"), null, null),
-                                                "secret");
+        new AtCommandExecutorContext(createAtSign("@alice"), null, null),
+        "secret");
   }
 
   @Test
@@ -42,12 +42,12 @@ public class AuthenticationCommandsTest {
         .build();
 
     Exception ex = assertThrows(AtUnauthenticatedException.class,
-                                () -> AuthenticationCommands.authenticateWithCram(
-                                                                                  executor,
-                                                                                  new AtCommandExecutorContext(
-                                                                                      createAtSign("@alice"), null,
-                                                                                      null),
-                                                                                  "secret"));
+        () -> AuthenticationCommands.authenticateWithCram(
+            executor,
+            new AtCommandExecutorContext(
+                createAtSign("@alice"), null,
+                null),
+            "secret"));
     assertThat(ex.getMessage(), containsString("deliberate"));
   }
 
@@ -94,8 +94,8 @@ public class AuthenticationCommandsTest {
         .build();
 
     Exception ex = assertThrows(AtUnauthenticatedException.class,
-                                () -> AuthenticationCommands.authenticateWithPkam(executor, createAtSign("@alice"),
-                                                                                  keys));
+        () -> AuthenticationCommands.authenticateWithPkam(executor, createAtSign("@alice"),
+            keys));
     assertThat(ex.getMessage(), containsString("deliberate"));
   }
 
@@ -108,8 +108,8 @@ public class AuthenticationCommandsTest {
         .build();
 
     Exception ex = assertThrows(Exception.class,
-                                () -> AuthenticationCommands.pkamAuthenticator(createAtSign("@alice"), keys, null)
-                                    .accept(executor));
+        () -> AuthenticationCommands.pkamAuthenticator(createAtSign("@alice"), keys, null)
+            .accept(executor));
     assertThat(ex, instanceOf(AtOnReadyException.class));
     assertThat(ex.getMessage(), containsString("deliberate"));
   }
