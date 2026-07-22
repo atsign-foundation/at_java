@@ -1,7 +1,17 @@
 package org.atsign.client.impl;
 
 
-import static org.atsign.client.impl.common.Preconditions.checkNotNull;
+import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
+import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.AtCommandExecutorContext;
+import org.atsign.client.api.AtKeys;
+import org.atsign.client.api.AtSign;
+import org.atsign.client.impl.commands.AuthenticationCommands;
+import org.atsign.client.impl.common.ReconnectStrategy;
+import org.atsign.client.impl.common.SimpleReconnectStrategy;
+import org.atsign.client.impl.exceptions.AtException;
+import org.atsign.client.impl.netty.NettyAtCommandExecutor;
 
 import java.io.InputStream;
 import java.net.URL;
@@ -12,17 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import org.atsign.client.api.AtCommandExecutor;
-import org.atsign.client.api.AtKeys;
-import org.atsign.client.api.AtSign;
-import org.atsign.client.impl.commands.AuthenticationCommands;
-import org.atsign.client.impl.common.ReconnectStrategy;
-import org.atsign.client.impl.common.SimpleReconnectStrategy;
-import org.atsign.client.impl.exceptions.AtException;
-import org.atsign.client.impl.netty.NettyAtCommandExecutor;
-
-import lombok.Builder;
-import lombok.extern.slf4j.Slf4j;
+import static org.atsign.client.impl.common.Preconditions.checkNotNull;
 
 /**
  * Utility methods / builders for instantiating {@link AtCommandExecutor} implementations
@@ -42,8 +42,10 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <b>NOTE:</b> If the url is prefixed with proxy (e.g. proxy:host:port) then the builder
  * will automatically attempt to connect to an At Server at host:port.
- * <b>NOTE:</b> If atSign and keys are provided then the builder
- * will automatically configure the {@link AtCommandExecutor} to authenticate with PKAM.
+ * <b>NOTE:</b> If an atSign is provided then the builder issues {@code from:@atSign} as the first
+ * command once connected (so proxies / gateways can route the connection); if keys are also
+ * provided it then authenticates the {@link AtCommandExecutor} with PKAM, reusing that
+ * {@code from:}'s challenge.
  * <b>NOTE:</b> If reconnect is not set then the builder will default to a
  * {@link SimpleReconnectStrategy}
  */
@@ -69,6 +71,10 @@ public class AtCommandExecutors {
       checkNotNull(atSign, "atSign not set");
     }
 
+    // the context is closed over by the onReady consumers the builder wires (see createOnReady); the
+    // command executor itself stays pure transport and knows nothing about it
+    AtCommandExecutorContext context = new AtCommandExecutorContext(atSign, keys, createClientConfig(config));
+
     return NettyAtCommandExecutor.builder()
         .endpoint(AtEndpointSuppliers.builder().url(url).atSign(atSign).build())
         .isVerbose(isVerbose)
@@ -76,7 +82,7 @@ public class AtCommandExecutors {
         .awaitReadyMillis(defaultIfNotSet(awaitReadyMillis, DEFAULT_TIMEOUT_MILLIS))
         .reconnect(defaultIfNotSet(reconnect, SimpleReconnectStrategy.builder().build()))
         .queueLimit(queueLimit)
-        .onReady(defaultIfNotSet(onReady, createOnReady(atSign, keys, createClientConfig(config))))
+        .onReady(defaultIfNotSet(onReady, createOnReady(context)))
         .build();
   }
 
@@ -128,13 +134,20 @@ public class AtCommandExecutors {
     return result;
   }
 
-  private static Consumer<AtCommandExecutor> createOnReady(AtSign atSign, AtKeys keys, Map<String, Object> config) {
-    Consumer<AtCommandExecutor> onReady;
-    if (atSign != null && keys != null) {
-      onReady = AuthenticationCommands.pkamAuthenticator(atSign, keys, config);
-    } else {
-      onReady = c -> {
+  /**
+   * The default protocol for a newly-ready connection. A connection with no atSign (e.g. one talking
+   * to the atDirectory / root server) sends nothing. Every connection that has an atSign issues
+   * {@code from:@atSign} first so that proxies / gateways can route it; if keys are also present it
+   * then authenticates with PKAM, reusing the challenge from that initial {@code from:}.
+   */
+  private static Consumer<AtCommandExecutor> createOnReady(AtCommandExecutorContext context) {
+    if (context.getAtSign() == null) {
+      return c -> {
       };
+    }
+    Consumer<AtCommandExecutor> onReady = AuthenticationCommands.sendFrom(context);
+    if (context.getKeys() != null) {
+      onReady = onReady.andThen(AuthenticationCommands.pkamAuthenticator(context));
     }
     return onReady;
   }

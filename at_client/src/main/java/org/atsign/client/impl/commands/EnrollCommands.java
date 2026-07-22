@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.AtCommandExecutorContext;
 import org.atsign.client.api.AtKeyNames;
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtSign;
@@ -32,8 +33,10 @@ public class EnrollCommands {
    * app/device keys that can approve subsequent enrollments.
    *
    * @param executor The {@link AtCommandExecutor} to use.
-   * @param atSign The AtSign that corresponds to the executor.
-   * @param keys The {@link AtKeys} for the {@link AtSign}, these should already be populated.
+   * @param context The connection context for the executor; the single source of identity for this
+   *        onboarding — its atSign, the {@link AtKeys} being onboarded (already populated), and the
+   *        {@code from:} challenge that CRAM reuses (the connection issues {@code from:} on connect,
+   *        before the connectivity scan below).
    * @param cramSecret The CRAM secret.
    * @param appName The app name for this first enrollment.
    * @param deviceName The device name for this first enrollment.
@@ -43,13 +46,14 @@ public class EnrollCommands {
    * @throws AtException If any of the commands fail.
    */
   public static AtKeys onboard(AtCommandExecutor executor,
-                               AtSign atSign,
-                               AtKeys keys,
+                               AtCommandExecutorContext context,
                                String cramSecret,
                                String appName,
                                String deviceName,
                                boolean deleteCramKey)
       throws AtException {
+    AtSign atSign = context.getAtSign();
+    AtKeys keys = context.getKeys();
     try {
 
       // verify that the executor is connected to the atsigns atserver
@@ -60,8 +64,8 @@ public class EnrollCommands {
         throw new IllegalStateException("not connected to the atsign's at server");
       }
 
-      // authenticate with CRAM
-      AuthenticationCommands.authenticateWithCram(executor, atSign, cramSecret);
+      // authenticate with CRAM, reusing the from: challenge the connection issued on connect
+      AuthenticationCommands.authenticateWithCram(executor, context, cramSecret);
 
       // send an enroll request which should automatically be approved after CRAM authentication
       String requestCommand = CommandBuilders.enrollCommandBuilder()
@@ -79,7 +83,9 @@ public class EnrollCommands {
           .enrollmentId(createEnrollmentId(response.get("enrollmentId")))
           .build();
 
-      // authenticate with PKAM
+      // authenticate with PKAM — issues its own from: (the connection's challenge was single-use and
+      // is spent by CRAM above; PKAM also authenticates with the freshly-enrolled keys, not the
+      // connection identity)
       AuthenticationCommands.authenticateWithPkam(executor, atSign, keys);
 
       // explicitly store the public encryption key in the atserver
