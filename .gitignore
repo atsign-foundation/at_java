@@ -32,5 +32,6 @@ hs_err_pid*
 .DS_Store
 *.iml
 .vscode
+.claude/
 
 dependency-reduced-pom.xml

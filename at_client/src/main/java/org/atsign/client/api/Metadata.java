@@ -211,6 +211,9 @@ public class Metadata {
     if (!setImmutableIfNotNull(builder, md1.immutable)) {
       setImmutableIfNotNull(builder, md2.immutable);
     }
+    if (!setAppMetadataIfNotNull(builder, md1.appMetadata)) {
+      setAppMetadataIfNotNull(builder, md2.appMetadata);
+    }
 
     return builder;
   }
@@ -452,6 +455,15 @@ public class Metadata {
   public static boolean setImmutableIfNotNull(MetadataBuilder builder, Boolean value) {
     if (value != null) {
       builder.immutable(value);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  public static boolean setAppMetadataIfNotNull(MetadataBuilder builder, AppMetadata value) {
+    if (value != null) {
+      builder.appMetadata(value);
       return true;
     } else {
       return false;
