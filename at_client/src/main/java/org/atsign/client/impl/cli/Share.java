@@ -1,6 +1,5 @@
 package org.atsign.client.impl.cli;
 
-import static org.atsign.client.api.AtSign.createAtSign;
 
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.AtKeys;
@@ -25,8 +24,8 @@ public class Share {
     }
 
     String rootUrl = args[0];
-    AtSign atSign = createAtSign(args[1]);
-    AtSign otherAtSign = createAtSign(args[2]);
+    AtSign atSign = AtSign.of(args[1]);
+    AtSign otherAtSign = AtSign.of(args[2]);
     String keyName = args[3];
     String toShare = args[4];
     int ttr = args.length == 6 ? Integer.parseInt(args[5]) : 0;

@@ -17,7 +17,7 @@ import org.atsign.client.impl.cli.Activate;
 import org.atsign.client.api.AtCommandExecutor;
 import org.atsign.client.impl.commands.EnrollCommands;
 import org.atsign.client.impl.commands.KeyCommands;
-import org.atsign.client.impl.common.EnrollmentId;
+import org.atsign.client.api.EnrollmentId;
 import org.atsign.client.impl.util.KeysUtils;
 import org.atsign.client.api.AtSign;
 import org.atsign.client.impl.exceptions.AtClientConfigException;
@@ -141,7 +141,7 @@ public class ActivateSteps {
   @When("{atsign} Activate.approve for enrollmentId {string}")
   public void approve(AtSign atSign, String enrollmentId) throws Exception {
     Activate util = createActivateUtil(atSign);
-    util.approve(EnrollmentId.createEnrollmentId(enrollmentId));
+    util.approve(EnrollmentId.of(enrollmentId));
   }
 
   @When("{atsign} Activate.approve for last enrollment")
@@ -163,7 +163,7 @@ public class ActivateSteps {
   @When("{atsign} Activate.deny for enrollmentId {string}")
   public void deny(AtSign atSign, String enrollmentId) throws Exception {
     Activate util = createActivateUtil(atSign);
-    util.deny(EnrollmentId.createEnrollmentId(enrollmentId));
+    util.deny(EnrollmentId.of(enrollmentId));
   }
 
   @When("{atsign} Activate.deny for last enrollment")
@@ -174,7 +174,7 @@ public class ActivateSteps {
   @When("{atsign} Activate.revoke for enrollmentId {string}")
   public void revoke(AtSign atSign, String enrollmentId) throws Exception {
     Activate util = createActivateUtil(atSign);
-    util.revoke(EnrollmentId.createEnrollmentId(enrollmentId));
+    util.revoke(EnrollmentId.of(enrollmentId));
   }
 
   @When("{atsign} Activate.revoke for last enrollment")
@@ -185,7 +185,7 @@ public class ActivateSteps {
   @When("{atsign} Activate.unrevoke for enrollmentId {string}")
   public void unrevoke(AtSign atSign, String enrollmentId) throws Exception {
     Activate util = createActivateUtil(atSign);
-    util.unrevoke(EnrollmentId.createEnrollmentId(enrollmentId));
+    util.unrevoke(EnrollmentId.of(enrollmentId));
   }
 
   private Activate createActivateUtil(AtSign atSign) {

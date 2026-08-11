@@ -1,7 +1,6 @@
 package org.atsign.client.impl;
 
 import static org.atsign.client.api.AtEvents.AtEventType.statsNotification;
-import static org.atsign.client.api.AtSign.createAtSign;
 import static org.atsign.client.impl.util.EncryptionUtils.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -34,7 +33,7 @@ class AtClientImplTest {
   void setUp() throws Exception {
     bus = Mockito.mock(AtEvents.AtEventBus.class);
     executor = TestExecutorBuilder.builder().build();
-    atSign = AtSign.createAtSign("test");
+    atSign = AtSign.of("test");
     keys = AtKeys.builder()
         .apkamKeyPair(generateRSAKeyPair())
         .encryptKeyPair(generateRSAKeyPair())
@@ -54,18 +53,18 @@ class AtClientImplTest {
   @Test
   void testSetAtSignReturnsConstructorArg() {
     AtClientImpl client = AtClientImpl.builder()
-        .atSign(createAtSign("test"))
+        .atSign(AtSign.of("test"))
         .keys(keys)
         .executor(executor)
         .eventBus(bus)
         .build();
-    assertThat(client.getAtSign(), equalTo(createAtSign("test")));
+    assertThat(client.getAtSign(), equalTo(AtSign.of("test")));
   }
 
   @Test
   void testGetCommandExecutorReturnsConstructorArg() {
     AtClientImpl client = AtClientImpl.builder()
-        .atSign(createAtSign("test"))
+        .atSign(AtSign.of("test"))
         .keys(keys)
         .executor(executor)
         .eventBus(bus)
@@ -90,7 +89,7 @@ class AtClientImplTest {
         .build();
 
     AtClientImpl client = AtClientImpl.builder()
-        .atSign(createAtSign("alice"))
+        .atSign(AtSign.of("alice"))
         .keys(keys)
         .executor(executor)
         .eventBus(bus)
@@ -132,7 +131,7 @@ class AtClientImplTest {
         .build();
 
     AtClientImpl client = AtClientImpl.builder()
-        .atSign(createAtSign("alice"))
+        .atSign(AtSign.of("alice"))
         .keys(keys)
         .executor(executor)
         .eventBus(bus)
@@ -315,7 +314,7 @@ class AtClientImplTest {
     Keys.PublicKey key3 = Keys.publicKeyBuilder().sharedBy(atSign).name("key3").build();
     assertThrows(Exception.class, () -> client.get(key3));
 
-    Keys.PublicKey key4 = Keys.publicKeyBuilder().sharedBy(createAtSign("another")).name("key4").build();
+    Keys.PublicKey key4 = Keys.publicKeyBuilder().sharedBy(AtSign.of("another")).name("key4").build();
     assertThat(client.get(key4), equalTo("greetings from another world"));
   }
 
@@ -345,7 +344,7 @@ class AtClientImplTest {
     Keys.PublicKey key3 = Keys.publicKeyBuilder().sharedBy(atSign).name("key3").build();
     assertThrows(Exception.class, () -> client.getBinary(key3));
 
-    Keys.PublicKey key4 = Keys.publicKeyBuilder().sharedBy(createAtSign("another")).name("key4").build();
+    Keys.PublicKey key4 = Keys.publicKeyBuilder().sharedBy(AtSign.of("another")).name("key4").build();
     assertThat(client.getBinary(key4), equalTo(bytes2));
 
     Keys.PublicKey key5 = Keys.publicKeyBuilder().sharedBy(atSign).name("key5").build();
@@ -433,7 +432,7 @@ class AtClientImplTest {
         .build();
 
     AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
-    AtSign atSign2 = createAtSign("another");
+    AtSign atSign2 = AtSign.of("another");
 
     Keys.SharedKey key1 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key1").build();
     assertThat(client.get(key1), equalTo("hello from me"));
@@ -473,7 +472,7 @@ class AtClientImplTest {
         .build();
 
     AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
-    AtSign atSign2 = createAtSign("another");
+    AtSign atSign2 = AtSign.of("another");
 
     Keys.SharedKey key1 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key1").build();
     assertThat(client.getBinary(key1), equalTo(bytes1));
@@ -502,7 +501,7 @@ class AtClientImplTest {
         .build();
 
     AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
-    AtSign atSign2 = createAtSign("another");
+    AtSign atSign2 = AtSign.of("another");
 
     Keys.SharedKey key1 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key1").build();
     client.put(key1, "hello world");
@@ -528,7 +527,7 @@ class AtClientImplTest {
         .build();
 
     AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
-    AtSign atSign2 = createAtSign("another");
+    AtSign atSign2 = AtSign.of("another");
 
     Keys.SharedKey key1 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key1").build();
     client.put(key1, bytes);
@@ -549,7 +548,7 @@ class AtClientImplTest {
         .build();
 
     AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
-    AtSign atSign2 = createAtSign("another");
+    AtSign atSign2 = AtSign.of("another");
 
     Keys.SharedKey key1 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key1").build();
     client.delete(key1);

@@ -1,6 +1,5 @@
 package org.atsign.client.impl.util;
 
-import static org.atsign.client.api.AtSign.createAtSign;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.atsign.client.impl.exceptions.AtException;
@@ -8,6 +7,7 @@ import org.atsign.client.api.Keys;
 import org.atsign.client.api.Keys.AtKey;
 import org.atsign.client.api.Metadata;
 import org.junit.jupiter.api.Test;
+import org.atsign.client.api.AtSign;
 
 public class FromStringTest {
 
@@ -22,7 +22,7 @@ public class FromStringTest {
     assertEquals(false, metadata.isEncrypted());
     assertEquals(false, metadata.isHidden());
     assertEquals("publickey", atKey.name());
-    assertEquals(createAtSign("@alice"), atKey.sharedBy());
+    assertEquals(AtSign.of("@alice"), atKey.sharedBy());
   }
 
   @Test

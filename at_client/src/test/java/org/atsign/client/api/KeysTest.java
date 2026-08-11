@@ -1,6 +1,5 @@
 package org.atsign.client.api;
 
-import static org.atsign.client.api.AtSign.createAtSign;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,18 +19,18 @@ class KeysTest {
   @Test
   void testPublicKeyBuilderThrowsExpectedExceptionWhenKeyNameIsNotSet() {
     IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                                               () -> Keys.publicKeyBuilder().sharedBy(createAtSign("fred")).build());
+                                               () -> Keys.publicKeyBuilder().sharedBy(AtSign.of("fred")).build());
     assertThat(ex.getMessage(), containsString("name is not set"));
   }
 
   @Test
   void testPublicKeyBuilderWithNoNamespaceCreatesExpectedKey() {
     Keys.PublicKey key = Keys.publicKeyBuilder()
-        .sharedBy(createAtSign("fred"))
+        .sharedBy(AtSign.of("fred"))
         .name("key1")
         .build();
 
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
     assertThat(key.name(), equalTo("key1"));
     assertThat(key.toString(), equalTo("public:key1@fred"));
     assertThat(key.metadata(), equalTo(Metadata.builder()
@@ -45,12 +44,12 @@ class KeysTest {
   @Test
   void testPublicKeyBuilderWithNamespaceCreatesExpectedKey() {
     Keys.PublicKey key = Keys.publicKeyBuilder()
-        .sharedBy(createAtSign("fred"))
+        .sharedBy(AtSign.of("fred"))
         .name("key1")
         .namespace("ns")
         .build();
 
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
     assertThat(key.name(), equalTo("key1.ns"));
     assertThat(key.namespace(), equalTo("ns"));
     assertThat(key.nameWithoutNamespace(), equalTo("key1"));
@@ -60,7 +59,7 @@ class KeysTest {
   @Test
   void testPublicKeyBuilderWithAdditionalMetadataFieldsCreatesExpectedKey() {
     Keys.PublicKey key = Keys.publicKeyBuilder()
-        .sharedBy(createAtSign("fred"))
+        .sharedBy(AtSign.of("fred"))
         .name("key1")
         .ttl(1000L)
         .ttb(2000L)
@@ -81,7 +80,7 @@ class KeysTest {
   @Test
   void testPublicKeyBuilderWithMetadataFieldsOverridesCreatesExpectedKey() {
     Keys.PublicKey key = Keys.publicKeyBuilder()
-        .sharedBy(createAtSign("fred"))
+        .sharedBy(AtSign.of("fred"))
         .name("key1")
         .isCached(true)
         .isBinary(true)
@@ -102,7 +101,7 @@ class KeysTest {
     Keys.AtKey key = Keys.keyBuilder().rawKey("public:key1@fred").build();
 
     assertThat(key, instanceOf(Keys.PublicKey.class));
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
     assertThat(key.name(), equalTo("key1"));
     assertThat(key.toString(), equalTo("public:key1@fred"));
     assertThat(key.metadata(), equalTo(Metadata.builder()
@@ -115,7 +114,7 @@ class KeysTest {
     key = Keys.keyBuilder().rawKey("cached:public:key1@fred").build();
 
     assertThat(key, instanceOf(Keys.PublicKey.class));
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
     assertThat(key.name(), equalTo("key1"));
     assertThat(key.toString(), equalTo("cached:public:key1@fred"));
     assertThat(key.metadata(), equalTo(Metadata.builder()
@@ -128,7 +127,7 @@ class KeysTest {
     key = Keys.keyBuilder().rawKey("cached:public:_key1@fred").build();
 
     assertThat(key, instanceOf(Keys.PublicKey.class));
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
     assertThat(key.name(), equalTo("_key1"));
     assertThat(key.toString(), equalTo("cached:public:_key1@fred"));
     assertThat(key.metadata(), equalTo(Metadata.builder()
@@ -141,7 +140,7 @@ class KeysTest {
     key = Keys.keyBuilder().rawKey("public:key1@fred").metadata(Metadata.builder().isEncrypted(true).build()).build();
 
     assertThat(key, instanceOf(Keys.PublicKey.class));
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
     assertThat(key.name(), equalTo("key1"));
     assertThat(key.toString(), equalTo("public:key1@fred"));
     assertThat(key.metadata(), equalTo(Metadata.builder()
@@ -162,18 +161,18 @@ class KeysTest {
   @Test
   void testSelfKeyBuilderThrowsExpectedExceptionWhenKeyNameIsNotSet() {
     IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                                               () -> Keys.selfKeyBuilder().sharedBy(createAtSign("fred")).build());
+                                               () -> Keys.selfKeyBuilder().sharedBy(AtSign.of("fred")).build());
     assertThat(ex.getMessage(), containsString("name is not set"));
   }
 
   @Test
   void testSelfKeyBuilderWithNoNamespaceCreatesExpectedKey() {
     Keys.SelfKey key = Keys.selfKeyBuilder()
-        .sharedBy(createAtSign("fred"))
+        .sharedBy(AtSign.of("fred"))
         .name("key1")
         .build();
 
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
     assertThat(key.name(), equalTo("key1"));
     assertThat(key.toString(), equalTo("key1@fred"));
     assertThat(key.metadata(), equalTo(Metadata.builder()
@@ -187,7 +186,7 @@ class KeysTest {
   @Test
   void testSelfKeyBuilderWithNamespaceCreatesExpectedKey() {
     Keys.SelfKey key = Keys.selfKeyBuilder()
-        .sharedBy(createAtSign("fred"))
+        .sharedBy(AtSign.of("fred"))
         .name("key1")
         .namespace("ns")
         .build();
@@ -201,14 +200,14 @@ class KeysTest {
   @Test
   void testSelfKeyBuilderWithSharedWithCreatesExpectedKey() {
     Keys.SelfKey key = Keys.selfKeyBuilder()
-        .sharedWith(createAtSign("fred"))
-        .sharedBy(createAtSign("fred"))
+        .sharedWith(AtSign.of("fred"))
+        .sharedBy(AtSign.of("fred"))
         .name("key1")
         .namespace("ns")
         .build();
 
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
-    assertThat(key.sharedWith(), equalTo(createAtSign("fred")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
+    assertThat(key.sharedWith(), equalTo(AtSign.of("fred")));
     assertThat(key.toString(), equalTo("@fred:key1.ns@fred"));
     assertThat(key.name(), equalTo("key1.ns"));
     assertThat(key.namespace(), equalTo("ns"));
@@ -218,7 +217,7 @@ class KeysTest {
   @Test
   void testSelfKeyBuilderWithAdditionalMetadataFieldsCreatesExpectedKey() {
     Keys.SelfKey key = Keys.selfKeyBuilder()
-        .sharedBy(createAtSign("fred"))
+        .sharedBy(AtSign.of("fred"))
         .name("key1")
         .ttl(1000L)
         .ttb(2000L)
@@ -239,7 +238,7 @@ class KeysTest {
   @Test
   void testSelfKeyBuilderWithMetadataFieldsOverridesCreatesExpectedKey() {
     Keys.SelfKey key = Keys.selfKeyBuilder()
-        .sharedBy(createAtSign("fred"))
+        .sharedBy(AtSign.of("fred"))
         .name("key1")
         .isBinary(true)
         .build();
@@ -260,7 +259,7 @@ class KeysTest {
         .build();
 
     assertThat(key, instanceOf(Keys.SelfKey.class));
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
     assertThat(key.sharedWith(), nullValue());
     assertThat(key.toString(), equalTo("key1@fred"));
     assertThat(key.name(), equalTo("key1"));
@@ -278,7 +277,7 @@ class KeysTest {
         .build();
 
     assertThat(key, instanceOf(Keys.SelfKey.class));
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
     assertThat(key.toString(), equalTo("key1.ns@fred"));
     assertThat(key.name(), equalTo("key1.ns"));
     assertThat(key.namespace(), equalTo("ns"));
@@ -289,8 +288,8 @@ class KeysTest {
         .build();
 
     assertThat(key, instanceOf(Keys.SelfKey.class));
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
-    assertThat(key.sharedWith(), equalTo(createAtSign("fred")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
+    assertThat(key.sharedWith(), equalTo(AtSign.of("fred")));
     assertThat(key.toString(), equalTo("@fred:key1.ns@fred"));
     assertThat(key.name(), equalTo("key1.ns"));
     assertThat(key.namespace(), equalTo("ns"));
@@ -321,15 +320,15 @@ class KeysTest {
   @Test
   void testSharedKeyBuilderThrowsExpectedExceptionWhenKeyNameIsNotSet() {
     IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                                               () -> Keys.sharedKeyBuilder().sharedBy(createAtSign("fred"))
-                                                   .sharedWith(createAtSign("colin")).build());
+                                               () -> Keys.sharedKeyBuilder().sharedBy(AtSign.of("fred"))
+                                                   .sharedWith(AtSign.of("colin")).build());
     assertThat(ex.getMessage(), containsString("name is not set"));
   }
 
   @Test
   void testSharedKeyBuilderThrowsExpectedExceptionWhenSharedKeyWithIsNotSet() {
     IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                                               () -> Keys.sharedKeyBuilder().sharedBy(createAtSign("fred")).name("key1")
+                                               () -> Keys.sharedKeyBuilder().sharedBy(AtSign.of("fred")).name("key1")
                                                    .build());
     assertThat(ex.getMessage(), containsString("sharedWith is not set"));
   }
@@ -345,13 +344,13 @@ class KeysTest {
   @Test
   void testSharedKeyBuilderWithNoNamespaceCreatesExpectedKey() {
     Keys.SharedKey key = Keys.sharedKeyBuilder()
-        .sharedBy(createAtSign("fred"))
-        .sharedWith(createAtSign("colin"))
+        .sharedBy(AtSign.of("fred"))
+        .sharedWith(AtSign.of("colin"))
         .name("key1")
         .build();
 
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
-    assertThat(key.sharedWith(), equalTo(createAtSign("colin")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
+    assertThat(key.sharedWith(), equalTo(AtSign.of("colin")));
     assertThat(key.name(), equalTo("key1"));
     assertThat(key.toString(), equalTo("@colin:key1@fred"));
     assertThat(key.metadata(), equalTo(Metadata.builder()
@@ -368,8 +367,8 @@ class KeysTest {
         .rawKey("@colin:key1@fred")
         .build();
 
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
-    assertThat(key.sharedWith(), equalTo(createAtSign("colin")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
+    assertThat(key.sharedWith(), equalTo(AtSign.of("colin")));
     assertThat(key.name(), equalTo("key1"));
     assertThat(key.toString(), equalTo("@colin:key1@fred"));
     assertThat(key.metadata(), equalTo(Metadata.builder()
@@ -386,8 +385,8 @@ class KeysTest {
         .rawKey("cached:@colin:key1@fred")
         .build();
 
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
-    assertThat(key.sharedWith(), equalTo(createAtSign("colin")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
+    assertThat(key.sharedWith(), equalTo(AtSign.of("colin")));
     assertThat(key.name(), equalTo("key1"));
     assertThat(key.toString(), equalTo("cached:@colin:key1@fred"));
     assertThat(key.metadata(), equalTo(Metadata.builder()
@@ -401,8 +400,8 @@ class KeysTest {
   @Test
   void testSharedKeyBuilderWithNamespaceCreatesExpectedKey() {
     Keys.SharedKey key = Keys.sharedKeyBuilder()
-        .sharedBy(createAtSign("fred"))
-        .sharedWith(createAtSign("colin"))
+        .sharedBy(AtSign.of("fred"))
+        .sharedWith(AtSign.of("colin"))
         .name("key1")
         .namespace("ns")
         .build();
@@ -428,8 +427,8 @@ class KeysTest {
   @Test
   void testSharedKeyBuilderWithAdditionalMetadataFieldsCreatesExpectedKey() {
     Keys.SharedKey key = Keys.sharedKeyBuilder()
-        .sharedBy(createAtSign("fred"))
-        .sharedWith(createAtSign("colin"))
+        .sharedBy(AtSign.of("fred"))
+        .sharedWith(AtSign.of("colin"))
         .name("key1")
         .ttl(1000L)
         .ttb(2000L)
@@ -450,8 +449,8 @@ class KeysTest {
   @Test
   void testSharedKeyBuilderWithMetadataFieldsOverridesCreatesExpectedKey() {
     Keys.SharedKey key = Keys.sharedKeyBuilder()
-        .sharedBy(createAtSign("fred"))
-        .sharedWith(createAtSign("colin"))
+        .sharedBy(AtSign.of("fred"))
+        .sharedWith(AtSign.of("colin"))
         .name("key1")
         .isBinary(true)
         .build();
@@ -472,8 +471,8 @@ class KeysTest {
         .build();
 
     assertThat(key, instanceOf(Keys.SharedKey.class));
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
-    assertThat(key.sharedWith(), equalTo(createAtSign("colin")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
+    assertThat(key.sharedWith(), equalTo(AtSign.of("colin")));
     assertThat(key.name(), equalTo("key1"));
     assertThat(key.toString(), equalTo("@colin:key1@fred"));
     assertThat(key.metadata(), equalTo(Metadata.builder()
@@ -488,8 +487,8 @@ class KeysTest {
         .build();
 
     assertThat(key, instanceOf(Keys.SharedKey.class));
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
-    assertThat(key.sharedWith(), equalTo(createAtSign("colin")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
+    assertThat(key.sharedWith(), equalTo(AtSign.of("colin")));
     assertThat(key.name(), equalTo("key1"));
     assertThat(key.toString(), equalTo("cached:@colin:key1@fred"));
     assertThat(key.metadata(), equalTo(Metadata.builder()
@@ -504,8 +503,8 @@ class KeysTest {
         .build();
 
     assertThat(key, instanceOf(Keys.SharedKey.class));
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
-    assertThat(key.sharedWith(), equalTo(createAtSign("colin")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
+    assertThat(key.sharedWith(), equalTo(AtSign.of("colin")));
     assertThat(key.name(), equalTo("_key1"));
     assertThat(key.toString(), equalTo("@colin:_key1@fred"));
     assertThat(key.metadata(), equalTo(Metadata.builder()
@@ -521,8 +520,8 @@ class KeysTest {
         .build();
 
     assertThat(key, instanceOf(Keys.SharedKey.class));
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
-    assertThat(key.sharedWith(), equalTo(createAtSign("colin")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
+    assertThat(key.sharedWith(), equalTo(AtSign.of("colin")));
     assertThat(key.name(), equalTo("key1"));
     assertThat(key.toString(), equalTo("@colin:key1@fred"));
     assertThat(key.metadata(), equalTo(Metadata.builder()
@@ -538,8 +537,8 @@ class KeysTest {
   @Test
   void testUpdateMissingMetadataWorksAsExpected() {
     Keys.SharedKey key = Keys.sharedKeyBuilder()
-        .sharedBy(createAtSign("fred"))
-        .sharedWith(createAtSign("colin"))
+        .sharedBy(AtSign.of("fred"))
+        .sharedWith(AtSign.of("colin"))
         .name("key1")
         .isBinary(true)
         .ttl(1000L)
@@ -561,8 +560,8 @@ class KeysTest {
   @Test
   void testOverwriteMetadataWorksAsExpected() {
     Keys.SharedKey key = Keys.sharedKeyBuilder()
-        .sharedBy(createAtSign("fred"))
-        .sharedWith(createAtSign("colin"))
+        .sharedBy(AtSign.of("fred"))
+        .sharedWith(AtSign.of("colin"))
         .name("key1")
         .isBinary(true)
         .ttl(1000L)
@@ -591,7 +590,7 @@ class KeysTest {
   @Test
   void testPrivateHiddenKeyBuilderThrowsExpectedExceptionWhenKeyNameIsNotSet() {
     IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                                               () -> Keys.privateHiddenKeyBuilder().sharedBy(createAtSign("fred"))
+                                               () -> Keys.privateHiddenKeyBuilder().sharedBy(AtSign.of("fred"))
                                                    .build());
     assertThat(ex.getMessage(), containsString("name is not set"));
   }
@@ -599,12 +598,12 @@ class KeysTest {
   @Test
   void testPrivateHiddenKeyBuilderWithNoNamespaceCreatesExpectedKey() {
     Keys.PrivateHiddenKey key = Keys.privateHiddenKeyBuilder()
-        .sharedBy(createAtSign("fred"))
+        .sharedBy(AtSign.of("fred"))
         .name("key1")
         .rawKey("private:key1@fred")
         .build();
 
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
     assertThat(key.name(), equalTo("key1"));
     assertThat(key.toString(), equalTo("private:key1@fred"));
     assertThat(key.metadata(), equalTo(Metadata.builder()
@@ -617,7 +616,7 @@ class KeysTest {
   @Test
   void testPrivateHiddenKeyBuilderWithNamespaceCreatesExpectedKey() {
     Keys.PrivateHiddenKey key = Keys.privateHiddenKeyBuilder()
-        .sharedBy(createAtSign("fred"))
+        .sharedBy(AtSign.of("fred"))
         .name("key1")
         .namespace("ns")
         .rawKey("private:key1.ns@fred")
@@ -636,7 +635,7 @@ class KeysTest {
         .build();
 
     assertThat(key, instanceOf(Keys.PrivateHiddenKey.class));
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
     assertThat(key.name(), equalTo("key1"));
     assertThat(key.toString(), equalTo("private:key1@fred"));
     assertThat(key.metadata(), equalTo(Metadata.builder()
@@ -651,7 +650,7 @@ class KeysTest {
         .build();
 
     assertThat(key, instanceOf(Keys.PrivateHiddenKey.class));
-    assertThat(key.sharedBy(), equalTo(createAtSign("fred")));
+    assertThat(key.sharedBy(), equalTo(AtSign.of("fred")));
     assertThat(key.name(), equalTo("key1"));
     assertThat(key.toString(), equalTo("private:key1@fred"));
     assertThat(key.metadata(), equalTo(Metadata.builder()
@@ -1160,26 +1159,26 @@ class KeysTest {
   public void testInvalidKeyNameCauseExceptionsToBeThron() {
 
     Exception ex = assertThrows(IllegalArgumentException.class,
-                                () -> Keys.publicKeyBuilder().sharedBy(createAtSign("fred")).name("").build());
+                                () -> Keys.publicKeyBuilder().sharedBy(AtSign.of("fred")).name("").build());
     assertThat(ex.getMessage(), equalTo("key name is blank"));
 
     ex = assertThrows(IllegalArgumentException.class,
-                      () -> Keys.publicKeyBuilder().sharedBy(createAtSign("fred")).name("test@").build());
+                      () -> Keys.publicKeyBuilder().sharedBy(AtSign.of("fred")).name("test@").build());
     assertThat(ex.getMessage(), equalTo("illegal characters in key name"));
 
     ex = assertThrows(IllegalArgumentException.class,
-                      () -> Keys.publicKeyBuilder().sharedBy(createAtSign("fred")).name("te st").build());
+                      () -> Keys.publicKeyBuilder().sharedBy(AtSign.of("fred")).name("te st").build());
     assertThat(ex.getMessage(), equalTo("illegal characters in key name"));
 
     ex = assertThrows(IllegalArgumentException.class,
-                      () -> Keys.publicKeyBuilder().sharedBy(createAtSign("fred")).name("te:st").build());
+                      () -> Keys.publicKeyBuilder().sharedBy(AtSign.of("fred")).name("te:st").build());
     assertThat(ex.getMessage(), equalTo("illegal characters in key name"));
   }
 
   @Test
   public void testPublicKeyInvalidMetadataThrowsException() {
     Exception ex = assertThrows(IllegalArgumentException.class, () -> Keys.publicKeyBuilder()
-        .sharedBy(createAtSign("fred"))
+        .sharedBy(AtSign.of("fred"))
         .name("key")
         .ttl(-1L)
         .ttb(0L)
@@ -1188,7 +1187,7 @@ class KeysTest {
     assertThat(ex.getMessage(), equalTo("ttl cannot be negative"));
 
     ex = assertThrows(IllegalArgumentException.class, () -> Keys.publicKeyBuilder()
-        .sharedBy(createAtSign("fred"))
+        .sharedBy(AtSign.of("fred"))
         .name("key")
         .ttl(0L)
         .ttb(-1L)
@@ -1197,7 +1196,7 @@ class KeysTest {
     assertThat(ex.getMessage(), equalTo("ttb cannot be negative"));
 
     ex = assertThrows(IllegalArgumentException.class, () -> Keys.publicKeyBuilder()
-        .sharedBy(createAtSign("fred"))
+        .sharedBy(AtSign.of("fred"))
         .name("key")
         .ttl(0L)
         .ttb(0L)
@@ -1209,7 +1208,7 @@ class KeysTest {
   @Test
   public void testSelfKeyInvalidMetadataThrowsException() {
     Exception ex = assertThrows(IllegalArgumentException.class, () -> Keys.selfKeyBuilder()
-        .sharedBy(createAtSign("fred"))
+        .sharedBy(AtSign.of("fred"))
         .name("key")
         .ttl(-1L)
         .ttb(0L)
@@ -1218,7 +1217,7 @@ class KeysTest {
     assertThat(ex.getMessage(), equalTo("ttl cannot be negative"));
 
     ex = assertThrows(IllegalArgumentException.class, () -> Keys.selfKeyBuilder()
-        .sharedBy(createAtSign("fred"))
+        .sharedBy(AtSign.of("fred"))
         .name("key")
         .ttl(0L)
         .ttb(-1L)
@@ -1227,7 +1226,7 @@ class KeysTest {
     assertThat(ex.getMessage(), equalTo("ttb cannot be negative"));
 
     ex = assertThrows(IllegalArgumentException.class, () -> Keys.selfKeyBuilder()
-        .sharedBy(createAtSign("fred"))
+        .sharedBy(AtSign.of("fred"))
         .name("key")
         .ttl(0L)
         .ttb(0L)
@@ -1239,8 +1238,8 @@ class KeysTest {
   @Test
   public void testSharedKeyInvalidMetadataThrowsException() {
     Exception ex = assertThrows(IllegalArgumentException.class, () -> Keys.sharedKeyBuilder()
-        .sharedWith(createAtSign("colin"))
-        .sharedBy(createAtSign("fred"))
+        .sharedWith(AtSign.of("colin"))
+        .sharedBy(AtSign.of("fred"))
         .name("key")
         .ttl(-1L)
         .ttb(0L)
@@ -1249,8 +1248,8 @@ class KeysTest {
     assertThat(ex.getMessage(), equalTo("ttl cannot be negative"));
 
     ex = assertThrows(IllegalArgumentException.class, () -> Keys.sharedKeyBuilder()
-        .sharedWith(createAtSign("colin"))
-        .sharedBy(createAtSign("fred"))
+        .sharedWith(AtSign.of("colin"))
+        .sharedBy(AtSign.of("fred"))
         .name("key")
         .ttl(0L)
         .ttb(-1L)
@@ -1259,8 +1258,8 @@ class KeysTest {
     assertThat(ex.getMessage(), equalTo("ttb cannot be negative"));
 
     ex = assertThrows(IllegalArgumentException.class, () -> Keys.sharedKeyBuilder()
-        .sharedWith(createAtSign("colin"))
-        .sharedBy(createAtSign("fred"))
+        .sharedWith(AtSign.of("colin"))
+        .sharedBy(AtSign.of("fred"))
         .name("key")
         .ttl(0L)
         .ttb(0L)

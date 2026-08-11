@@ -1,7 +1,6 @@
 package org.atsign.client.impl.netty;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.atsign.client.api.AtSign.createAtSign;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -33,7 +32,7 @@ class NettyAtCommandExecutorIT {
   void testResolveAtServer() throws Exception {
     NettyAtEndpointSupplier provider = NettyAtEndpointSupplier.builder()
         .rootUrl("vip.ve.atsign.zone:64")
-        .atsign(createAtSign("colin"))
+        .atsign(AtSign.of("colin"))
         .build();
     assertThat(provider.get().matches("\\S+:\\d+"), is(true));
   }
@@ -42,7 +41,7 @@ class NettyAtCommandExecutorIT {
   void testScan() throws Exception {
     NettyAtEndpointSupplier provider = NettyAtEndpointSupplier.builder()
         .rootUrl("vip.ve.atsign.zone:64")
-        .atsign(createAtSign("colin"))
+        .atsign(AtSign.of("colin"))
         .build();
     try (NettyAtCommandExecutor executor = NettyAtCommandExecutor.builder().endpoint(provider).build()) {
       assertThat(executor.sendSync("scan"), Matchers.startsWith("data:"));
@@ -51,7 +50,7 @@ class NettyAtCommandExecutorIT {
 
   @Test
   void testUnauthenticatedMonitorAttempt() throws Exception {
-    AtSign atSign = createAtSign("colin");
+    AtSign atSign = AtSign.of("colin");
 
     NettyAtEndpointSupplier provider = NettyAtEndpointSupplier.builder()
         .rootUrl("vip.ve.atsign.zone:64")

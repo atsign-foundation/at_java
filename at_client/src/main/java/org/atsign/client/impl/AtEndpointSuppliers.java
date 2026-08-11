@@ -20,7 +20,7 @@ import lombok.Builder;
  * <pre>
  * AtEndpointSupplierBuilder builder = AtEndpointSupplier.builder()
  *     .url("vip.ve.atsign.zone:64")
- *     .atSign(createAtSign("colin"));
+ *     .atSign(AtSign.of("colin"));
  *
  * try (AtEndpointSupplier endpoint = builder.build()) {
  *   return endpoint.get();

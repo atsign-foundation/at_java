@@ -123,7 +123,7 @@ public class Main {
 
    public static void main(String[] args) throws Exception {
 
-      AtSign atSign = AtSign.createAtSign("atsign1");
+      AtSign atSign = AtSign.of("atsign1");
 
       try (AtClient client = AtClients.builder().atSign(atSign).build()) {
 
@@ -134,7 +134,7 @@ public class Main {
 
          client.put(key, "hello");
 
-         AtSign anotherAtSign = AtSign.createAtSign("atsign2");
+         AtSign anotherAtSign = AtSign.of("atsign2");
 
          Keys.SharedKey anotherKey = Keys.sharedKeyBuilder()
                  .sharedBy(atSign)
@@ -164,11 +164,11 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        AtSign atSign = AtSign.createAtSign("atsign2");
+        AtSign atSign = AtSign.of("atsign2");
 
         try (AtClient client = AtClients.builder().atSign(atSign).build()) {
 
-            AtSign anotherAtSign = AtSign.createAtSign("atsign1");
+            AtSign anotherAtSign = AtSign.of("atsign1");
 
             Keys.PublicKey key = Keys.publicKeyBuilder()
                     .sharedBy(anotherAtSign)

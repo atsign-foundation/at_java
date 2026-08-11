@@ -1,6 +1,5 @@
 package org.atsign.examples;
 
-import static org.atsign.client.api.AtSign.createAtSign;
 
 import java.util.concurrent.TimeUnit;
 
@@ -21,7 +20,7 @@ public class SelfKeyPutExample {
     long ttl = TimeUnit.SECONDS.toMillis(30);
 
     // 2. create AtSign object
-    AtSign atSign = createAtSign(ATSIGN_STR);
+    AtSign atSign = AtSign.of(ATSIGN_STR);
 
     // 3. build an AtClient
     try (AtClient atClient = AtClients.builder().atSign(atSign).build()) {

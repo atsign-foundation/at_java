@@ -23,8 +23,18 @@ public class AtSign extends TypedString {
    * @param s the string representation of the Atsign (can be with our without @ prefix)
    * @return null if param is null or blank, otherwise the corresponding {@link AtSign} for the param
    */
-  public static AtSign createAtSign(String s) {
+  public static AtSign of(String s) {
     return s != null && !s.isBlank() ? new AtSign(s) : null;
+  }
+
+  /**
+   * @param s the string representation of the Atsign (can be with our without @ prefix)
+   * @return null if param is null or blank, otherwise the corresponding {@link AtSign} for the param
+   * @deprecated use {@link #of(String)}
+   */
+  @Deprecated
+  public static AtSign createAtSign(String s) {
+    return AtSign.of(s);
   }
 
   /**

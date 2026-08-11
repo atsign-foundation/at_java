@@ -1,6 +1,5 @@
 package org.atsign.client.impl.commands.builders;
 
-import static org.atsign.client.api.AtSign.createAtSign;
 import static org.atsign.client.impl.util.EncryptionUtils.generateRSAKeyPair;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -15,6 +14,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.atsign.client.api.AtSign;
 
 class NotifyUpdateSharedKeyCommandBuilderTest {
 
@@ -27,8 +27,8 @@ class NotifyUpdateSharedKeyCommandBuilderTest {
     sharedWithPublicKey = EncryptionUtils.toStringBase64(generateRSAKeyPair().getPublic());
     key = Keys.sharedKeyBuilder()
         .name("key1")
-        .sharedBy(createAtSign("alice"))
-        .sharedWith(createAtSign("bob"))
+        .sharedBy(AtSign.of("alice"))
+        .sharedWith(AtSign.of("bob"))
         .build();
     builder = new NotifyUpdateSharedKeyCommandBuilder()
         .key(key)

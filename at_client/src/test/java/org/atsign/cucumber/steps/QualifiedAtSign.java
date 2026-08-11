@@ -2,7 +2,7 @@ package org.atsign.cucumber.steps;
 
 import java.util.Objects;
 
-import org.atsign.client.impl.common.EnrollmentId;
+import org.atsign.client.api.EnrollmentId;
 import org.atsign.client.api.AtSign;
 
 public class QualifiedAtSign {

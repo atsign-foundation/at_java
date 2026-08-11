@@ -15,7 +15,6 @@ import org.atsign.client.api.Metadata;
 
 import lombok.extern.slf4j.Slf4j;
 
-import static org.atsign.client.api.AtSign.createAtSign;
 
 /**
  * A command-line interface for scanning keys in your secondary (must have keys to atSign in keys/)
@@ -30,7 +29,7 @@ public class Scan {
     }
 
     String rootUrl = args[0];
-    AtSign atSign = createAtSign(args[1]);
+    AtSign atSign = AtSign.of(args[1]);
     String regex = args[2];
 
     // all AtClients require AtKeys, this loads them based on the AtSign from the default location

@@ -1,7 +1,6 @@
 package org.atsign.client.impl.commands;
 
 import static org.atsign.client.impl.util.EncryptionUtils.*;
-import static org.atsign.client.api.AtSign.createAtSign;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -29,7 +28,7 @@ class SelfKeyCommandsTest {
         .selfEncryptKey(generateAESKeyBase64())
         .encryptKeyPair(generateRSAKeyPair())
         .build();
-    atSign = createAtSign("gary");
+    atSign = AtSign.of("gary");
     key = Keys.selfKeyBuilder()
         .sharedBy(atSign)
         .name("test")

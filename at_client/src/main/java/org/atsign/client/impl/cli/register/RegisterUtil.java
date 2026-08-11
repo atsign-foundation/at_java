@@ -2,7 +2,6 @@ package org.atsign.client.impl.cli.register;
 
 import static java.util.AbstractMap.SimpleEntry;
 import static java.util.stream.Collectors.toMap;
-import static org.atsign.client.api.AtSign.createAtSign;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -86,7 +85,7 @@ public class RegisterUtil {
       throws AtException, IOException {
     Map<String, String> paramsMap = new HashMap<>();
     if (!atsign.isEmpty()) {
-      paramsMap.put("atSign", createAtSign(atsign).withoutPrefix());
+      paramsMap.put("atSign", AtSign.of(atsign).withoutPrefix());
     }
     if (!activationKey.isEmpty()) {
       paramsMap.put("ActivationKey", activationKey);

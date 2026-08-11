@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <pre>
  *
- * try (AtClient client = AtClients.builder().atSign(createAtSign("colin")).build()) {
+ * try (AtClient client = AtClients.builder().atSign(AtSign.of("colin")).build()) {
  *     client.startMonitor();
  *     client.put(...);
  *     client.get(...);

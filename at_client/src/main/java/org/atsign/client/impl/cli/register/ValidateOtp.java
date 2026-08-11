@@ -4,8 +4,8 @@ import org.atsign.client.impl.exceptions.AtRegistrarException;
 
 import java.util.Map;
 import java.util.Scanner;
+import org.atsign.client.api.AtSign;
 
-import static org.atsign.client.api.AtSign.createAtSign;
 
 class ValidateOtp extends RegisterApiTask<RegisterApiResult<Map<String, String>>> {
   Scanner scanner = new Scanner(System.in);
@@ -21,7 +21,7 @@ class ValidateOtp extends RegisterApiTask<RegisterApiResult<Map<String, String>>
         params.put("otp", scanner.nextLine());
         System.out.println("Validating verification code ...");
       }
-      String apiResponse = registerUtil.validateOtp(params.get("email"), createAtSign(params.get("atSign")),
+      String apiResponse = registerUtil.validateOtp(params.get("email"), AtSign.of(params.get("atSign")),
                                                     params.get("otp"), params.get("registrarUrl"), params.get("apiKey"),
                                                     Boolean.parseBoolean(params.get("confirmation")));
       if ("retry".equals(apiResponse)) {

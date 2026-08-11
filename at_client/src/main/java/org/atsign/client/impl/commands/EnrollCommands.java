@@ -3,7 +3,6 @@ package org.atsign.client.impl.commands;
 import static org.atsign.client.impl.commands.CommandBuilders.EnrollParameters.ENCRYPTED_APKAM_SYMMETRIC_KEY;
 import static org.atsign.client.impl.commands.DataResponses.*;
 import static org.atsign.client.impl.commands.ErrorResponses.throwExceptionIfError;
-import static org.atsign.client.impl.common.EnrollmentId.createEnrollmentId;
 import static org.atsign.client.impl.common.Preconditions.checkNotNull;
 import static org.atsign.client.impl.util.EncryptionUtils.*;
 
@@ -18,7 +17,7 @@ import org.atsign.client.api.AtCommandExecutorContext;
 import org.atsign.client.api.AtKeyNames;
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtSign;
-import org.atsign.client.impl.common.EnrollmentId;
+import org.atsign.client.api.EnrollmentId;
 import org.atsign.client.impl.exceptions.AtException;
 
 /**
@@ -80,7 +79,7 @@ public class EnrollCommands {
 
       // update the AtKeys with the enrollment id
       keys = keys.toBuilder()
-          .enrollmentId(createEnrollmentId(response.get("enrollmentId")))
+          .enrollmentId(EnrollmentId.of(response.get("enrollmentId")))
           .build();
 
       // authenticate with PKAM — issues its own from: (the connection's challenge was single-use and
@@ -196,7 +195,7 @@ public class EnrollCommands {
     // return a copy of the provided AtKeys with the public encryption key and enrollment id set
     return keys.toBuilder()
         .encryptPublicKey(publicKey)
-        .enrollmentId(EnrollmentId.createEnrollmentId(map.get("enrollmentId")))
+        .enrollmentId(EnrollmentId.of(map.get("enrollmentId")))
         .build();
   }
 
@@ -372,7 +371,7 @@ public class EnrollCommands {
   private static EnrollmentId inferEnrollmentId(String key) {
     int endIndex = key.indexOf('.');
     if (key.contains("__manage") && endIndex > 0) {
-      return EnrollmentId.createEnrollmentId(key.substring(0, endIndex));
+      return EnrollmentId.of(key.substring(0, endIndex));
     } else {
       throw new RuntimeException(key + " doesn't match expected enrollment key pattern");
     }

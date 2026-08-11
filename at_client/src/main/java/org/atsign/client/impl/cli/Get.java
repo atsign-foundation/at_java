@@ -9,7 +9,6 @@ import org.atsign.client.api.Keys;
 
 import lombok.extern.slf4j.Slf4j;
 
-import static org.atsign.client.api.AtSign.createAtSign;
 
 /**
  * A command-line interface half-example half-utility to get something that was shared by another
@@ -26,8 +25,8 @@ public class Get {
     }
 
     String rootUrl = args[0];
-    AtSign atSign = createAtSign(args[1]);
-    AtSign otherAtSign = createAtSign(args[2]);
+    AtSign atSign = AtSign.of(args[1]);
+    AtSign otherAtSign = AtSign.of(args[2]);
     String keyName = args[3];
 
     // all AtClients require AtKeys, this loads them based on the AtSign from the default location

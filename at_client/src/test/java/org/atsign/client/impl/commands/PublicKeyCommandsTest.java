@@ -1,6 +1,5 @@
 package org.atsign.client.impl.commands;
 
-import static org.atsign.client.api.AtSign.createAtSign;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -30,7 +29,7 @@ class PublicKeyCommandsTest {
     keys = AtKeys.builder()
         .encryptKeyPair(EncryptionUtils.generateRSAKeyPair())
         .build();
-    atSign = createAtSign("gary");
+    atSign = AtSign.of("gary");
     key = Keys.publicKeyBuilder()
         .sharedBy(atSign)
         .name("test")
@@ -43,7 +42,7 @@ class PublicKeyCommandsTest {
         .stubLookupResponse("llookup:all:public:test@gary", "public:test@gary", "hello world")
         .build();
 
-    String actual = PublicKeyCommands.get(executor, createAtSign("gary"), key, null);
+    String actual = PublicKeyCommands.get(executor, AtSign.of("gary"), key, null);
 
     assertThat(actual, equalTo("hello world"));
   }
@@ -54,7 +53,7 @@ class PublicKeyCommandsTest {
         .stubLookupResponse("llookup:all:public:test@gary", "cached:public:test@gary", "hello world")
         .build();
 
-    PublicKeyCommands.get(executor, createAtSign("gary"), key, null);
+    PublicKeyCommands.get(executor, AtSign.of("gary"), key, null);
 
     assertThat(key.metadata().isCached(), is(true));
   }
@@ -65,7 +64,7 @@ class PublicKeyCommandsTest {
         .stub("llookup:all:public:test@gary", "error:AT0015:deliberate")
         .build();
 
-    assertThrows(AtKeyNotFoundException.class, () -> PublicKeyCommands.get(executor, createAtSign("gary"), key, null));
+    assertThrows(AtKeyNotFoundException.class, () -> PublicKeyCommands.get(executor, AtSign.of("gary"), key, null));
   }
 
   @Test
@@ -74,7 +73,7 @@ class PublicKeyCommandsTest {
         .stub("llookup:all:public:test@gary", new ExecutionException("deliberate", null))
         .build();
 
-    assertThrows(RuntimeException.class, () -> PublicKeyCommands.get(executor, createAtSign("gary"), key, null));
+    assertThrows(RuntimeException.class, () -> PublicKeyCommands.get(executor, AtSign.of("gary"), key, null));
   }
 
   @Test
@@ -83,7 +82,7 @@ class PublicKeyCommandsTest {
         .stubLookupResponse("plookup:all:test@gary", "public:test@gary", "hello world")
         .build();
 
-    String actual = PublicKeyCommands.get(executor, createAtSign("colin"), key, null);
+    String actual = PublicKeyCommands.get(executor, AtSign.of("colin"), key, null);
 
     assertThat(actual, equalTo("hello world"));
   }
@@ -94,7 +93,7 @@ class PublicKeyCommandsTest {
         .stubLookupResponse("plookup:all:test@gary", "cached:public:test@gary", "hello world")
         .build();
 
-    PublicKeyCommands.get(executor, createAtSign("colin"), key, null);
+    PublicKeyCommands.get(executor, AtSign.of("colin"), key, null);
 
     assertThat(key.metadata().isCached(), is(true));
   }
@@ -106,7 +105,7 @@ class PublicKeyCommandsTest {
         .build();
 
     GetRequestOptions options = GetRequestOptions.builder().bypassCache(true).build();
-    String actual = PublicKeyCommands.get(executor, createAtSign("colin"), key, options);
+    String actual = PublicKeyCommands.get(executor, AtSign.of("colin"), key, options);
 
     assertThat(actual, equalTo("hello world"));
   }
@@ -119,7 +118,7 @@ class PublicKeyCommandsTest {
         .stub("plookup:all:test@gary", "error:AT0015:deliberate")
         .build();
 
-    assertThrows(AtKeyNotFoundException.class, () -> PublicKeyCommands.get(executor, createAtSign("colin"), key, null));
+    assertThrows(AtKeyNotFoundException.class, () -> PublicKeyCommands.get(executor, AtSign.of("colin"), key, null));
   }
 
   @Test
@@ -128,7 +127,7 @@ class PublicKeyCommandsTest {
         .stubExecutionException("plookup:all:test@gary")
         .build();
 
-    assertThrows(RuntimeException.class, () -> PublicKeyCommands.get(executor, createAtSign("colin"), key, null));
+    assertThrows(RuntimeException.class, () -> PublicKeyCommands.get(executor, AtSign.of("colin"), key, null));
   }
 
   @Test
@@ -137,7 +136,7 @@ class PublicKeyCommandsTest {
         .stub("update:dataSignature:.+:isEncrypted:false:public:test@gary hello world", "data:123")
         .build();
 
-    PublicKeyCommands.put(executor, createAtSign("gary"), keys, key, "hello world");
+    PublicKeyCommands.put(executor, AtSign.of("gary"), keys, key, "hello world");
   }
 
   @Test
@@ -151,7 +150,7 @@ class PublicKeyCommandsTest {
         .build();
 
     assertThrows(AtServerRuntimeException.class,
-                 () -> PublicKeyCommands.put(executor, createAtSign("gary"), keys, key, "hello world"));
+                 () -> PublicKeyCommands.put(executor, AtSign.of("gary"), keys, key, "hello world"));
   }
 
   @Test
@@ -165,6 +164,6 @@ class PublicKeyCommandsTest {
         .build();
 
     assertThrows(RuntimeException.class,
-                 () -> PublicKeyCommands.put(executor, createAtSign("gary"), keys, key, "hello world"));
+                 () -> PublicKeyCommands.put(executor, AtSign.of("gary"), keys, key, "hello world"));
   }
 }

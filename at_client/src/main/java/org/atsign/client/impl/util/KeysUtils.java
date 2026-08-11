@@ -1,7 +1,6 @@
 package org.atsign.client.impl.util;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.atsign.client.impl.common.EnrollmentId.createEnrollmentId;
 import static org.atsign.client.impl.util.EncryptionUtils.aesDecryptFromBase64;
 import static org.atsign.client.impl.util.EncryptionUtils.aesEncryptToBase64;
 
@@ -14,7 +13,7 @@ import java.util.TreeMap;
 
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtSign;
-import org.atsign.client.impl.common.EnrollmentId;
+import org.atsign.client.api.EnrollmentId;
 import org.atsign.client.impl.common.TypedString;
 import org.atsign.client.impl.exceptions.AtClientConfigException;
 import org.atsign.client.impl.exceptions.AtDecryptionException;
@@ -231,7 +230,7 @@ public class KeysUtils {
   }
 
   private static EnrollmentId mapGetEnrollmentId(Map<String, String> map, String key) {
-    return createEnrollmentId(map.get(key));
+    return EnrollmentId.of(map.get(key));
   }
 
   private static String mapGet(Map<String, String> map, String key) {

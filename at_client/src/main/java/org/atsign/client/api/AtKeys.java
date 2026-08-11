@@ -7,7 +7,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import lombok.Builder;
 import lombok.Value;
-import org.atsign.client.impl.common.EnrollmentId;
 
 import static org.atsign.client.impl.util.EncryptionUtils.toStringBase64;
 

@@ -17,7 +17,7 @@ import org.atsign.client.api.AtCommandExecutor;
 import org.atsign.client.api.AtCommandExecutorContext;
 import org.atsign.client.impl.commands.EnrollCommands;
 import org.atsign.client.impl.commands.ScanCommands;
-import org.atsign.client.impl.common.EnrollmentId;
+import org.atsign.client.api.EnrollmentId;
 import org.atsign.client.impl.util.KeysUtils;
 import org.atsign.client.impl.exceptions.AtEncryptionException;
 import org.atsign.client.impl.exceptions.AtUnauthenticatedException;
@@ -143,7 +143,7 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
 
   @Option(names = {"-i", "--enrollmentId"}, description = "the ID of the enrollment request")
   public void setEnrollmentId(String s) {
-    this.enrollmentId = EnrollmentId.createEnrollmentId(s);
+    this.enrollmentId = EnrollmentId.of(s);
   }
 
   @Option(names = {"-es", " --enrollmentStatus"}, description = "A specific status to filter by",

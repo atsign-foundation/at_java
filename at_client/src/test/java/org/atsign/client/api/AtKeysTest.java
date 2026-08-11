@@ -1,6 +1,5 @@
 package org.atsign.client.api;
 
-import static org.atsign.client.impl.common.EnrollmentId.createEnrollmentId;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
@@ -24,7 +23,7 @@ class AtKeysTest {
 
   @Test
   void testHasEnrollmentIdReturnsTrueWhenSet() {
-    AtKeys keys = AtKeys.builder().enrollmentId(createEnrollmentId("123")).build();
+    AtKeys keys = AtKeys.builder().enrollmentId(EnrollmentId.of("123")).build();
     assertTrue(keys.hasEnrollmentId());
   }
 

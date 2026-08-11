@@ -1,6 +1,5 @@
 package org.atsign.client.impl.commands;
 
-import static org.atsign.client.api.AtSign.createAtSign;
 import static org.atsign.client.impl.util.EncryptionUtils.generateRSAKeyPair;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -27,7 +26,7 @@ class NotificationsTest {
 
   @Test
   void testMonitorSendExpectedCommands() throws Exception {
-    AtSign atSign = createAtSign("colin");
+    AtSign atSign = AtSign.of("colin");
     AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).build();
     AtCommandExecutor executor = mock(AtCommandExecutor.class);
     stubAuthentication(executor, atSign);
@@ -40,7 +39,7 @@ class NotificationsTest {
 
   @Test
   void testMonitorWrapsConsumer() throws Exception {
-    AtSign atSign = createAtSign("colin");
+    AtSign atSign = AtSign.of("colin");
     AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).build();
     AtCommandExecutor executor = mock(AtCommandExecutor.class);
     stubAuthentication(executor, atSign);
@@ -72,7 +71,7 @@ class NotificationsTest {
     AtEvents.AtEventBus eventBus = mock(AtEvents.AtEventBus.class);
     MonitorOptions monitorOptions = MonitorOptions.builder().build();
     Notifications.EventBusBridge consumer = new Notifications.EventBusBridge(eventBus,
-        createAtSign("colin"),
+        AtSign.of("colin"),
         monitorOptions);
 
     consumer.accept("notification: {\"id\":\"-1\",\"from\":\"@gary\",\"to\":\"@gary\"" +
@@ -93,7 +92,7 @@ class NotificationsTest {
     AtEvents.AtEventBus eventBus = mock(AtEvents.AtEventBus.class);
     MonitorOptions monitorOptions = MonitorOptions.builder().build();
     Notifications.EventBusBridge consumer = new Notifications.EventBusBridge(eventBus,
-        createAtSign("gary"),
+        AtSign.of("gary"),
         monitorOptions);
 
     consumer.accept("notification: {\"id\":\"0480060d\",\"from\":\"@colin\"" +
@@ -115,7 +114,7 @@ class NotificationsTest {
     AtEvents.AtEventBus eventBus = mock(AtEvents.AtEventBus.class);
     MonitorOptions monitorOptions = MonitorOptions.builder().build();
     Notifications.EventBusBridge consumer = new Notifications.EventBusBridge(eventBus,
-        createAtSign("gary"),
+        AtSign.of("gary"),
         monitorOptions);
 
     consumer.accept("notification: {\"id\":\"cc72371c\",\"from\":\"@colin\",\"to\":\"@gary\"" +
@@ -137,7 +136,7 @@ class NotificationsTest {
     AtEvents.AtEventBus eventBus = mock(AtEvents.AtEventBus.class);
     MonitorOptions monitorOptions = MonitorOptions.builder().build();
     Notifications.EventBusBridge consumer = new Notifications.EventBusBridge(eventBus,
-        createAtSign("gary"),
+        AtSign.of("gary"),
         monitorOptions);
 
     consumer.accept("xyz");
@@ -150,7 +149,7 @@ class NotificationsTest {
     AtEvents.AtEventBus eventBus = mock(AtEvents.AtEventBus.class);
     MonitorOptions monitorOptions = MonitorOptions.builder().build();
     Notifications.EventBusBridge consumer = new Notifications.EventBusBridge(eventBus,
-        createAtSign("gary"),
+        AtSign.of("gary"),
         monitorOptions);
 
     consumer.accept("notification: {\"id\":\"41b265d8\",\"from\":\"@colin\",\"to\":\"@gary\"" +
@@ -171,7 +170,7 @@ class NotificationsTest {
     AtEvents.AtEventBus eventBus = mock(AtEvents.AtEventBus.class);
     MonitorOptions monitorOptions = MonitorOptions.builder().build();
     Notifications.EventBusBridge consumer = new Notifications.EventBusBridge(eventBus,
-        createAtSign("gary"),
+        AtSign.of("gary"),
         monitorOptions);
 
     consumer.accept("notification: {\"id\":\"41b265d8\",\"from\":\"@colin\",\"to\":\"@gary\"" +

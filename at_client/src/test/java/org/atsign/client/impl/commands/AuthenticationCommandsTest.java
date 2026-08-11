@@ -10,8 +10,6 @@ import org.junit.jupiter.api.Test;
 import java.util.Collections;
 import java.util.Map;
 
-import static org.atsign.client.api.AtSign.createAtSign;
-import static org.atsign.client.impl.common.EnrollmentId.createEnrollmentId;
 import static org.atsign.client.impl.util.EncryptionUtils.generateRSAKeyPair;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -19,6 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.matches;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import org.atsign.client.api.AtSign;
+import org.atsign.client.api.EnrollmentId;
 
 public class AuthenticationCommandsTest {
 
@@ -30,7 +30,7 @@ public class AuthenticationCommandsTest {
         .build();
 
     AuthenticationCommands.authenticateWithCram(executor,
-                                                new AtCommandExecutorContext(createAtSign("@alice"), null, null),
+                                                new AtCommandExecutorContext(AtSign.of("@alice"), null, null),
                                                 "secret");
   }
 
@@ -45,7 +45,7 @@ public class AuthenticationCommandsTest {
                                 () -> AuthenticationCommands.authenticateWithCram(
                                                                                   executor,
                                                                                   new AtCommandExecutorContext(
-                                                                                      createAtSign("@alice"), null,
+                                                                                      AtSign.of("@alice"), null,
                                                                                       null),
                                                                                   "secret"));
     assertThat(ex.getMessage(), containsString("deliberate"));
@@ -59,56 +59,56 @@ public class AuthenticationCommandsTest {
         .stub("pkam:[^{].+", "data:success")
         .build();
 
-    AuthenticationCommands.authenticateWithPkam(executor, createAtSign("@alice"), keys);
+    AuthenticationCommands.authenticateWithPkam(executor, AtSign.of("@alice"), keys);
   }
 
   @Test
   public void testAuthenticateWithApkamWithEnrollmentId() throws Exception {
-    AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).enrollmentId(createEnrollmentId("12345")).build();
+    AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).enrollmentId(EnrollmentId.of("12345")).build();
     AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("from:@alice", "data:challenge")
         .stub("pkam:signingAlgo:rsa2048:hashingAlgo:sha256:enrollmentId:12345:.+", "data:success")
         .build();
 
-    AuthenticationCommands.authenticateWithPkam(executor, createAtSign("@alice"), keys);
+    AuthenticationCommands.authenticateWithPkam(executor, AtSign.of("@alice"), keys);
   }
 
   @Test
   public void testAuthenticateWithApkamWithConfig() throws Exception {
-    AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).enrollmentId(createEnrollmentId("12345")).build();
+    AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).enrollmentId(EnrollmentId.of("12345")).build();
     AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("from:@alice:clientConfig:.+", "data:challenge")
         .stub("pkam:signingAlgo:rsa2048:hashingAlgo:sha256:enrollmentId:12345:.+", "data:success")
         .build();
 
     Map<String, Object> config = Collections.singletonMap("clientVersion", "1.2.3");
-    AuthenticationCommands.authenticateWithPkam(executor, createAtSign("@alice"), keys, config);
+    AuthenticationCommands.authenticateWithPkam(executor, AtSign.of("@alice"), keys, config);
   }
 
   @Test
   public void testAuthenticateWithApkamFailThrowsExpectedException() throws Exception {
-    AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).enrollmentId(createEnrollmentId("12345")).build();
+    AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).enrollmentId(EnrollmentId.of("12345")).build();
     AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("from:@alice", "data:challenge")
         .stub("pkam:.+", "error:AT0401:deliberate")
         .build();
 
     Exception ex = assertThrows(AtUnauthenticatedException.class,
-                                () -> AuthenticationCommands.authenticateWithPkam(executor, createAtSign("@alice"),
+                                () -> AuthenticationCommands.authenticateWithPkam(executor, AtSign.of("@alice"),
                                                                                   keys));
     assertThat(ex.getMessage(), containsString("deliberate"));
   }
 
   @Test
   public void testPkamAuthenticatorThrowsOnReadyException() throws Exception {
-    AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).enrollmentId(createEnrollmentId("12345")).build();
+    AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).enrollmentId(EnrollmentId.of("12345")).build();
     AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("from:@alice", "data:challenge")
         .stub("pkam:.+", "error:AT0401:deliberate")
         .build();
 
     Exception ex = assertThrows(Exception.class,
-                                () -> AuthenticationCommands.pkamAuthenticator(createAtSign("@alice"), keys, null)
+                                () -> AuthenticationCommands.pkamAuthenticator(AtSign.of("@alice"), keys, null)
                                     .accept(executor));
     assertThat(ex, instanceOf(AtOnReadyException.class));
     assertThat(ex.getMessage(), containsString("deliberate"));
@@ -119,7 +119,7 @@ public class AuthenticationCommandsTest {
     AtCommandExecutor executor = TestExecutorBuilder.builder()
         .stub("from:@alice", "data:challenge")
         .build();
-    AtCommandExecutorContext context = new AtCommandExecutorContext(createAtSign("@alice"), null, null);
+    AtCommandExecutorContext context = new AtCommandExecutorContext(AtSign.of("@alice"), null, null);
 
     AuthenticationCommands.sendFrom(context).accept(executor);
 
@@ -134,7 +134,7 @@ public class AuthenticationCommandsTest {
         .stub("from:@alice", "data:challenge")
         .stub("pkam:[^{].+", "data:success")
         .build();
-    AtCommandExecutorContext context = new AtCommandExecutorContext(createAtSign("@alice"), keys, null);
+    AtCommandExecutorContext context = new AtCommandExecutorContext(AtSign.of("@alice"), keys, null);
 
     // the from: sender runs first (as wired by createOnReady), then PKAM reuses its challenge
     AuthenticationCommands.sendFrom(context).accept(executor);
@@ -153,7 +153,7 @@ public class AuthenticationCommandsTest {
         .stub("from:@alice", "data:challenge")
         .stub("pkam:[^{].+", "data:success")
         .build();
-    AtCommandExecutorContext context = new AtCommandExecutorContext(createAtSign("@alice"), keys, null);
+    AtCommandExecutorContext context = new AtCommandExecutorContext(AtSign.of("@alice"), keys, null);
 
     // no prior sendFrom: the authenticator must issue its own from: to obtain a challenge
     AuthenticationCommands.pkamAuthenticator(context).accept(executor);
@@ -164,7 +164,7 @@ public class AuthenticationCommandsTest {
 
   @Test
   public void testRetainedChallengeIsConsumedAtMostOnce() {
-    AtCommandExecutorContext context = new AtCommandExecutorContext(createAtSign("@alice"), null, null);
+    AtCommandExecutorContext context = new AtCommandExecutorContext(AtSign.of("@alice"), null, null);
     context.setChallenge("challenge");
 
     // single-use: the first consumer gets it, a second (e.g. a further auth on the same connection)

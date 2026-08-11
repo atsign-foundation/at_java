@@ -1,7 +1,6 @@
 package org.atsign.client.api;
 
 
-import static org.atsign.client.api.AtSign.createAtSign;
 import static org.atsign.client.api.Metadata.*;
 import static org.atsign.client.impl.common.Preconditions.*;
 
@@ -399,7 +398,7 @@ public abstract class Keys {
       }
       return publicKeyBuilder()
           .name(matcher.group(2))
-          .sharedBy(createAtSign(matcher.group(3)))
+          .sharedBy(AtSign.of(matcher.group(3)))
           .metadata(metadataBuilder.build())
           .build();
     }
@@ -431,9 +430,9 @@ public abstract class Keys {
         metadataBuilder.isHidden(true);
       }
       return selfKeyBuilder()
-          .sharedWith(createAtSign(chop(matcher.group(1))))
+          .sharedWith(AtSign.of(chop(matcher.group(1))))
           .name(matcher.group(2))
-          .sharedBy(createAtSign(matcher.group(3)))
+          .sharedBy(AtSign.of(matcher.group(3)))
           .metadata(metadataBuilder.build())
           .build();
     }
@@ -467,9 +466,9 @@ public abstract class Keys {
         metadataBuilder.isHidden(true);
       }
       return sharedKeyBuilder()
-          .sharedWith(createAtSign(matcher.group(2)))
+          .sharedWith(AtSign.of(matcher.group(2)))
           .name(matcher.group(3))
-          .sharedBy(createAtSign(matcher.group(4)))
+          .sharedBy(AtSign.of(matcher.group(4)))
           .metadata(metadataBuilder.build())
           .build();
     }
@@ -496,7 +495,7 @@ public abstract class Keys {
       }
       return privateHiddenKeyBuilder()
           .name(matcher.group(2))
-          .sharedBy(createAtSign(matcher.group(3)))
+          .sharedBy(AtSign.of(matcher.group(3)))
           .metadata(metadataBuilder.build())
           .rawKey(rawKey)
           .build();

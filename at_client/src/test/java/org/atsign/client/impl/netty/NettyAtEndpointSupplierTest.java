@@ -1,6 +1,5 @@
 package org.atsign.client.impl.netty;
 
-import static org.atsign.client.api.AtSign.createAtSign;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -13,6 +12,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.atsign.client.api.AtSign;
 
 class NettyAtEndpointSupplierTest {
 
@@ -49,7 +49,7 @@ class NettyAtEndpointSupplierTest {
                                                () -> NettyAtEndpointSupplier.builder().build());
     assertThat(ex.getMessage(), containsString("atSign not set"));
     ex = assertThrows(IllegalArgumentException.class,
-                      () -> NettyAtEndpointSupplier.builder().atsign(createAtSign("colin")).build());
+                      () -> NettyAtEndpointSupplier.builder().atsign(AtSign.of("colin")).build());
     assertThat(ex.getMessage(), containsString("rootUrl not set"));
   }
 
@@ -57,7 +57,7 @@ class NettyAtEndpointSupplierTest {
   void testConnectAndResolve() throws Exception {
     NettyAtEndpointSupplier provider = NettyAtEndpointSupplier.builder()
         .rootUrl("localhost:" + TEST_SERVER.getPort())
-        .atsign(createAtSign("colin"))
+        .atsign(AtSign.of("colin"))
         .sslContext(TEST_SERVER.getClientSslContext())
         .build();
     assertThat(provider.get(), equalTo("host:60001"));
@@ -67,7 +67,7 @@ class NettyAtEndpointSupplierTest {
   void testConnectAndResolveFail() throws Exception {
     NettyAtEndpointSupplier provider = NettyAtEndpointSupplier.builder()
         .rootUrl("localhost:" + TEST_SERVER.getPort())
-        .atsign(createAtSign("gary"))
+        .atsign(AtSign.of("gary"))
         .sslContext(TEST_SERVER.getClientSslContext())
         .build();
     AtSecondaryNotFoundException ex = assertThrows(AtSecondaryNotFoundException.class, () -> provider.get());
@@ -79,7 +79,7 @@ class NettyAtEndpointSupplierTest {
     TEST_SERVER.closeServerSocket();
     NettyAtEndpointSupplier provider = NettyAtEndpointSupplier.builder()
         .rootUrl("localhost:" + TEST_SERVER.getPort())
-        .atsign(createAtSign("colin"))
+        .atsign(AtSign.of("colin"))
         .sslContext(TEST_SERVER.getClientSslContext())
         .build();
     AtSecondaryNotFoundException ex = assertThrows(AtSecondaryNotFoundException.class, () -> provider.get());
@@ -97,7 +97,7 @@ class NettyAtEndpointSupplierTest {
     });
     NettyAtEndpointSupplier provider = NettyAtEndpointSupplier.builder()
         .rootUrl("localhost:" + TEST_SERVER.getPort())
-        .atsign(createAtSign("colin"))
+        .atsign(AtSign.of("colin"))
         .sslContext(TEST_SERVER.getClientSslContext())
         .build();
     AtSecondaryNotFoundException ex = assertThrows(AtSecondaryNotFoundException.class, () -> provider.get());

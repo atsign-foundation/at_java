@@ -8,7 +8,6 @@ import org.atsign.client.api.Keys;
 import org.atsign.client.api.Keys.PublicKey;
 import org.atsign.client.impl.exceptions.AtClientConfigException;
 
-import static org.atsign.client.api.AtSign.createAtSign;
 
 public class PublicKeyGetExample {
   public static void main(String[] args) throws AtClientConfigException {
@@ -18,7 +17,7 @@ public class PublicKeyGetExample {
     String KEY_NAME = "test"; // name of the key we will get
 
     // 2. create AtSign object
-    AtSign atSign = createAtSign(ATSIGN_STR);
+    AtSign atSign = AtSign.of(ATSIGN_STR);
 
     // 3. build an AtClient
     try (AtClient atClient = AtClients.builder().atSign(atSign).build()) {

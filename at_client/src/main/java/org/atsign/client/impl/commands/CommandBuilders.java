@@ -13,7 +13,7 @@ import org.atsign.client.api.AtSign;
 import org.atsign.client.api.Keys;
 import org.atsign.client.api.Keys.AtKey;
 import org.atsign.client.api.Metadata;
-import org.atsign.client.impl.common.EnrollmentId;
+import org.atsign.client.api.EnrollmentId;
 import org.atsign.client.impl.common.TypedString;
 import org.atsign.client.impl.util.JsonUtils;
 

@@ -30,7 +30,7 @@ class AtClientsIT {
     if (!Helpers.isHostPortReachable("vip.ve.atsign.zone:64", SECONDS.toMillis(2))) {
       VirtualEnv.setUp();
     }
-    atSign = AtSign.createAtSign("colin");
+    atSign = AtSign.of("colin");
     keysFile = new File("target/at_demo_data/lib/assets/atkeys/@colin.atKeys");
     keys = KeysUtils.loadKeys(keysFile);
     AT_SIGN_KEYS_DIR = KeysUtils.expectedKeysFilesLocation;

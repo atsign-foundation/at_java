@@ -4,7 +4,7 @@ import org.atsign.client.api.AtCommandExecutor;
 import org.atsign.client.api.AtCommandExecutorContext;
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtSign;
-import org.atsign.client.impl.common.EnrollmentId;
+import org.atsign.client.api.EnrollmentId;
 import org.atsign.client.impl.exceptions.AtException;
 import org.atsign.client.impl.exceptions.AtServerRuntimeException;
 import org.junit.jupiter.api.Test;
@@ -13,8 +13,6 @@ import java.util.List;
 
 import static java.lang.String.format;
 import static java.util.Collections.singletonMap;
-import static org.atsign.client.api.AtSign.createAtSign;
-import static org.atsign.client.impl.common.EnrollmentId.createEnrollmentId;
 import static org.atsign.client.impl.util.EncryptionUtils.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -56,7 +54,7 @@ public class EnrollCommandsTest {
 
   @Test
   public void testOnboardThrowsExceptionIfSigningPublicKeyIsMissing() throws Exception {
-    AtSign atSign = createAtSign("@alice");
+    AtSign atSign = AtSign.of("@alice");
     AtKeys keys = AtKeys.builder()
         .apkamKeyPair(generateRSAKeyPair())
         .encryptKeyPair(generateRSAKeyPair())
@@ -92,7 +90,7 @@ public class EnrollCommandsTest {
 
   @Test
   public void testOnboard() throws Exception {
-    AtSign atSign = createAtSign("@alice");
+    AtSign atSign = AtSign.of("@alice");
     AtKeys keys = AtKeys.builder()
         .apkamKeyPair(generateRSAKeyPair())
         .encryptKeyPair(generateRSAKeyPair())
@@ -111,12 +109,12 @@ public class EnrollCommandsTest {
                                             "app", "device", false);
 
     assertThat(newKeys, is(not(sameInstance(keys))));
-    assertThat(newKeys.getEnrollmentId(), equalTo(createEnrollmentId("904dcbf7")));
+    assertThat(newKeys.getEnrollmentId(), equalTo(EnrollmentId.of("904dcbf7")));
   }
 
   @Test
   public void testOnboardReusesTheConnectionFromChallengeForCram() throws Exception {
-    AtSign atSign = createAtSign("@alice");
+    AtSign atSign = AtSign.of("@alice");
     AtKeys keys = AtKeys.builder()
         .apkamKeyPair(generateRSAKeyPair())
         .encryptKeyPair(generateRSAKeyPair())
@@ -146,7 +144,7 @@ public class EnrollCommandsTest {
 
   @Test
   public void testEnroll() throws Exception {
-    AtSign atSign = createAtSign("@alice");
+    AtSign atSign = AtSign.of("@alice");
     AtKeys keys = AtKeys.builder()
         .apkamKeyPair(generateRSAKeyPair())
         .apkamSymmetricKey(generateAESKeyBase64())
@@ -160,18 +158,18 @@ public class EnrollCommandsTest {
     AtKeys newKeys = EnrollCommands.enroll(executor, atSign, keys, "OTP123", "app", "device", singletonMap("ns", "rw"));
 
     assertThat(newKeys, is(not(sameInstance(keys))));
-    assertThat(newKeys.getEnrollmentId(), equalTo(createEnrollmentId("759acb09")));
+    assertThat(newKeys.getEnrollmentId(), equalTo(EnrollmentId.of("759acb09")));
     assertThat(newKeys.getEncryptPublicKey(), notNullValue());
   }
 
 
   @Test
   public void testComplete() throws Exception {
-    AtSign atSign = createAtSign("@alice");
+    AtSign atSign = AtSign.of("@alice");
     AtKeys keys = AtKeys.builder()
         .apkamKeyPair(generateRSAKeyPair())
         .apkamSymmetricKey(generateAESKeyBase64())
-        .enrollmentId(createEnrollmentId("12345"))
+        .enrollmentId(EnrollmentId.of("12345"))
         .build();
 
     String selfEncryptKeysGetResponse = format("data:{\"value\":\"%s\",\"iv\":\"%s\"}",
@@ -210,7 +208,7 @@ public class EnrollCommandsTest {
               "data:{\"status\":\"approved\",\"enrollmentId\":\"12345\"}")
         .build();
 
-    EnrollCommands.approve(executor, keys, createEnrollmentId("12345"));
+    EnrollCommands.approve(executor, keys, EnrollmentId.of("12345"));
   }
 
   @Test
@@ -220,7 +218,7 @@ public class EnrollCommandsTest {
               "data:{\"status\":\"denied\",\"enrollmentId\":\"12345\"}")
         .build();
 
-    EnrollCommands.deny(executor, createEnrollmentId("12345"));
+    EnrollCommands.deny(executor, EnrollmentId.of("12345"));
   }
 
   @Test
@@ -230,7 +228,7 @@ public class EnrollCommandsTest {
               "data:{\"status\":\"revoked\",\"enrollmentId\":\"12345\"}")
         .build();
 
-    EnrollCommands.revoke(executor, createEnrollmentId("12345"));
+    EnrollCommands.revoke(executor, EnrollmentId.of("12345"));
   }
 
   @Test
@@ -240,7 +238,7 @@ public class EnrollCommandsTest {
               "data:{\"status\":\"approved\",\"enrollmentId\":\"12345\"}")
         .build();
 
-    EnrollCommands.unrevoke(executor, createEnrollmentId("12345"));
+    EnrollCommands.unrevoke(executor, EnrollmentId.of("12345"));
   }
 
   @Test
@@ -250,7 +248,7 @@ public class EnrollCommandsTest {
               "data:{\"status\":\"deleted\",\"enrollmentId\":\"12345\"}")
         .build();
 
-    EnrollCommands.delete(executor, createEnrollmentId("12345"));
+    EnrollCommands.delete(executor, EnrollmentId.of("12345"));
   }
 
   @Test
@@ -280,7 +278,7 @@ public class EnrollCommandsTest {
         .build();
 
     List<EnrollmentId> ids = EnrollCommands.list(executor, "pending");
-    assertThat(ids, contains(createEnrollmentId("bc8bfdf3-eadd-4373-b0cc-a9c8a52c96c5")));
+    assertThat(ids, contains(EnrollmentId.of("bc8bfdf3-eadd-4373-b0cc-a9c8a52c96c5")));
   }
 
 }

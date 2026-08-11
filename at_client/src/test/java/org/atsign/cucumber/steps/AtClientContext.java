@@ -22,7 +22,7 @@ import org.atsign.client.api.AtKeys;
 import org.atsign.client.impl.AtClients;
 import org.atsign.client.impl.commands.DataResponses;
 import org.atsign.client.impl.commands.MonitorOptions;
-import org.atsign.client.impl.common.EnrollmentId;
+import org.atsign.client.api.EnrollmentId;
 import org.atsign.client.impl.util.KeysUtils;
 import org.atsign.client.impl.exceptions.AtException;
 import org.atsign.client.api.AtSign;

@@ -32,7 +32,7 @@ class AtCommandExecutorsIT {
     if (!Helpers.isHostPortReachable("vip.ve.atsign.zone:64", SECONDS.toMillis(2))) {
       VirtualEnv.setUp();
     }
-    atSign = AtSign.createAtSign("colin");
+    atSign = AtSign.of("colin");
     keys = KeysUtils.loadKeys(new File("target/at_demo_data/lib/assets/atkeys/@colin.atKeys"));
   }
 

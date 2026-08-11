@@ -14,13 +14,12 @@ import org.atsign.client.api.AtSign;
 
 import io.cucumber.java.ParameterType;
 
-import static org.atsign.client.api.AtSign.createAtSign;
 
 public class ParameterTypes {
 
   @ParameterType("@\\S+")
   public AtSign atsign(String s) {
-    return createAtSign(s);
+    return AtSign.of(s);
   }
 
   @ParameterType("\\S+")

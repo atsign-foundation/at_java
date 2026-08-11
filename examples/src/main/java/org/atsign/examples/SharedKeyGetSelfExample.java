@@ -1,6 +1,5 @@
 package org.atsign.examples;
 
-import static org.atsign.client.api.AtSign.createAtSign;
 
 
 import org.atsign.client.api.AtClient;
@@ -19,8 +18,8 @@ public class SharedKeyGetSelfExample {
     String KEY_NAME = "test";
 
     // 2. create AtSign objects
-    AtSign sharedBy = createAtSign(ATSIGN_STR_SHARED_BY);
-    AtSign sharedWith = createAtSign(ATSIGN_STR_SHARED_WITH);
+    AtSign sharedBy = AtSign.of(ATSIGN_STR_SHARED_BY);
+    AtSign sharedWith = AtSign.of(ATSIGN_STR_SHARED_WITH);
 
     // 3. build an AtClient
     try (AtClient atClient = AtClients.builder().atSign(sharedBy).build()) {

@@ -1,6 +1,5 @@
 package org.atsign.client.impl.commands;
 
-import static org.atsign.client.api.AtSign.createAtSign;
 import static org.atsign.client.impl.util.EncryptionUtils.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -18,6 +17,7 @@ import org.atsign.client.impl.exceptions.AtServerRuntimeException;
 import org.atsign.client.impl.util.EncryptionUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.atsign.client.api.AtSign;
 
 class SharedKeyCommandsTest {
 
@@ -32,8 +32,8 @@ class SharedKeyCommandsTest {
         .selfEncryptKey(generateAESKeyBase64())
         .build();
     key = Keys.sharedKeyBuilder()
-        .sharedBy(createAtSign("gary"))
-        .sharedWith(createAtSign("colin"))
+        .sharedBy(AtSign.of("gary"))
+        .sharedWith(AtSign.of("colin"))
         .name("test")
         .build();
   }
@@ -48,7 +48,7 @@ class SharedKeyCommandsTest {
         .stubLookupResponse("llookup:all:@colin:test@gary", "@colin:test@gary", encrypted, "ivNonce", iv)
         .build();
 
-    String actual = SharedKeyCommands.get(executor, createAtSign("gary"), keys, key);
+    String actual = SharedKeyCommands.get(executor, AtSign.of("gary"), keys, key);
 
     assertThat(actual, equalTo("hello colin"));
   }
@@ -59,7 +59,7 @@ class SharedKeyCommandsTest {
         .build();
 
     RuntimeException ex =
-        assertThrows(RuntimeException.class, () -> SharedKeyCommands.get(executor, createAtSign("alice"), keys, key));
+        assertThrows(RuntimeException.class, () -> SharedKeyCommands.get(executor, AtSign.of("alice"), keys, key));
     assertThat(ex.getMessage(), containsString("@alice is neither the sharedBy or sharedWith of @colin:test@gary"));
   }
 
@@ -73,7 +73,7 @@ class SharedKeyCommandsTest {
         .stubLookupResponse("llookup:all:@colin:test@gary", "@colin:test@gary", encrypted, "ivNonce", iv)
         .build();
 
-    String actual = SharedKeyCommands.get(executor, createAtSign("gary"), keys, key);
+    String actual = SharedKeyCommands.get(executor, AtSign.of("gary"), keys, key);
 
     assertThat(actual, equalTo("hello colin"));
   }
@@ -87,7 +87,7 @@ class SharedKeyCommandsTest {
         .build();
 
     assertThrows(AtServerRuntimeException.class,
-                 () -> SharedKeyCommands.get(executor, createAtSign("gary"), keys, key));
+                 () -> SharedKeyCommands.get(executor, AtSign.of("gary"), keys, key));
   }
 
   @Test
@@ -98,7 +98,7 @@ class SharedKeyCommandsTest {
         .stubExecutionException("llookup:all:@colin:test@gary")
         .build();
 
-    assertThrows(RuntimeException.class, () -> SharedKeyCommands.get(executor, createAtSign("gary"), keys, key));
+    assertThrows(RuntimeException.class, () -> SharedKeyCommands.get(executor, AtSign.of("gary"), keys, key));
   }
 
   @Test
@@ -116,7 +116,7 @@ class SharedKeyCommandsTest {
                             "ivNonce", iv, "sharedKeyEnc", sharedKeyEnc, "pubKeyHash", hash)
         .build();
 
-    String actual = SharedKeyCommands.get(executor, createAtSign("colin"), keys, key);
+    String actual = SharedKeyCommands.get(executor, AtSign.of("colin"), keys, key);
 
     assertThat(actual, equalTo("hello colin"));
   }
@@ -132,7 +132,7 @@ class SharedKeyCommandsTest {
         .stub("lookup:shared_key@gary", "data:" + sharedKeyEnc)
         .build();
 
-    String actual = SharedKeyCommands.get(executor, createAtSign("colin"), keys, key);
+    String actual = SharedKeyCommands.get(executor, AtSign.of("colin"), keys, key);
 
     assertThat(actual, equalTo("hello colin"));
   }
@@ -153,7 +153,7 @@ class SharedKeyCommandsTest {
         .build();
 
     assertThrows(AtPublicKeyChangeException.class,
-                 () -> SharedKeyCommands.get(executor, createAtSign("colin"), keys, key));
+                 () -> SharedKeyCommands.get(executor, AtSign.of("colin"), keys, key));
   }
 
   @Test
@@ -164,7 +164,7 @@ class SharedKeyCommandsTest {
         .stub("update:isEncrypted:true:ivNonce:.+:@colin:test@gary .+", "data:123")
         .build();
 
-    SharedKeyCommands.put(executor, createAtSign("gary"), keys, key, "hello colin");
+    SharedKeyCommands.put(executor, AtSign.of("gary"), keys, key, "hello colin");
     verify(executor).sendSync(argThat(s -> s.contains("update:") && !s.contains("hello colin")));
   }
 
@@ -178,7 +178,7 @@ class SharedKeyCommandsTest {
         .stub("update:isEncrypted:true:sharedKeyEnc:.+:ivNonce:.+:@colin:test@gary .+", "data:3")
         .build();
 
-    SharedKeyCommands.put(executor, createAtSign("gary"), keys, key, "hello colin");
+    SharedKeyCommands.put(executor, AtSign.of("gary"), keys, key, "hello colin");
 
     verify(executor).sendSync(argThat(s -> s.contains("update:") && s.contains(":pubKeyHash:")));
     verify(executor).sendSync(argThat(s -> s.contains("update:") && s.contains(":pubKeyCS:")));

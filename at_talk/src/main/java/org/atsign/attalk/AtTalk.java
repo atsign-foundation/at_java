@@ -1,7 +1,6 @@
 package org.atsign.attalk;
 
 import static org.atsign.client.api.AtEvents.AtEventType.decryptedUpdateNotification;
-import static org.atsign.client.api.AtSign.createAtSign;
 import static org.atsign.client.impl.commands.SharedKeyCommands.getEncryptKey;
 import static org.fusesource.jansi.Ansi.ansi;
 
@@ -94,7 +93,7 @@ public class AtTalk implements Callable<Integer> {
         if (isExit(line)) {
           return 0;
         } else if (isSwitchToAtSign(line)) {
-          setToAtSign(client, createAtSign(line));
+          setToAtSign(client, AtSign.of(line));
         } else if (!hasTerminal) {
           buffer.append(line).append("\r\n");
         } else {

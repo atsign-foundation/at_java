@@ -1,6 +1,5 @@
 package org.atsign.client.api;
 
-import static org.atsign.client.api.AtSign.createAtSign;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
@@ -11,16 +10,26 @@ class AtSignTest {
 
   @Test
   void testStaticCreateMethod() {
-    assertThat(createAtSign("@fred"), equalTo(createAtSign("@fred")));
-    assertThat(createAtSign("fred"), equalTo(createAtSign("@fred")));
-    assertThat(createAtSign(null), nullValue());
-    assertThat(createAtSign(""), nullValue());
+    assertThat(AtSign.of("@fred"), equalTo(AtSign.of("@fred")));
+    assertThat(AtSign.of("fred"), equalTo(AtSign.of("@fred")));
+    assertThat(AtSign.of(null), nullValue());
+    assertThat(AtSign.of(""), nullValue());
   }
 
   @Test
   void testWithoutPrefixReturnsExpectedResult() {
-    assertThat(createAtSign("fred").withoutPrefix(), equalTo("fred"));
-    assertThat(createAtSign("@fred").withoutPrefix(), equalTo("fred"));
+    assertThat(AtSign.of("fred").withoutPrefix(), equalTo("fred"));
+    assertThat(AtSign.of("@fred").withoutPrefix(), equalTo("fred"));
+  }
+
+  @Test
+  @SuppressWarnings("deprecation")
+  void testDeprecatedFactoryDelegatesToOf() {
+    assertThat(AtSign.createAtSign("@fred"), equalTo(AtSign.of("@fred")));
+    assertThat(AtSign.createAtSign("fred"), equalTo(AtSign.of("@fred")));
+    assertThat(AtSign.createAtSign(null), nullValue());
+    assertThat(AtSign.createAtSign(""), nullValue());
+    assertThat(AtSign.createAtSign("   "), nullValue());
   }
 
   @Test

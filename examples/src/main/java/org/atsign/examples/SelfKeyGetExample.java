@@ -1,6 +1,5 @@
 package org.atsign.examples;
 
-import static org.atsign.client.api.AtSign.createAtSign;
 
 
 import org.atsign.client.api.AtClient;
@@ -19,7 +18,7 @@ public class SelfKeyGetExample {
     String KEY_NAME = "test";
 
     // 2. create AtSign object
-    AtSign atSign = createAtSign(ATSIGN_STR);
+    AtSign atSign = AtSign.of(ATSIGN_STR);
 
     // 3. build an AtClient
     try (AtClient atClient = AtClients.builder().atSign(atSign).build()) {

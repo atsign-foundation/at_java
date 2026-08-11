@@ -32,7 +32,7 @@ import static org.atsign.client.impl.common.Preconditions.checkNotNull;
  * <pre>
  * AtCommandExecutorBuilder builder = AtCommandExecutors.builder()
  *     .url("vip.ve.atsign.zone:64")
- *     .atSign(createAtSign("colin"))
+ *     .atSign(AtSign.of("colin"))
  *     .keys(...);
  *
  * try (AtCommandExecutor executor = builder.build()) {
