@@ -6,7 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Map;
 
+import org.atsign.client.api.Metadata.AppMetadata;
+import org.atsign.client.api.Metadata.PublicKeyHash;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -125,28 +128,44 @@ class MetadataTest {
 
   @Test
   void testMergeMd1FieldsTakePriorityOverMd2() {
+    AppMetadata appMetadata1 = AppMetadata.builder()
+        .providerId("prov1")
+        .build();
+    PublicKeyHash pubKeyHash1 = PublicKeyHash.builder()
+        .hash("hash1")
+        .hashingAlgo("algo1")
+        .build();
     Metadata md1 = Metadata.builder()
         .ttl(1L).ttb(2L).ttr(3L).ccd(true)
         .isPublic(true).isHidden(true).isCached(true)
         .isEncrypted(true).isBinary(true).namespaceAware(true)
         .dataSignature("ds1").sharedKeyStatus("sks1").sharedKeyEnc("ske1")
         .pubKeyCS("pkcs1").encoding("utf8").ivNonce("iv1")
-        .pubKeyHash(Metadata.PublicKeyHash.builder().hash("hash1").hashingAlgo("algo1").build())
+        .pubKeyHash(pubKeyHash1)
         .encKeyName("encKeyName1").encAlgo("encAlgo1")
         .skeEncKeyName("skeEncKeyName1").skeEncAlgo("skeEncAlgo1")
         .immutable(true)
+        .appMetadata(appMetadata1)
         .build();
 
+    AppMetadata appMetadata2 = AppMetadata.builder()
+        .providerId("prov2")
+        .build();
+    PublicKeyHash pubKeyHash2 = PublicKeyHash.builder()
+        .hash("hash2")
+        .hashingAlgo("algo2")
+        .build();
     Metadata md2 = Metadata.builder()
         .ttl(99L).ttb(99L).ttr(99L).ccd(false)
         .isPublic(false).isHidden(false).isCached(false)
         .isEncrypted(false).isBinary(false).namespaceAware(false)
         .dataSignature("ds2").sharedKeyStatus("sks2").sharedKeyEnc("ske2")
         .pubKeyCS("pkcs2").encoding("ascii").ivNonce("iv2")
-        .pubKeyHash(Metadata.PublicKeyHash.builder().hash("hash2").hashingAlgo("algo2").build())
+        .pubKeyHash(pubKeyHash2)
         .encKeyName("encKeyName2").encAlgo("encAlgo2")
         .skeEncKeyName("skeEncKeyName2").skeEncAlgo("skeEncAlgo2")
         .immutable(false)
+        .appMetadata(appMetadata2)
         .build();
 
     Metadata merged = Metadata.merge(md1, md2);
@@ -167,19 +186,26 @@ class MetadataTest {
     assertThat(merged.pubKeyCS(), equalTo("pkcs1"));
     assertThat(merged.encoding(), equalTo("utf8"));
     assertThat(merged.ivNonce(), equalTo("iv1"));
-    assertThat(merged.pubKeyHash(),
-               equalTo(Metadata.PublicKeyHash.builder().hash("hash1").hashingAlgo("algo1").build()));
+    assertThat(merged.pubKeyHash(), equalTo(pubKeyHash1));
     assertThat(merged.encKeyName(), equalTo("encKeyName1"));
     assertThat(merged.encAlgo(), equalTo("encAlgo1"));
     assertThat(merged.skeEncKeyName(), equalTo("skeEncKeyName1"));
     assertThat(merged.skeEncAlgo(), equalTo("skeEncAlgo1"));
     assertThat(merged.immutable(), is(true));
+    assertThat(merged.appMetadata(), equalTo(appMetadata1));
   }
 
   @Test
   void testMergeMd2FieldsUsedWhenMd1FieldsAreNull() {
     Metadata md1 = Metadata.builder().build();
 
+    AppMetadata appMetadata2 = AppMetadata.builder()
+        .providerId("prov2")
+        .build();
+    PublicKeyHash pubKeyHash2 = PublicKeyHash.builder()
+        .hash("hash2")
+        .hashingAlgo("algo2")
+        .build();
     OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
     Metadata md2 = Metadata.builder()
         .ttl(1L).ttb(2L).ttr(3L).ccd(true)
@@ -189,10 +215,11 @@ class MetadataTest {
         .pubKeyCS("pkcs2").encoding("ascii").ivNonce("iv2")
         .availableAt(now).expiresAt(now).refreshAt(now)
         .createdAt(now).updatedAt(now)
-        .pubKeyHash(Metadata.PublicKeyHash.builder().hash("hash2").hashingAlgo("algo2").build())
+        .pubKeyHash(pubKeyHash2)
         .encKeyName("encKeyName2").encAlgo("encAlgo2")
         .skeEncKeyName("skeEncKeyName2").skeEncAlgo("skeEncAlgo2")
         .immutable(false)
+        .appMetadata(appMetadata2)
         .build();
 
     Metadata merged = Metadata.merge(md1, md2);
@@ -218,13 +245,13 @@ class MetadataTest {
     assertThat(merged.refreshAt(), equalTo(now));
     assertThat(merged.createdAt(), equalTo(now));
     assertThat(merged.updatedAt(), equalTo(now));
-    assertThat(merged.pubKeyHash(),
-               equalTo(Metadata.PublicKeyHash.builder().hash("hash2").hashingAlgo("algo2").build()));
+    assertThat(merged.pubKeyHash(), equalTo(pubKeyHash2));
     assertThat(merged.encKeyName(), equalTo("encKeyName2"));
     assertThat(merged.encAlgo(), equalTo("encAlgo2"));
     assertThat(merged.skeEncKeyName(), equalTo("skeEncKeyName2"));
     assertThat(merged.skeEncAlgo(), equalTo("skeEncAlgo2"));
     assertThat(merged.immutable(), is(false));
+    assertThat(merged.appMetadata(), equalTo(appMetadata2));
   }
 
   @Test
@@ -258,6 +285,63 @@ class MetadataTest {
     assertThat(merged.skeEncKeyName(), is(nullValue()));
     assertThat(merged.skeEncAlgo(), is(nullValue()));
     assertThat(merged.immutable(), is(nullValue()));
+    assertThat(merged.appMetadata(), is(nullValue()));
+  }
+
+  @Test
+  void testMergeKeepsMd1AppMetadataWholeRatherThanMergingAdditionalEntries() {
+    AppMetadata appMetadata1 = AppMetadata.builder()
+        .providerId("prov1")
+        .additional(Map.of("a", 1))
+        .build();
+    AppMetadata appMetadata2 = AppMetadata.builder()
+        .providerId("prov2")
+        .additional(Map.of("b", 2))
+        .build();
+    Metadata md1 = Metadata.builder().appMetadata(appMetadata1).build();
+    Metadata md2 = Metadata.builder().appMetadata(appMetadata2).build();
+
+    Metadata merged = Metadata.merge(md1, md2);
+
+    // appMetadata is provider-owned and indivisible: md1 wins whole, md2's entries are not
+    // folded in.
+    assertThat(merged.appMetadata(), equalTo(appMetadata1));
+    assertThat(merged.appMetadata().additional(), equalTo(Map.of("a", 1)));
+  }
+
+  @Test
+  void testToMergedBuilderReturnsBuilderThatCanBeOverriddenBeforeBuild() {
+    AppMetadata appMetadata1 = AppMetadata.builder().providerId("prov1").build();
+    AppMetadata override = AppMetadata.builder().providerId("override").build();
+    Metadata md1 = Metadata.builder().ttl(1L).appMetadata(appMetadata1).build();
+    Metadata md2 = Metadata.builder().ttl(99L).ttb(2L).build();
+
+    Metadata.MetadataBuilder builder = Metadata.toMergedBuilder(md1, md2);
+
+    Metadata merged = builder.build();
+    assertThat(merged.ttl(), equalTo(1L));
+    assertThat(merged.ttb(), equalTo(2L));
+    assertThat(merged.appMetadata(), equalTo(appMetadata1));
+
+    Metadata overridden = builder.appMetadata(override).build();
+    assertThat(overridden.appMetadata(), equalTo(override));
+    assertThat(overridden.ttl(), equalTo(1L));
+  }
+
+  @Test
+  void testSetAppMetadataIfNotNullReturnsTrueAndSetsValueWhenNotNull() {
+    AppMetadata am = AppMetadata.builder().providerId("prov").build();
+    Metadata.MetadataBuilder b = Metadata.builder();
+    assertThat(Metadata.setAppMetadataIfNotNull(b, am), is(true));
+    assertThat(b.build().appMetadata(), equalTo(am));
+  }
+
+  @Test
+  void testSetAppMetadataIfNotNullReturnsFalseAndDoesNotOverwriteExistingValueWhenNull() {
+    AppMetadata am = AppMetadata.builder().providerId("prov").build();
+    Metadata.MetadataBuilder b = Metadata.builder().appMetadata(am);
+    assertThat(Metadata.setAppMetadataIfNotNull(b, null), is(false));
+    assertThat(b.build().appMetadata(), equalTo(am));
   }
 
   @Test
@@ -487,14 +571,14 @@ class MetadataTest {
   @Test
   void testSetPubKeyHashIfNotNullReturnsTrueAndSetsValueWhenNotNull() {
     Metadata.MetadataBuilder b = Metadata.builder();
-    Metadata.PublicKeyHash hash = Metadata.PublicKeyHash.builder().hash("HASH").hashingAlgo("algo").build();
+    PublicKeyHash hash = PublicKeyHash.builder().hash("HASH").hashingAlgo("algo").build();
     assertThat(Metadata.setPubKeyHashIfNotNull(b, hash), is(true));
     assertThat(b.build().pubKeyHash(), equalTo(hash));
   }
 
   @Test
   void testSetPubKeyHashIfNotNullReturnsFalseAndDoesNotOverwriteExistingValueWhenNull() {
-    Metadata.PublicKeyHash hash = Metadata.PublicKeyHash.builder().hash("HASH").hashingAlgo("algo").build();
+    PublicKeyHash hash = PublicKeyHash.builder().hash("HASH").hashingAlgo("algo").build();
     Metadata.MetadataBuilder b = Metadata.builder().pubKeyHash(hash);
     assertThat(Metadata.setPubKeyHashIfNotNull(b, null), is(false));
     assertThat(b.build().pubKeyHash(), equalTo(hash));
@@ -575,11 +659,11 @@ class MetadataTest {
 
   @Test
   void testAppMetadataToJsonIsFlatProviderIdPlusAdditional() {
-    Metadata.AppMetadata am = Metadata.AppMetadata.builder()
+    AppMetadata am = AppMetadata.builder()
         .providerId("legacy")
-        .additional(java.util.Map.of("v", 2))
+        .additional(Map.of("v", 2))
         .build();
-    java.util.Map<String, Object> json = am.toJson();
+    Map<String, Object> json = am.toJson();
     assertThat(json.get("providerId"), equalTo("legacy"));
     assertThat(json.get("v"), equalTo(2));
     // additional is flattened, NOT nested under an "additional" key
@@ -588,33 +672,31 @@ class MetadataTest {
 
   @Test
   void testAppMetadataFromJsonRoutesNonProviderIdKeysToAdditional() {
-    Metadata.AppMetadata am = Metadata.AppMetadata
-        .fromJson(new java.util.LinkedHashMap<>(java.util.Map.of("providerId", "p1", "x", "y")));
+    AppMetadata am = AppMetadata.fromJson(Map.of("providerId", "p1", "x", "y"));
     assertThat(am.providerId(), equalTo("p1"));
     assertThat(am.additional().get("x"), equalTo("y"));
   }
 
   @Test
   void testAppMetadataFromJsonWithOnlyProviderIdHasNullAdditional() {
-    Metadata.AppMetadata am = Metadata.AppMetadata
-        .fromJson(new java.util.LinkedHashMap<>(java.util.Map.of("providerId", "p1")));
+    AppMetadata am = AppMetadata.fromJson(Map.of("providerId", "p1"));
     assertThat(am.additional(), is(nullValue()));
   }
 
   @Test
   void testAppMetadataFromJsonThrowsWhenProviderIdMissingOrBlank() {
     assertThrows(IllegalArgumentException.class,
-                 () -> Metadata.AppMetadata.fromJson(new java.util.LinkedHashMap<>()));
-    assertThrows(IllegalArgumentException.class, () -> Metadata.AppMetadata
-        .fromJson(new java.util.LinkedHashMap<>(java.util.Map.of("providerId", "  "))));
+                 () -> AppMetadata.fromJson(Map.of()));
+    assertThrows(IllegalArgumentException.class,
+                 () -> AppMetadata.fromJson(Map.of("providerId", "  ")));
   }
 
   @Test
   void testAppMetadataEncodeDecodeRoundTrips() {
-    Metadata.AppMetadata am = Metadata.AppMetadata.builder().providerId("prov").build();
+    AppMetadata am = AppMetadata.builder().providerId("prov").build();
     String encoded = am.encode();
     // base64 of a JSON object — decode must reconstruct the same value
-    assertThat(Metadata.AppMetadata.decode(encoded), equalTo(am));
+    assertThat(AppMetadata.decode(encoded), equalTo(am));
     // canonical parity: the static Metadata helpers delegate to encode/decode
     assertThat(Metadata.encodeAppMetadata(am), equalTo(encoded));
     assertThat(Metadata.decodeAppMetadata(encoded), equalTo(am));
@@ -622,16 +704,16 @@ class MetadataTest {
 
   @Test
   void testAppMetadataDecodeAcceptsMapAndAppMetadataAndNull() {
-    Metadata.AppMetadata am = Metadata.AppMetadata.builder().providerId("prov").build();
-    assertThat(Metadata.AppMetadata.decode(am), sameInstance(am));
-    assertThat(Metadata.AppMetadata.decode(java.util.Map.of("providerId", "prov")), equalTo(am));
-    assertThat(Metadata.AppMetadata.decode(null), is(nullValue()));
-    assertThat(Metadata.AppMetadata.decode("null"), is(nullValue()));
+    AppMetadata am = AppMetadata.builder().providerId("prov").build();
+    assertThat(AppMetadata.decode(am), sameInstance(am));
+    assertThat(AppMetadata.decode(Map.of("providerId", "prov")), equalTo(am));
+    assertThat(AppMetadata.decode(null), is(nullValue()));
+    assertThat(AppMetadata.decode("null"), is(nullValue()));
   }
 
   @Test
   void testToStringEncodesAppMetadataAsBase64Fragment() {
-    Metadata.AppMetadata am = Metadata.AppMetadata.builder().providerId("prov").build();
+    AppMetadata am = AppMetadata.builder().providerId("prov").build();
     Metadata md = Metadata.builder().appMetadata(am).build();
     assertThat(md.toString(), containsString(":appMetadata:" + am.encode()));
   }
