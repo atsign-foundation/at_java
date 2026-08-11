@@ -3,7 +3,7 @@ package org.atsign.client.impl.common;
 import static org.atsign.client.impl.common.Preconditions.checkNotNull;
 
 /**
- * Base class for simple classes have String values.
+ * Base class for simple classes that have String values.
  */
 public abstract class TypedString {
 
@@ -11,6 +11,10 @@ public abstract class TypedString {
 
   protected TypedString(String s) {
     this.value = checkNotNull(s);
+  }
+
+  protected static boolean isBlank(String s) {
+    return s == null || s.isBlank();
   }
 
   @Override
