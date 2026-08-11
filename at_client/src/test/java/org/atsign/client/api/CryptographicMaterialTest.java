@@ -27,10 +27,10 @@ class CryptographicMaterialTest {
 
   private static CryptographicMaterial.CryptographicMaterialBuilder material() {
     return CryptographicMaterial.builder()
-        .keyId(KeyId.of("default"))
+        .keyId("default")
         .role(Role.publicEncryption)
         .algorithm(Algorithm.rsa2048)
-        .bytes(BytesAsBase64.of("c2VjcmV0"))
+        .bytes("c2VjcmV0")
         .createdAt(CREATED_AT);
   }
 
@@ -141,7 +141,7 @@ class CryptographicMaterialTest {
   void testEqualityComparesTheKeyMaterial() {
     CryptographicMaterial left = material().build();
     CryptographicMaterial right = material().build();
-    CryptographicMaterial other = material().bytes(BytesAsBase64.of("cHVibGlj")).build();
+    CryptographicMaterial other = material().bytes("cHVibGlj").build();
 
     assertThat(left, equalTo(right));
     assertThat(left.hashCode(), equalTo(right.hashCode()));
@@ -153,11 +153,11 @@ class CryptographicMaterialTest {
     assertThrows(NullPointerException.class, () -> CryptographicMaterial.builder()
         .role(Role.publicEncryption)
         .algorithm(Algorithm.rsa2048)
-        .bytes(BytesAsBase64.of("c2VjcmV0"))
+        .bytes("c2VjcmV0")
         .createdAt(CREATED_AT)
         .build());
-    assertThrows(NullPointerException.class, () -> material().bytes(null).build());
-    assertThrows(NullPointerException.class, () -> material().role(null).build());
+    assertThrows(NullPointerException.class, () -> material().bytes((BytesAsBase64) null).build());
+    assertThrows(NullPointerException.class, () -> material().role((Role) null).build());
   }
 
   @Test
@@ -183,8 +183,8 @@ class CryptographicMaterialTest {
 
   @Test
   void testEnrollmentIdIsCarriedWhenPresent() {
-    EnrollmentId enrollmentId = EnrollmentId.of("352b78c8-4b6f-4d07-a9cf-5466512ffa44");
-    CryptographicMaterial subject = material().enrollmentId(enrollmentId).build();
-    assertThat(subject.getEnrollmentId(), equalTo(enrollmentId));
+    CryptographicMaterial subject = material().enrollmentId("352b78c8-4b6f-4d07-a9cf-5466512ffa44").build();
+    assertThat(subject.getEnrollmentId(),
+               equalTo(EnrollmentId.of("352b78c8-4b6f-4d07-a9cf-5466512ffa44")));
   }
 }

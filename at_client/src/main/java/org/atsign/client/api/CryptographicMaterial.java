@@ -8,6 +8,7 @@ import org.atsign.client.impl.common.TypedString;
 import org.atsign.client.impl.common.TypedToken;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,8 +38,13 @@ public class CryptographicMaterial {
   @NonNull
   BytesAsBase64 bytes;
 
+  /**
+   * Defaults to the moment the material is built, so a caller that has no better answer need not
+   * invent one. Note two otherwise identical materials built at different times are not equal.
+   */
   @NonNull
-  OffsetDateTime createdAt;
+  @Builder.Default
+  OffsetDateTime createdAt = OffsetDateTime.now(ZoneOffset.UTC);
 
   @Builder.Default
   Status status = Status.active;
@@ -49,6 +55,61 @@ public class CryptographicMaterial {
    */
   public CryptographicMaterial withStatus(Status status) {
     return toBuilder().status(status).build();
+  }
+
+  /**
+   * Builds {@link CryptographicMaterial}. Each typed property also accepts the String it is made
+   * from, so that a caller holding raw values need not name the factory for each one.
+   * <p>
+   * The typed setters are written out rather than generated because Lombok omits a setter when a
+   * method of the same name and arity already exists, and the String overloads collide with them.
+   */
+  public static class CryptographicMaterialBuilder {
+
+    public CryptographicMaterialBuilder keyId(KeyId keyId) {
+      this.keyId = keyId;
+      return this;
+    }
+
+    public CryptographicMaterialBuilder keyId(String keyId) {
+      return keyId(KeyId.of(keyId));
+    }
+
+    public CryptographicMaterialBuilder enrollmentId(EnrollmentId enrollmentId) {
+      this.enrollmentId = enrollmentId;
+      return this;
+    }
+
+    public CryptographicMaterialBuilder enrollmentId(String enrollmentId) {
+      return enrollmentId(EnrollmentId.of(enrollmentId));
+    }
+
+    public CryptographicMaterialBuilder role(Role role) {
+      this.role = role;
+      return this;
+    }
+
+    public CryptographicMaterialBuilder role(String role) {
+      return role(Role.of(role));
+    }
+
+    public CryptographicMaterialBuilder algorithm(Algorithm algorithm) {
+      this.algorithm = algorithm;
+      return this;
+    }
+
+    public CryptographicMaterialBuilder algorithm(String algorithm) {
+      return algorithm(Algorithm.of(algorithm));
+    }
+
+    public CryptographicMaterialBuilder bytes(BytesAsBase64 bytes) {
+      this.bytes = bytes;
+      return this;
+    }
+
+    public CryptographicMaterialBuilder bytes(String base64) {
+      return bytes(BytesAsBase64.of(base64));
+    }
   }
 
   /**
