@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.AtCommandExecutorContext;
 import org.atsign.client.api.AtEvents;
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtSign;
@@ -29,11 +30,12 @@ class NotificationsTest {
   void testMonitorSendExpectedCommands() throws Exception {
     AtSign atSign = createAtSign("colin");
     AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).build();
+    AtCommandExecutorContext context = new AtCommandExecutorContext(atSign, keys);
     AtCommandExecutor executor = mock(AtCommandExecutor.class);
     stubAuthentication(executor, atSign);
 
     Consumer<String> consumer = mock(Consumer.class);
-    Notifications.monitor(executor, atSign, null, keys, consumer);
+    Notifications.monitor(executor, context, null, consumer);
 
     verify(executor).sendSync(eq("monitor"), eq(consumer));
   }
@@ -42,6 +44,7 @@ class NotificationsTest {
   void testMonitorWrapsConsumer() throws Exception {
     AtSign atSign = createAtSign("colin");
     AtKeys keys = AtKeys.builder().apkamKeyPair(generateRSAKeyPair()).build();
+    AtCommandExecutorContext context = new AtCommandExecutorContext(atSign, keys);
     AtCommandExecutor executor = mock(AtCommandExecutor.class);
     stubAuthentication(executor, atSign);
     Consumer<String> consumer = mock(Consumer.class);
@@ -49,8 +52,8 @@ class NotificationsTest {
       throw new AtTimeoutException("deliberate");
     }).when(executor).sendSync(eq("monitor"), Mockito.any(Consumer.class));
 
-    Exception ex =
-        assertThrows(Exception.class, () -> Notifications.monitor(atSign, null, keys, null, consumer).accept(executor));
+    Exception ex = assertThrows(Exception.class,
+                                () -> Notifications.monitor(context, null, consumer).accept(executor));
     assertThat(ex, instanceOf(AtOnReadyException.class));
   }
 

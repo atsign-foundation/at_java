@@ -35,8 +35,7 @@ import org.atsign.client.impl.util.Base2e15Utils;
  *
  * <pre>
  * AtClientImplBuilder builder = AtClientImpl.builder()
- *     .atSign(...)
- *     .keys(...)
+ *     .context(...)
  *     .executor(...)
  *     .eventBus(...);
  *
@@ -50,10 +49,8 @@ import org.atsign.client.impl.util.Base2e15Utils;
 @Slf4j
 public class AtClientImpl implements AtClient {
 
-  private final AtSign atSign;
-  private final AtKeys keys;
-  private MonitorOptions monitorOptions;
-  private final Map<String, Object> config;
+  private final AtCommandExecutorContext context;
+  private final MonitorOptions monitorOptions;
   private final AtCommandExecutor executor;
   private final AtEventBus eventBus;
   private final AtomicBoolean isMonitoring = new AtomicBoolean();
@@ -61,7 +58,7 @@ public class AtClientImpl implements AtClient {
 
   @Override
   public AtSign getAtSign() {
-    return atSign;
+    return context.getAtSign();
   }
 
   @Override
@@ -70,23 +67,20 @@ public class AtClientImpl implements AtClient {
   }
 
   @Builder
-  public AtClientImpl(AtSign atSign,
-                      AtKeys keys,
+  public AtClientImpl(AtCommandExecutorContext context,
                       boolean withMonitoring,
                       MonitorOptions monitorOptions,
-                      Map<String, Object> config,
                       AtCommandExecutor executor,
                       AtEventBus eventBus) {
-    this.atSign = checkNotNull(atSign, "atSign not set");
-    this.keys = checkNotNull(keys, "keys not set");
+    this.context = checkNotNull(context, "context not set");
+    checkNotNull(context.getKeys(), "keys not set");
+    checkNotNull(context.getKeys().getEncryptPrivateKey(), "keys have not been fully enrolled");
     this.monitorOptions = monitorOptions != null ? monitorOptions : MonitorOptions.builder().build();
-    this.config = config;
     this.executor = checkNotNull(executor, "executor not set");
     this.eventBus = checkNotNull(eventBus, "eventBus not set");
     this.eventBus.addEventListener(this::handleEvent, EnumSet.allOf(AtEventType.class));
     this.isMonitoring.set(withMonitoring);
-    this.eventBusBridge = new Notifications.EventBusBridge(eventBus, atSign, this.monitorOptions);
-    checkNotNull(keys.getEncryptPrivateKey(), "keys have not been fully enrolled");
+    this.eventBusBridge = new Notifications.EventBusBridge(eventBus, context.getAtSign(), this.monitorOptions);
   }
 
   /**
@@ -96,13 +90,16 @@ public class AtClientImpl implements AtClient {
    * <pre>
    *
    * AtClientImpl.builder()
-   *   .atSign(...)  // the AtSign that this client will authenticate as
-   *   .keys(...)    // the AtKeys that this client will use
+   *   .context(...) // the connection context: atSign, keys and client config
    *   .executor()   // the AtCommandExecutor this client will use
    *   .eventBus()   // the AtEventBus this client will publish to
    *   .build();
    * }
    * </pre>
+   *
+   * <b>NOTE</b> the context must be the same instance the {@link AtCommandExecutor} was built with
+   * (see {@link AtClients#createAtClient}), so that the {@code from:} challenge and the client config
+   * are shared by the connection's authentication and by every command the client issues.
    */
   public static class AtClientImplBuilder {
     // required for javadoc
@@ -116,13 +113,13 @@ public class AtClientImpl implements AtClient {
   @Override
   public void startMonitor() {
     isMonitoring.compareAndSet(false, true);
-    executor.onReady(Notifications.monitor(atSign, monitorOptions, keys, config, eventBusBridge));
+    executor.onReady(Notifications.monitor(context, monitorOptions, eventBusBridge));
   }
 
   @Override
   public void stopMonitor() {
     isMonitoring.compareAndSet(true, false);
-    executor.onReady(AuthenticationCommands.pkamAuthenticator(atSign, keys, config));
+    executor.onReady(AuthenticationCommands.pkamAuthenticator(context));
   }
 
   @Override
@@ -147,17 +144,17 @@ public class AtClientImpl implements AtClient {
 
   @Override
   public String get(SharedKey sharedKey) throws AtException {
-    return SharedKeyCommands.get(executor, atSign, keys, sharedKey);
+    return SharedKeyCommands.get(executor, context, sharedKey);
   }
 
   @Override
   public byte[] getBinary(SharedKey sharedKey) throws AtException {
-    return Base2e15Utils.decode(SharedKeyCommands.get(executor, atSign, keys, sharedKey, true));
+    return Base2e15Utils.decode(SharedKeyCommands.get(executor, context, sharedKey, true));
   }
 
   @Override
   public void put(SharedKey sharedKey, String value) throws AtException {
-    SharedKeyCommands.put(executor, atSign, keys, sharedKey, value);
+    SharedKeyCommands.put(executor, context, sharedKey, value);
   }
 
   @Override
@@ -167,17 +164,17 @@ public class AtClientImpl implements AtClient {
 
   @Override
   public String get(SelfKey selfKey) throws AtException {
-    return SelfKeyCommands.get(executor, atSign, keys, selfKey);
+    return SelfKeyCommands.get(executor, context, selfKey);
   }
 
   @Override
   public byte[] getBinary(SelfKey selfKey) throws AtException {
-    return Base2e15Utils.decode(SelfKeyCommands.get(executor, atSign, keys, selfKey, true));
+    return Base2e15Utils.decode(SelfKeyCommands.get(executor, context, selfKey, true));
   }
 
   @Override
   public void put(SelfKey selfKey, String value) throws AtException {
-    SelfKeyCommands.put(executor, atSign, keys, selfKey, value);
+    SelfKeyCommands.put(executor, context, selfKey, value);
   }
 
   @Override
@@ -192,7 +189,7 @@ public class AtClientImpl implements AtClient {
 
   @Override
   public String get(PublicKey publicKey, GetRequestOptions options) throws AtException {
-    return PublicKeyCommands.get(executor, atSign, publicKey, options);
+    return PublicKeyCommands.get(executor, context, publicKey, options);
   }
 
   @Override
@@ -202,12 +199,12 @@ public class AtClientImpl implements AtClient {
 
   @Override
   public byte[] getBinary(PublicKey publicKey, GetRequestOptions options) throws AtException {
-    return Base2e15Utils.decode(PublicKeyCommands.get(executor, atSign, publicKey, true, options));
+    return Base2e15Utils.decode(PublicKeyCommands.get(executor, context, publicKey, true, options));
   }
 
   @Override
   public void put(PublicKey publicKey, String value) throws AtException {
-    PublicKeyCommands.put(executor, atSign, keys, publicKey, value);
+    PublicKeyCommands.put(executor, context, publicKey, value);
   }
 
   @Override
@@ -262,6 +259,7 @@ public class AtClientImpl implements AtClient {
     // If we also got a value, we can decrypt it and add it to our keys map
     // Note: a value isn't supplied when the ttr on the shared key was set to 0
     if (eventData.get("value") != null) {
+      AtKeys keys = context.getKeys();
       String keyName = (String) eventData.get("key");
       String value = (String) eventData.get("value");
       String decrypted = rsaDecryptFromBase64(value, keys.getEncryptPrivateKey());
@@ -272,6 +270,7 @@ public class AtClientImpl implements AtClient {
   private void onUpdateNotification(Map<String, Object> eventData) throws AtException {
     // Let's see if we can decrypt it on the fly
     if (eventData.get("value") != null) {
+      AtKeys keys = context.getKeys();
       String encryptedValue = (String) eventData.get("value");
       Map<String, Object> metadata = (Map<String, Object>) eventData.get("metadata");
       String ivNonce = (String) metadata.get("ivNonce");
@@ -282,7 +281,7 @@ public class AtClientImpl implements AtClient {
       } else {
         String key = (String) eventData.get("key");
         SharedKey sk = org.atsign.client.api.Keys.sharedKeyBuilder().rawKey(key).build();
-        encryptKeySharedByOther = SharedKeyCommands.lookupEncryptKeySharedByOther(executor, keys, sk);
+        encryptKeySharedByOther = SharedKeyCommands.lookupEncryptKeySharedByOther(executor, context, sk);
       }
       String decryptedValue = aesDecryptFromBase64(encryptedValue, encryptKeySharedByOther, ivNonce);
       HashMap<String, Object> newEventData = new HashMap<>(eventData);
@@ -292,8 +291,8 @@ public class AtClientImpl implements AtClient {
   }
 
   /**
-   * A runnable command which returns a String value but can throw {@link AtException}s or execution
-   * exceptions
+   * A runnable command returning a String; may throw {@link AtException}s or
+   * execution exceptions.
    */
   public interface AtCommandThatReturnsString {
     String run() throws AtException, ExecutionException, InterruptedException;
@@ -310,9 +309,8 @@ public class AtClientImpl implements AtClient {
   }
 
   /**
-   * A runnable command which returns a byte array value but can throw {@link AtException}s or
-   * execution
-   * exceptions
+   * A runnable command returning a byte array; may throw {@link AtException}s or
+   * execution exceptions.
    */
   public interface AtCommandThatReturnsByteArray {
     byte[] run() throws AtException, ExecutionException, InterruptedException;
@@ -329,8 +327,8 @@ public class AtClientImpl implements AtClient {
   }
 
   /**
-   * A runnable command which does NOT return a value but can throw {@link AtException}s or execution
-   * exceptions
+   * A runnable command returning no value; may throw {@link AtException}s or
+   * execution exceptions.
    */
   public interface AtCommandThatReturnsVoid {
     void run() throws AtException, ExecutionException, InterruptedException;

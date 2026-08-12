@@ -29,6 +29,7 @@ class AtClientImplTest {
   private AtCommandExecutor executor;
   private AtClientImpl client;
   private AtSign atSign;
+  private AtCommandExecutorContext context;
 
   @BeforeEach
   void setUp() throws Exception {
@@ -40,9 +41,9 @@ class AtClientImplTest {
         .encryptKeyPair(generateRSAKeyPair())
         .selfEncryptKey(generateAESKeyBase64())
         .build();
+    context = new AtCommandExecutorContext(atSign, keys);
     client = AtClientImpl.builder()
-        .atSign(atSign)
-        .keys(keys)
+        .context(context)
         .executor(executor)
         .eventBus(bus)
         .build();
@@ -54,8 +55,7 @@ class AtClientImplTest {
   @Test
   void testSetAtSignReturnsConstructorArg() {
     AtClientImpl client = AtClientImpl.builder()
-        .atSign(createAtSign("test"))
-        .keys(keys)
+        .context(context)
         .executor(executor)
         .eventBus(bus)
         .build();
@@ -65,8 +65,7 @@ class AtClientImplTest {
   @Test
   void testGetCommandExecutorReturnsConstructorArg() {
     AtClientImpl client = AtClientImpl.builder()
-        .atSign(createAtSign("test"))
-        .keys(keys)
+        .context(context)
         .executor(executor)
         .eventBus(bus)
         .build();
@@ -85,13 +84,14 @@ class AtClientImplTest {
 
     // stub the executor so that onReady consumer successfully authenticates
     executor = TestExecutorBuilder.builder()
-        .stub("from:@alice", "data:challenge")
+        .stub("from:@alice:clientConfig:.*12345.*", "data:challenge")
         .stub("pkam:[^{].+", "data:success")
         .build();
 
+    Map<String, Object> config = Collections.singletonMap("clientId", "12345");
+    AtCommandExecutorContext contextAlice = new AtCommandExecutorContext(createAtSign("alice"), keys, config);
     AtClientImpl client = AtClientImpl.builder()
-        .atSign(createAtSign("alice"))
-        .keys(keys)
+        .context(contextAlice)
         .executor(executor)
         .eventBus(bus)
         .build();
@@ -127,13 +127,14 @@ class AtClientImplTest {
   void testStopMonitor() throws Exception {
     // stub the executor so that onReady consumer successfully authenticates
     executor = TestExecutorBuilder.builder()
-        .stub("from:@alice", "data:challenge")
+        .stub("from:@alice:clientConfig:.*12345.*", "data:challenge")
         .stub("pkam:[^{].+", "data:success")
         .build();
 
+    Map<String, Object> config = Collections.singletonMap("clientId", "12345");
+    AtCommandExecutorContext contextAlice = new AtCommandExecutorContext(createAtSign("alice"), keys, config);
     AtClientImpl client = AtClientImpl.builder()
-        .atSign(createAtSign("alice"))
-        .keys(keys)
+        .context(contextAlice)
         .executor(executor)
         .eventBus(bus)
         .build();
@@ -193,7 +194,11 @@ class AtClientImplTest {
         .stubExecutionException("llookup:all:key3@test")
         .build();
 
-    AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
+    AtClientImpl client = AtClientImpl.builder()
+        .context(context)
+        .executor(executor)
+        .eventBus(bus)
+        .build();
 
     Keys.SelfKey key1 = Keys.selfKeyBuilder().sharedBy(atSign).name("key1").build();
     assertThat(client.get(key1), equalTo("hello me"));
@@ -219,7 +224,11 @@ class AtClientImplTest {
         .stubExecutionException("llookup:all:key3@test")
         .build();
 
-    AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
+    AtClientImpl client = AtClientImpl.builder()
+        .context(context)
+        .executor(executor)
+        .eventBus(bus)
+        .build();
 
     Keys.SelfKey key1 = Keys.selfKeyBuilder().sharedBy(atSign).name("key1").build();
     assertThat(client.getBinary(key1), equalTo(bytes));
@@ -243,7 +252,11 @@ class AtClientImplTest {
         .stubExecutionException("update:dataSignature:.+:key3@test .+")
         .build();
 
-    AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
+    AtClientImpl client = AtClientImpl.builder()
+        .context(context)
+        .executor(executor)
+        .eventBus(bus)
+        .build();
     Keys.SelfKey key1 = Keys.selfKeyBuilder().sharedBy(atSign).name("key1").build();
     client.put(key1, "hello world");
 
@@ -265,7 +278,11 @@ class AtClientImplTest {
         .stubExecutionException("update:.+:key3@test .+")
         .build();
 
-    AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
+    AtClientImpl client = AtClientImpl.builder()
+        .context(context)
+        .executor(executor)
+        .eventBus(bus)
+        .build();
     Keys.SelfKey key1 = Keys.selfKeyBuilder().sharedBy(atSign).name("key1").build();
     client.put(key1, bytes);
 
@@ -284,7 +301,11 @@ class AtClientImplTest {
         .stubExecutionException("delete:key3@test")
         .build();
 
-    AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
+    AtClientImpl client = AtClientImpl.builder()
+        .context(context)
+        .executor(executor)
+        .eventBus(bus)
+        .build();
     Keys.SelfKey key1 = Keys.selfKeyBuilder().sharedBy(atSign).name("key1").build();
     client.delete(key1);
 
@@ -304,7 +325,11 @@ class AtClientImplTest {
         .stubLookupResponse("plookup:all:key4@another", "key4@test", "greetings from another world")
         .build();
 
-    AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
+    AtClientImpl client = AtClientImpl.builder()
+        .context(context)
+        .executor(executor)
+        .eventBus(bus)
+        .build();
 
     Keys.PublicKey key1 = Keys.publicKeyBuilder().sharedBy(atSign).name("key1").build();
     assertThat(client.get(key1), equalTo("hello world"));
@@ -334,7 +359,11 @@ class AtClientImplTest {
         .stubLookupResponse("llookup:all:public:key5@test", "key5@test", Base2e15Utils.encode(bytes1))
         .build();
 
-    AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
+    AtClientImpl client = AtClientImpl.builder()
+        .context(context)
+        .executor(executor)
+        .eventBus(bus)
+        .build();
 
     Keys.PublicKey key1 = Keys.publicKeyBuilder().sharedBy(atSign).name("key1").build();
     assertThat(client.getBinary(key1), equalTo(bytes1));
@@ -360,7 +389,11 @@ class AtClientImplTest {
         .stubExecutionException("update:dataSignature:.+:key3@test .+")
         .build();
 
-    AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
+    AtClientImpl client = AtClientImpl.builder()
+        .context(context)
+        .executor(executor)
+        .eventBus(bus)
+        .build();
     Keys.PublicKey key1 = Keys.publicKeyBuilder().sharedBy(atSign).name("key1").build();
     client.put(key1, "hello world");
 
@@ -383,7 +416,11 @@ class AtClientImplTest {
         .stubExecutionException("update:dataSignature:.+:key3@test .+")
         .build();
 
-    AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
+    AtClientImpl client = AtClientImpl.builder()
+        .context(context)
+        .executor(executor)
+        .eventBus(bus)
+        .build();
     Keys.PublicKey key1 = Keys.publicKeyBuilder().sharedBy(atSign).name("key1").build();
     client.put(key1, bytes);
 
@@ -402,7 +439,11 @@ class AtClientImplTest {
         .stubExecutionException("delete:public:key3@test")
         .build();
 
-    AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
+    AtClientImpl client = AtClientImpl.builder()
+        .context(context)
+        .executor(executor)
+        .eventBus(bus)
+        .build();
     Keys.PublicKey key1 = Keys.publicKeyBuilder().sharedBy(atSign).name("key1").build();
     client.delete(key1);
 
@@ -432,7 +473,11 @@ class AtClientImplTest {
                             "ivNonce", iv, "sharedKeyEnc", sharedKeyEnc)
         .build();
 
-    AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
+    AtClientImpl client = AtClientImpl.builder()
+        .context(context)
+        .executor(executor)
+        .eventBus(bus)
+        .build();
     AtSign atSign2 = createAtSign("another");
 
     Keys.SharedKey key1 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key1").build();
@@ -472,7 +517,11 @@ class AtClientImplTest {
         .stubLookupResponse("llookup:all:@another:key5@test", "key5@test", encrypted1, "ivNonce", iv)
         .build();
 
-    AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
+    AtClientImpl client = AtClientImpl.builder()
+        .context(context)
+        .executor(executor)
+        .eventBus(bus)
+        .build();
     AtSign atSign2 = createAtSign("another");
 
     Keys.SharedKey key1 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key1").build();
@@ -501,7 +550,11 @@ class AtClientImplTest {
         .stubExecutionException("update:.+:key3@test .+")
         .build();
 
-    AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
+    AtClientImpl client = AtClientImpl.builder()
+        .context(context)
+        .executor(executor)
+        .eventBus(bus)
+        .build();
     AtSign atSign2 = createAtSign("another");
 
     Keys.SharedKey key1 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key1").build();
@@ -527,7 +580,11 @@ class AtClientImplTest {
         .stubExecutionException("update:.+:key3@test .+")
         .build();
 
-    AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
+    AtClientImpl client = AtClientImpl.builder()
+        .context(context)
+        .executor(executor)
+        .eventBus(bus)
+        .build();
     AtSign atSign2 = createAtSign("another");
 
     Keys.SharedKey key1 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key1").build();
@@ -548,7 +605,11 @@ class AtClientImplTest {
         .stubExecutionException("delete:@another:key3@test")
         .build();
 
-    AtClientImpl client = AtClientImpl.builder().atSign(atSign).keys(keys).executor(executor).eventBus(bus).build();
+    AtClientImpl client = AtClientImpl.builder()
+        .context(context)
+        .executor(executor)
+        .eventBus(bus)
+        .build();
     AtSign atSign2 = createAtSign("another");
 
     Keys.SharedKey key1 = Keys.sharedKeyBuilder().sharedBy(atSign).sharedWith(atSign2).name("key1").build();

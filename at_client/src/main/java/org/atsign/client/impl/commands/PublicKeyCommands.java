@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.atsign.client.api.AtClient.GetRequestOptions;
 import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.AtCommandExecutorContext;
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtSign;
 import org.atsign.client.api.Keys.PublicKey;
@@ -27,34 +28,38 @@ public class PublicKeyCommands {
    * Get the String value associated with a public key.
    *
    * @param executor The {@link AtCommandExecutor} to use.
-   * @param atSign The AtSign that corresponds to the executor.
-   * @param key The {@link PublicKey}
-   * @param options If set then can be used to bypass caches.
-   * @return The associated value.
-   * @throws AtException If any of the commands fail or the key does not exist.
-   */
-  public static String get(AtCommandExecutor executor, AtSign atSign, PublicKey key, GetRequestOptions options)
-      throws AtException {
-    return get(executor, atSign, key, false, options);
-  }
-
-  /**
-   * Get the String value associated with a public key.
-   *
-   * @param executor The {@link AtCommandExecutor} to use.
-   * @param atSign The AtSign that corresponds to the executor.
+   * @param context The connection context; supplies the atSign.
    * @param key The {@link PublicKey}
    * @param options If set then can be used to bypass caches.
    * @return The associated value.
    * @throws AtException If any of the commands fail or the key does not exist.
    */
   public static String get(AtCommandExecutor executor,
-                           AtSign atSign,
+                           AtCommandExecutorContext context,
+                           PublicKey key,
+                           GetRequestOptions options)
+      throws AtException {
+    return get(executor, context, key, false, options);
+  }
+
+  /**
+   * Get the String value associated with a public key.
+   *
+   * @param executor The {@link AtCommandExecutor} to use.
+   * @param context The connection context; supplies the atSign.
+   * @param key The {@link PublicKey}
+   * @param expectBinary If true then metadata will be checked
+   * @param options If set then can be used to bypass caches.
+   * @return The associated value.
+   * @throws AtException If any of the commands fail or the key does not exist.
+   */
+  public static String get(AtCommandExecutor executor,
+                           AtCommandExecutorContext context,
                            PublicKey key,
                            boolean expectBinary,
                            GetRequestOptions options)
       throws AtException {
-    if (atSign.equals(key.sharedBy())) {
+    if (context.getAtSign().equals(key.sharedBy())) {
       return getSharedByMe(executor, key, expectBinary);
     } else {
       return getSharedByOther(executor, key, expectBinary, options);
@@ -154,13 +159,15 @@ public class PublicKeyCommands {
    * metadata using the AtSign's Private Encryption Key.
    *
    * @param executor The {@link AtCommandExecutor} to use.
-   * @param atSign The AtSign that corresponds to the executor.
+   * @param context The connection context; supplies the atSign and keys.
    * @param key The {@link PublicKey}
    * @param value The associated value.
    * @throws AtException If any of the commands fail or the key does not exist.
    */
-  public static void put(AtCommandExecutor executor, AtSign atSign, AtKeys keys, PublicKey key, String value)
+  public static void put(AtCommandExecutor executor, AtCommandExecutorContext context, PublicKey key, String value)
       throws AtException {
+    AtSign atSign = context.getAtSign();
+    AtKeys keys = context.getKeys();
     checkAtSignCanPut(atSign, key);
     try {
 

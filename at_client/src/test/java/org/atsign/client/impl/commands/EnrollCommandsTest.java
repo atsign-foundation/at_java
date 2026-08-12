@@ -66,9 +66,10 @@ public class EnrollCommandsTest {
         .stub("scan", "data:[\"signing_publickey@gary\"]")
         .build();
 
+    AtCommandExecutorContext context = new AtCommandExecutorContext(atSign, keys);
+
     Exception ex = assertThrows(Exception.class,
-                                () -> EnrollCommands.onboard(executor, new AtCommandExecutorContext(atSign, keys, null),
-                                                             "secret", "app", "device", false));
+                                () -> EnrollCommands.onboard(executor, context, "secret", "app", "device", false));
     assertThat(ex.getMessage(), containsString("not connected to the atsign's at server"));
   }
 
@@ -107,8 +108,9 @@ public class EnrollCommandsTest {
         .stub("update:public:publickey@alice .+", "data:1")
         .build();
 
-    AtKeys newKeys = EnrollCommands.onboard(executor, new AtCommandExecutorContext(atSign, keys, null), "secret",
-                                            "app", "device", false);
+    AtCommandExecutorContext context = new AtCommandExecutorContext(atSign, keys);
+
+    AtKeys newKeys = EnrollCommands.onboard(executor, context, "secret", "app", "device", false);
 
     assertThat(newKeys, is(not(sameInstance(keys))));
     assertThat(newKeys.getEnrollmentId(), equalTo(createEnrollmentId("904dcbf7")));
@@ -123,7 +125,7 @@ public class EnrollCommandsTest {
         .build();
 
     // simulate the connection having issued from: on connect (sendFrom) and retained the challenge
-    AtCommandExecutorContext context = new AtCommandExecutorContext(atSign, keys, null);
+    AtCommandExecutorContext context = new AtCommandExecutorContext(atSign, keys);
     context.setChallenge("challenge");
 
     AtCommandExecutor executor = TestExecutorBuilder.builder()
@@ -157,7 +159,9 @@ public class EnrollCommandsTest {
         .stub("enroll:request\\{.+}", "data:{\"enrollmentId\":\"759acb09\",\"status\":\"pending\"}")
         .build();
 
-    AtKeys newKeys = EnrollCommands.enroll(executor, atSign, keys, "OTP123", "app", "device", singletonMap("ns", "rw"));
+    AtCommandExecutorContext context = new AtCommandExecutorContext(atSign, keys);
+
+    AtKeys newKeys = EnrollCommands.enroll(executor, context, "OTP123", "app", "device", singletonMap("ns", "rw"));
 
     assertThat(newKeys, is(not(sameInstance(keys))));
     assertThat(newKeys.getEnrollmentId(), equalTo(createEnrollmentId("759acb09")));
@@ -186,7 +190,9 @@ public class EnrollCommandsTest {
         .stub("keys:get:keyName:12345.default_enc_private_key.__manage@alice", privateEncryptKeysGetResponse)
         .build();
 
-    AtKeys newKeys = EnrollCommands.complete(executor, atSign, keys);
+    AtCommandExecutorContext context = new AtCommandExecutorContext(atSign, keys);
+
+    AtKeys newKeys = EnrollCommands.complete(executor, context);
 
     assertThat(newKeys, is(not(sameInstance(keys))));
     assertThat(newKeys.getEncryptPrivateKey(), notNullValue());
@@ -210,7 +216,10 @@ public class EnrollCommandsTest {
               "data:{\"status\":\"approved\",\"enrollmentId\":\"12345\"}")
         .build();
 
-    EnrollCommands.approve(executor, keys, createEnrollmentId("12345"));
+    // approve reads only the keys from the context, but a context always carries an atSign
+    AtCommandExecutorContext context = new AtCommandExecutorContext(createAtSign("@alice"), keys);
+
+    EnrollCommands.approve(executor, context, createEnrollmentId("12345"));
   }
 
   @Test

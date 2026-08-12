@@ -28,14 +28,14 @@ public class SharedKeyCommands {
    * key for the sharedBy-sharedWith relationship.
    *
    * @param executor The {@link AtCommandExecutor} to use.
-   * @param atSign The AtSign that corresponds to the executor.
+   * @param context The connection context; supplies the atSign and keys.
    * @param key The {@link Keys.SharedKey}
    * @return The associated value.
    * @throws AtException If any of the commands fail or the key does not exist.
    */
-
-  public static String get(AtCommandExecutor executor, AtSign atSign, AtKeys keys, SharedKey key) throws AtException {
-    return get(executor, atSign, keys, key, false);
+  public static String get(AtCommandExecutor executor, AtCommandExecutorContext context, SharedKey key)
+      throws AtException {
+    return get(executor, context, key, false);
   }
 
   /**
@@ -43,46 +43,47 @@ public class SharedKeyCommands {
    * key for the sharedBy-sharedWith relationship.
    *
    * @param executor The {@link AtCommandExecutor} to use.
-   * @param atSign The AtSign that corresponds to the executor.
+   * @param context The connection context; supplies the atSign and keys.
    * @param key The {@link Keys.SharedKey}
    * @param expectedBinary If true then lookup metadata will be checked
    * @return The associated value.
    * @throws AtException If any of the commands fail or the key does not exist.
    */
-
-  public static String get(AtCommandExecutor executor, AtSign atSign, AtKeys keys, SharedKey key,
+  public static String get(AtCommandExecutor executor, AtCommandExecutorContext context, SharedKey key,
                            boolean expectedBinary)
       throws AtException {
+    AtSign atSign = context.getAtSign();
     checkAtSignCanGet(atSign, key);
     if (key.sharedBy().equals(atSign)) {
-      return getSharedByMe(executor, keys, key, expectedBinary);
+      return getSharedByMe(executor, context, key, expectedBinary);
     } else if (key.sharedWith().equals(atSign)) {
-      return getSharedByOther(executor, keys, key, expectedBinary);
+      return getSharedByOther(executor, context, key, expectedBinary);
     } else {
       throw new IllegalArgumentException("the client atsign is neither the sharedBy or sharedWith");
     }
   }
 
   /**
-   * Set a String value to be associated with a shared key. The value will be decrypted with a
-   * specific
-   * key for the sharedBy-sharedWith relationship.
+   * Set a String value to be associated with a shared key. The value will be encrypted with a key
+   * specific to the sharedBy-sharedWith relationship.
    *
    * @param executor The {@link AtCommandExecutor} to use.
-   * @param atSign The AtSign that corresponds to the executor.
+   * @param context The connection context; supplies the atSign and keys.
    * @param key The {@link Keys.SharedKey}
    * @param value The associated value.
    * @throws AtException If any of the commands fail or the key does not exist.
    */
-  public static void put(AtCommandExecutor executor, AtSign atSign, AtKeys keys, SharedKey key, String value)
+  public static void put(AtCommandExecutor executor, AtCommandExecutorContext context, SharedKey key, String value)
       throws AtException {
+    AtSign atSign = context.getAtSign();
+    AtKeys keys = context.getKeys();
     checkAtSignCanPut(atSign, key);
     try {
 
       // get or create key for sharedBy - sharedWith
-      String aesKey = lookupEncryptKeySharedByMe(executor, keys, key);
+      String aesKey = lookupEncryptKeySharedByMe(executor, context, key);
       if (aesKey == null) {
-        aesKey = createEncryptKey(executor, keys, key);
+        aesKey = createEncryptKey(executor, context, key);
       }
 
       // encrypt the value
@@ -102,7 +103,10 @@ public class SharedKeyCommands {
     }
   }
 
-  private static String getSharedByMe(AtCommandExecutor executor, AtKeys keys, SharedKey key, boolean expectBinary)
+  private static String getSharedByMe(AtCommandExecutor executor,
+                                      AtCommandExecutorContext context,
+                                      SharedKey key,
+                                      boolean expectBinary)
       throws AtException {
     try {
 
@@ -115,7 +119,7 @@ public class SharedKeyCommands {
       }
 
       // get the encryption key that was previously created by "me"
-      String aesKey = checkNotNull(lookupEncryptKeySharedByMe(executor, keys, key), key + " not found");
+      String aesKey = checkNotNull(lookupEncryptKeySharedByMe(executor, context, key), key + " not found");
 
       // return decrypted value
       return aesDecryptFromBase64(llookupResponse.data, aesKey, llookupResponse.metaData.ivNonce());
@@ -125,7 +129,10 @@ public class SharedKeyCommands {
     }
   }
 
-  private static String getSharedByOther(AtCommandExecutor executor, AtKeys keys, SharedKey key, boolean expectBinary)
+  private static String getSharedByOther(AtCommandExecutor executor,
+                                         AtCommandExecutorContext context,
+                                         SharedKey key,
+                                         boolean expectBinary)
       throws AtException {
     try {
 
@@ -140,9 +147,9 @@ public class SharedKeyCommands {
       // get the encryption key that was created by the "other"
       String sharedEncryptionKey;
       if (lookupResponse.metaData.sharedKeyEnc() != null) {
-        sharedEncryptionKey = extractEncryptKeySharedByOther(lookupResponse, keys);
+        sharedEncryptionKey = extractEncryptKeySharedByOther(lookupResponse, context.getKeys());
       } else {
-        sharedEncryptionKey = lookupEncryptKeySharedByOther(executor, keys, key);
+        sharedEncryptionKey = lookupEncryptKeySharedByOther(executor, context, key);
       }
 
       // return decrypted value
@@ -172,13 +179,16 @@ public class SharedKeyCommands {
    * AtSign. This will automatically decrypt the value with the AtKeys Private Encryption Key.
    *
    * @param executor The {@link AtCommandExecutor} to use.
-   * @param keys The {@link AtKeys} for the {@link AtSign} that is the sharedBy in the relationship.
+   * @param context The connection context; supplies the keys of the sharedBy {@link AtSign}.
    * @param key The {@link Keys.SharedKey}
    * @return The symmetric encryption key (in base64).
    * @throws AtException If any of the commands fail or the key does not exist.
    */
-  public static String lookupEncryptKeySharedByMe(AtCommandExecutor executor, AtKeys keys, SharedKey key)
+  public static String lookupEncryptKeySharedByMe(AtCommandExecutor executor,
+                                                  AtCommandExecutorContext context,
+                                                  SharedKey key)
       throws AtException {
+    AtKeys keys = context.getKeys();
     try {
 
       String keyName = AtKeyNames.toSharedByMeKeyName(key.sharedWith());
@@ -217,13 +227,16 @@ public class SharedKeyCommands {
    * AtSign. This will automatically decrypt the value with the AtKeys Private Encryption Key.
    *
    * @param executor The {@link AtCommandExecutor} to use.
-   * @param keys The {@link AtKeys} for the {@link AtSign} that is the sharedWith in the relationship.
+   * @param context The connection context; supplies the keys of the sharedWith {@link AtSign}.
    * @param key The {@link Keys.SharedKey}
    * @return The symmetric encryption key (in base64).
    * @throws AtException If any of the commands fail or the key does not exist.
    */
-  public static String lookupEncryptKeySharedByOther(AtCommandExecutor executor, AtKeys keys, SharedKey key)
+  public static String lookupEncryptKeySharedByOther(AtCommandExecutor executor,
+                                                     AtCommandExecutorContext context,
+                                                     SharedKey key)
       throws AtException {
+    AtKeys keys = context.getKeys();
     try {
 
       // check in Keys cache
@@ -254,7 +267,11 @@ public class SharedKeyCommands {
     }
   }
 
-  private static String createEncryptKey(AtCommandExecutor executor, AtKeys keys, SharedKey key) throws AtException {
+  private static String createEncryptKey(AtCommandExecutor executor,
+                                         AtCommandExecutorContext context,
+                                         SharedKey key)
+      throws AtException {
+    AtKeys keys = context.getKeys();
     try {
 
       // generate a new encrypt key
