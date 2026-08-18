@@ -2,8 +2,13 @@ package org.atsign.client.api;
 
 import lombok.*;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.unmodifiableMap;
+import static org.atsign.client.impl.common.Preconditions.checkNotNull;
 
 /**
  * The identity a connection authenticates as (its {@code atSign}, {@code keys} and {@code config})
@@ -11,33 +16,73 @@ import java.util.concurrent.atomic.AtomicReference;
  * once the connection is ready.
  *
  * <p>
- * The context is created by the builder (see
- * {@code AtCommandExecutors#createCommandExecutor}) and closed over by the {@code onReady}
- * consumers it wires, so the {@code from:} sender can retain the challenge and the authentication
- * that follows on the same connection can reuse it rather than issuing a second {@code from:}.
- * The command executor itself is pure transport and knows nothing about this context.
+ * There is one context per connection. {@code AtClients#createAtClient} creates it and passes it to
+ * both the executor and the client; {@code AtCommandExecutors#createCommandExecutor} creates one
+ * itself when no caller supplies one. The {@code onReady} consumers hold a reference to it, so the
+ * {@code from:} sender can retain the challenge and the authentication that follows on the same
+ * connection can reuse it instead of issuing a second {@code from:}. The command executor itself
+ * only sends and receives, and never sees the context.
  *
  * <p>
  * The identity fields are fixed for the life of the context. The challenge is per-connection state:
  * {@link #setChallenge(String) retained} when the initial {@code from:} completes and
  * {@link #consumeChallenge() consumed} at most once (the server's {@code from:} challenge is
- * single-use). On reconnect the ready sequence re-runs, so a fresh challenge overwrites any
- * previous
- * one before it is consumed.
+ * single-use). On reconnect the ready sequence re-runs, so a fresh challenge replaces any
+ * previous one before it is consumed.
  */
 @Value
 public class AtCommandExecutorContext {
 
+  /**
+   * The atSign the connection authenticates as. Never {@code null}: a connection is built either from
+   * a context or from an atSign, and both establish an identity.
+   */
   AtSign atSign;
 
+  /**
+   * The keys the connection authenticates with, or {@code null} for a connection that is not
+   * PKAM-authenticated — one that only issues {@code from:}, or one authenticating with CRAM before
+   * any keys exist.
+   */
   AtKeys keys;
 
+  /**
+   * The client config sent with {@code from:}. Never {@code null} and never modifiable; empty
+   * when the connection has none.
+   */
   Map<String, Object> config;
 
+  /**
+   * Holds the {@code from:} challenge for this connection.
+   */
   @Getter(AccessLevel.NONE)
   @EqualsAndHashCode.Exclude
   @ToString.Exclude
-  AtomicReference<String> challenge = new AtomicReference<>();
+  AtomicReference<String> challenge;
+
+  /**
+   * A context with no client config, for a connection whose {@code from:} carries no
+   * {@code clientConfig} segment.
+   *
+   * @param atSign the atSign the connection authenticates as
+   * @param keys the keys the connection authenticates with, or null if it is not PKAM-authenticated
+   */
+  public AtCommandExecutorContext(AtSign atSign, AtKeys keys) {
+    this(atSign, keys, null);
+  }
+
+  /**
+   * @param atSign the atSign the connection authenticates as
+   * @param keys the keys the connection authenticates with, or null if it is not PKAM-authenticated
+   * @param config the client config to send with {@code from:}. Copied, so a later change to the
+   *        caller's map cannot alter what this connection sends; null is stored as an empty map
+   */
+  public AtCommandExecutorContext(AtSign atSign, AtKeys keys, Map<String, Object> config) {
+    this.atSign = checkNotNull(atSign, "atSign not set");
+    this.keys = keys;
+    this.config = config != null ? unmodifiableMap(new LinkedHashMap<>(config)) : emptyMap();
+    this.challenge = new AtomicReference<>();
+  }
 
   /**
    * Retains the challenge returned by the initial {@code from:}, so the authentication that follows

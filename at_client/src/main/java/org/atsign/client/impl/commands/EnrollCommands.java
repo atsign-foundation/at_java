@@ -84,9 +84,11 @@ public class EnrollCommands {
           .build();
 
       // authenticate with PKAM — issues its own from: (the connection's challenge was single-use and
-      // is spent by CRAM above; PKAM also authenticates with the freshly-enrolled keys, not the
-      // connection identity)
-      AuthenticationCommands.authenticateWithPkam(executor, atSign, keys);
+      // is spent by CRAM above). The keys now carry the enrollment id, so this needs a context built
+      // over them rather than the connection's; the client config is carried across so the from: it
+      // sends still identifies the client
+      AtCommandExecutorContext enrolled = new AtCommandExecutorContext(atSign, keys, context.getConfig());
+      AuthenticationCommands.authenticateWithPkam(executor, enrolled);
 
       // explicitly store the public encryption key in the atserver
       String updateCommand = CommandBuilders.updateCommandBuilder()
@@ -143,14 +145,14 @@ public class EnrollCommands {
   /**
    * Performs the enrollment request commands for a new application / device set of keys.
    * <b>NOTE</b> The result of this command will be a pending request that must be approved
-   * ({@link #approve(AtCommandExecutor, AtKeys, EnrollmentId)}) using keys that have access
-   * to the manage namespace (the original keys from onboard) and then completed
-   * ({@link #complete(AtCommandExecutor, AtSign, AtKeys)}).
+   * ({@link #approve(AtCommandExecutor, AtCommandExecutorContext, EnrollmentId)}) using keys that
+   * have access to the manage namespace (the original keys from onboard) and then completed
+   * ({@link #complete(AtCommandExecutor, AtCommandExecutorContext)}).
    *
    * @param executor An executor to an atserver command interface.
-   * @param atSign The AtSign that corresponds to the executor.
-   * @param keys The {@link AtKeys} for the {@link AtSign}, this should have the APKAM keys populated.
-   *        The rest of the fields will be set once enrollment is complated.
+   * @param context The connection context; supplies the atSign and the {@link AtKeys} being
+   *        enrolled, which should have the APKAM keys populated. The rest of the fields will be set
+   *        once enrollment is completed.
    * @param otp A one time password.
    * @param appName The app name for this enrollment.
    * @param deviceName The device name for this enrollment.
@@ -160,14 +162,15 @@ public class EnrollCommands {
    * @throws AtException If any of the commands fail.
    */
   public static AtKeys enroll(AtCommandExecutor executor,
-                              AtSign atSign,
-                              AtKeys keys,
+                              AtCommandExecutorContext context,
                               String otp,
                               String appName,
                               String deviceName,
                               Map<String, String> namespaces)
       throws Exception {
 
+    AtSign atSign = context.getAtSign();
+    AtKeys keys = context.getKeys();
     checkNotNull(keys.getApkamPublicKey(), "apkam public key not set");
     checkNotNull(keys.getApkamSymmetricKey(), "apkam symmetric key not set");
 
@@ -206,18 +209,20 @@ public class EnrollCommands {
    * has been approved.
    *
    * @param executor An executor to an atserver command interface.
-   * @param atSign The AtSign that corresponds to the executor.
-   * @param keys The {@link AtKeys} for the {@link AtSign}, this should have the APKAM keys populated.
-   *        The rest of the fields will be set once enrollment is completed.
-   * @return A new copy of the {@link AtKeys} that has the private encrypt key and self encrypt key
-   *         set.
+   * @param context The connection context; supplies the atSign and the {@link AtKeys} being
+   *        enrolled, which should have the APKAM keys populated. The rest of the fields will be set
+   *        once enrollment is completed.
+   * @return A new copy of the {@link AtKeys} with the private encrypt key and self encrypt key set.
    *         These need to be persisted by the caller.
    * @throws AtException If any of the commands fail.
    */
-  public static AtKeys complete(AtCommandExecutor executor, AtSign atSign, AtKeys keys) throws AtException {
+  public static AtKeys complete(AtCommandExecutor executor, AtCommandExecutorContext context) throws AtException {
+
+    AtSign atSign = context.getAtSign();
+    AtKeys keys = context.getKeys();
 
     // attempt to authenticate with PKAM, this will succeed once the enroll request is approved
-    AuthenticationCommands.authenticateWithPkam(executor, atSign, keys);
+    AuthenticationCommands.authenticateWithPkam(executor, context);
 
     // Use the keys:get command to obtain the private encryption key and self encryption key
     String selfEncryptKey = keysGetSelfEncryptKey(executor, atSign, keys);
@@ -263,12 +268,16 @@ public class EnrollCommands {
    * Performs the enrollment approve commands for a new application / device set of keys.
    *
    * @param executor An executor to an atserver command interface.
-   * @param keys The {@link AtKeys} for the {@link AtSign} that have the authority to manage
-   *        enrollment requests. Typically the first set of keys from the onboard.
+   * @param context The connection context; supplies the {@link AtKeys} that have the authority to
+   *        manage enrollment requests. Typically the first set of keys from the onboard.
    * @param enrollmentId The {@link EnrollmentId} to approve.
    * @throws AtException If any of the commands fail.
    */
-  public static void approve(AtCommandExecutor executor, AtKeys keys, EnrollmentId enrollmentId) throws AtException {
+  public static void approve(AtCommandExecutor executor,
+                             AtCommandExecutorContext context,
+                             EnrollmentId enrollmentId)
+      throws AtException {
+    AtKeys keys = context.getKeys();
     try {
 
       // fetch the request and decrypt the apkam symmetric key that will be used encrypt the shared keys
@@ -321,8 +330,7 @@ public class EnrollCommands {
   }
 
   /**
-   * Performs the enrollment revoke commands for a previously approved application / device set of
-   * keys.
+   * Performs the enrollment revoke commands for a previously approved application / device key set.
    *
    * @param executor An executor to an atserver command interface.
    * @param enrollmentId The {@link EnrollmentId} to revoke.
@@ -333,8 +341,7 @@ public class EnrollCommands {
   }
 
   /**
-   * Performs the enrollment revoke commands for a previously revoked application / device set of
-   * keys.
+   * Performs the enrollment unrevoke commands for a previously revoked application / device key set.
    *
    * @param executor An executor to an atserver command interface.
    * @param enrollmentId The {@link EnrollmentId} to unrevoke.

@@ -113,7 +113,7 @@ public abstract class AbstractCli<T extends AbstractCli<T>> {
   protected AtCommandExecutor createConnectionSendingFrom(AtCommandExecutorContext context) throws AtException {
     return AtCommandExecutors.builder()
         .url(rootUrl)
-        .atSign(context.getAtSign())
+        .context(context)
         .onReady(AuthenticationCommands.sendFrom(context))
         .reconnect(ReconnectStrategy.NONE)
         .isVerbose(verbose)

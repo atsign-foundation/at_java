@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.AtCommandExecutorContext;
 import org.atsign.client.api.AtSign;
 import org.atsign.client.api.Keys;
 import org.atsign.client.impl.exceptions.AtServerRuntimeException;
@@ -22,6 +23,7 @@ class SelfKeyCommandsTest {
 
   private AtKeys keys;
   private AtSign atSign;
+  private AtCommandExecutorContext context;
 
   @BeforeEach
   public void setup() throws Exception {
@@ -30,6 +32,7 @@ class SelfKeyCommandsTest {
         .encryptKeyPair(generateRSAKeyPair())
         .build();
     atSign = createAtSign("gary");
+    context = new AtCommandExecutorContext(atSign, keys);
     key = Keys.selfKeyBuilder()
         .sharedBy(atSign)
         .name("test")
@@ -45,7 +48,7 @@ class SelfKeyCommandsTest {
         .stubLookupResponse("llookup:all:test@gary", "test@gary", encrypted, "ivNonce", iv)
         .build();
 
-    String actual = SelfKeyCommands.get(executor, atSign, keys, key);
+    String actual = SelfKeyCommands.get(executor, context, key);
 
     assertThat(actual, equalTo("hello me"));
   }
@@ -56,7 +59,7 @@ class SelfKeyCommandsTest {
         .stub("llookup:all:test@gary", "error:AT0001:deliberate")
         .build();
 
-    assertThrows(AtServerRuntimeException.class, () -> SelfKeyCommands.get(executor, atSign, keys, key));
+    assertThrows(AtServerRuntimeException.class, () -> SelfKeyCommands.get(executor, context, key));
   }
 
   @Test
@@ -65,7 +68,7 @@ class SelfKeyCommandsTest {
         .stubExecutionException("llookup:all:test@gary")
         .build();
 
-    assertThrows(RuntimeException.class, () -> SelfKeyCommands.get(executor, atSign, keys, key));
+    assertThrows(RuntimeException.class, () -> SelfKeyCommands.get(executor, context, key));
   }
 
   @Test
@@ -74,7 +77,7 @@ class SelfKeyCommandsTest {
         .stub("update:dataSignature:.+:isEncrypted:true:ivNonce:.+:test@gary .+", "data:123")
         .build();
 
-    SelfKeyCommands.put(executor, atSign, keys, key, "hello world");
+    SelfKeyCommands.put(executor, context, key, "hello world");
     verify(executor).sendSync(argThat(s -> !s.contains("hello world")));
   }
 
@@ -84,7 +87,8 @@ class SelfKeyCommandsTest {
         .stub("update:dataSignature:.+:isEncrypted:true:ivNonce:.+:test@gary .+", "error:AT0001:deliberate")
         .build();
 
-    assertThrows(AtServerRuntimeException.class, () -> SelfKeyCommands.put(executor, atSign, keys, key, "hello world"));
+    assertThrows(AtServerRuntimeException.class,
+                 () -> SelfKeyCommands.put(executor, context, key, "hello world"));
   }
 
   @Test
@@ -93,7 +97,8 @@ class SelfKeyCommandsTest {
         .stubExecutionException("update:dataSignature:.+:isEncrypted:true:ivNonce:.+:test@gary .+")
         .build();
 
-    assertThrows(RuntimeException.class, () -> SelfKeyCommands.put(executor, atSign, keys, key, "hello world"));
+    assertThrows(RuntimeException.class,
+                 () -> SelfKeyCommands.put(executor, context, key, "hello world"));
   }
 
 }

@@ -15,6 +15,7 @@ import java.util.Stack;
 
 import org.atsign.client.impl.cli.Activate;
 import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.AtCommandExecutorContext;
 import org.atsign.client.impl.commands.EnrollCommands;
 import org.atsign.client.impl.commands.KeyCommands;
 import org.atsign.client.impl.common.EnrollmentId;
@@ -233,7 +234,8 @@ public class ActivateSteps {
 
       try (AtCommandExecutor executor = createConnection(rootUrl, atSign, 0)) {
 
-        authenticateWithPkam(executor, atSign, KeysUtils.loadKeys(keysFile));
+        AtCommandExecutorContext context = new AtCommandExecutorContext(atSign, KeysUtils.loadKeys(keysFile));
+        authenticateWithPkam(executor, context);
 
         // delete keys that have been created
         matchDataJsonListOfStrings(executor.sendSync("scan")).stream()

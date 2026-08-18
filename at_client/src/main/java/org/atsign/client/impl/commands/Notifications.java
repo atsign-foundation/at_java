@@ -12,8 +12,8 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.AtCommandExecutorContext;
 import org.atsign.client.api.AtEvents;
-import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtSign;
 import org.atsign.client.impl.exceptions.AtException;
 
@@ -31,66 +31,41 @@ public class Notifications {
 
   /**
    * Creates a {@link Consumer} that can be passed to {@link AtCommandExecutor#onReady(Consumer)} to
-   * request notifications. <b>NOTE</b> monitoring is contingent on authentication to this will
-   * authenticate
-   * with pkam prior to sending the monitor command.
+   * request notifications. <b>NOTE</b> monitoring is contingent on authentication so this will
+   * authenticate with pkam prior to sending the monitor command.
    *
-   * @param atSign The {@link AtSign} to authenticate.
+   * @param context The connection context; supplies the atSign / keys / client config and the
+   *        {@code from:} challenge.
    * @param options optional arguments that influence the server behavior.
-   * @param keys The {@link AtKeys} to authenticate with.
    * @param consumer A consumer that will be invoked with each notification.
    * @return A consumer that can be provided as OnReady argument.
    */
-  public static Consumer<AtCommandExecutor> monitor(AtSign atSign,
+  public static Consumer<AtCommandExecutor> monitor(AtCommandExecutorContext context,
                                                     MonitorOptions options,
-                                                    AtKeys keys,
-                                                    Map<String, Object> config,
                                                     Consumer<String> consumer) {
-    return throwOnReadyException(executor -> monitor(executor, atSign, options, keys, config, consumer));
+    return throwOnReadyException(executor -> monitor(executor, context, options, consumer));
   }
 
   /**
    * Sends the commands to perform PKAM authentication followed by monitor command.
    *
    * @param executor The {@link AtCommandExecutor} to use.
-   * @param atSign The {@link AtSign} to authenticate.
+   * @param context The connection context; supplies the atSign / keys / client config and the
+   *        {@code from:} challenge.
    * @param options optional arguments that influence the server behavior.
-   * @param keys The {@link AtKeys} to authenticate with.
    * @param consumer A consumer that will be invoked with each notification.
    * @throws AtException If any of the commands fail.
    */
   public static void monitor(AtCommandExecutor executor,
-                             AtSign atSign,
+                             AtCommandExecutorContext context,
                              MonitorOptions options,
-                             AtKeys keys,
-                             Consumer<String> consumer)
-      throws AtException {
-    monitor(executor, atSign, options, keys, null, consumer);
-  }
-
-  /**
-   * Sends the commands to perform PKAM authentication followed by monitor command.
-   *
-   * @param executor The {@link AtCommandExecutor} to use.
-   * @param atSign The {@link AtSign} to authenticate.
-   * @param options optional arguments that influence the server behavior.
-   * @param keys The {@link AtKeys} to authenticate with.
-   * @param config The map of configuration values to send with the from command.
-   * @param consumer A consumer that will be invoked with each notification.
-   *        notifications.
-   * @throws AtException If any of the commands fail.
-   */
-  public static void monitor(AtCommandExecutor executor,
-                             AtSign atSign,
-                             MonitorOptions options,
-                             AtKeys keys,
-                             Map<String, Object> config,
                              Consumer<String> consumer)
       throws AtException {
     try {
 
-      // authenticate
-      authenticateWithPkam(executor, atSign, keys, config);
+      // authenticate; the context supplies the client config and any challenge already retained by
+      // the initial from: on this connection
+      authenticateWithPkam(executor, context);
 
       // send monitor command
       String command = CommandBuilders.monitorCommandBuilder().options(options).build();

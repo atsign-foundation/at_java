@@ -25,13 +25,14 @@ public class SelfKeyCommands {
    * Self Encryption Key.
    *
    * @param executor The {@link AtCommandExecutor} to use.
-   * @param atSign The AtSign that corresponds to the executor.
+   * @param context The connection context; supplies the atSign and keys.
    * @param key The {@link Keys.SelfKey}
    * @return The associated value.
    * @throws AtException If any of the commands fail or the key does not exist.
    */
-  public static String get(AtCommandExecutor executor, AtSign atSign, AtKeys keys, SelfKey key) throws AtException {
-    return get(executor, atSign, keys, key, false);
+  public static String get(AtCommandExecutor executor, AtCommandExecutorContext context, SelfKey key)
+      throws AtException {
+    return get(executor, context, key, false);
   }
 
   /**
@@ -39,18 +40,19 @@ public class SelfKeyCommands {
    * Self Encryption Key.
    *
    * @param executor The {@link AtCommandExecutor} to use.
-   * @param atSign The AtSign that corresponds to the executor.
+   * @param context The connection context; supplies the atSign and keys.
    * @param key The {@link Keys.SelfKey}
    * @param expectBinary If true then metadata will be checked
    * @return The associated value.
    * @throws AtException If any of the commands fail or the key does not exist.
    */
   public static String get(AtCommandExecutor executor,
-                           AtSign atSign,
-                           AtKeys keys,
+                           AtCommandExecutorContext context,
                            SelfKey key,
                            boolean expectBinary)
       throws AtException {
+    AtSign atSign = context.getAtSign();
+    AtKeys keys = context.getKeys();
     checkAtSignCanGet(atSign, key);
     try {
 
@@ -79,17 +81,18 @@ public class SelfKeyCommands {
 
   /**
    * Set a String value to be associated with a self key. The value will be encrypted with the
-   * AtSign's
-   * Self Encryption Key.
+   * AtSign's Self Encryption Key.
    *
    * @param executor The {@link AtCommandExecutor} to use.
-   * @param atSign The AtSign that corresponds to the executor.
+   * @param context The connection context; supplies the atSign and keys.
    * @param key The {@link Keys.SelfKey}
    * @param value The associated value.
    * @throws AtException If any of the commands fail or the key does not exist.
    */
-  public static void put(AtCommandExecutor executor, AtSign atSign, AtKeys keys, SelfKey key, String value)
+  public static void put(AtCommandExecutor executor, AtCommandExecutorContext context, SelfKey key, String value)
       throws AtException {
+    AtSign atSign = context.getAtSign();
+    AtKeys keys = context.getKeys();
     checkAtSignCanPut(atSign, key);
     try {
 

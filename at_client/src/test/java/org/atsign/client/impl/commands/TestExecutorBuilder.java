@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,10 +20,17 @@ import org.mockito.stubbing.Answer;
 
 public class TestExecutorBuilder {
 
-  private Map<Pattern, Object> mapping = new LinkedHashMap<>();
+  private final Map<Pattern, Object> mapping = new LinkedHashMap<>();
+  private Consumer<String> commandConsumer = c -> {
+  };
 
   public static TestExecutorBuilder builder() {
     return new TestExecutorBuilder();
+  }
+
+  public TestExecutorBuilder record(Consumer<String> consumer) {
+    this.commandConsumer = consumer;
+    return this;
   }
 
   public TestExecutorBuilder stub(String command, String response) {
@@ -67,6 +75,7 @@ public class TestExecutorBuilder {
       for (Map.Entry<Pattern, Object> entry : mapping.entrySet()) {
         Matcher matcher = entry.getKey().matcher(command);
         if (matcher.matches()) {
+          commandConsumer.accept(command);
           if (entry.getValue() instanceof Throwable) {
             throw (Throwable) entry.getValue();
           } else if (entry.getValue() instanceof Function) {

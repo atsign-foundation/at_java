@@ -91,8 +91,4 @@ public class AtEndpointSuppliers {
   public static class AtEndpointSuppliersBuilder {
     // required for javadoc
   }
-
-  public static boolean isProxyUrl(String s) {
-    return s != null && PATTERN_PROXY_URL.matcher(s).matches();
-  }
 }

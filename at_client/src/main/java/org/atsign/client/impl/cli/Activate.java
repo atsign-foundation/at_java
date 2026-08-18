@@ -28,8 +28,8 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 /**
- * Utility (and CommandLineInterface) for onboarding and enrolling atSigns and AtSign application
- * devices
+ * Utility (and CommandLineInterface) for onboarding and enrolling atSigns and AtSign
+ * application devices.
  */
 @Command(
     mixinStandardHelpOptions = true)
@@ -37,7 +37,7 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
 
   enum Action {
     onboard, enroll, otp, list, approve, deny, revoke, unrevoke
-  };
+  }
 
   public static final String DEFAULT_FIRST_APP = "firstApp";
   public static final String DEFAULT_FIRST_DEVICE = "firstDevice";
@@ -218,7 +218,7 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
 
   public void approve(EnrollmentId enrollmentId) throws Exception {
     try (AtCommandExecutor executor = createAuthenticatedConnection(rootUrl, atSign, connectionRetries)) {
-      EnrollCommands.approve(executor, getKeys(), enrollmentId);
+      EnrollCommands.approve(executor, newConnectionContext(getKeys()), enrollmentId);
     }
   }
 
@@ -286,7 +286,7 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
       checkNotExists(file);
     }
     AtKeys keys = generateAtKeys(false);
-    keys = EnrollCommands.enroll(executor, atSign, keys, otp, appName, deviceName, namespaces);
+    keys = EnrollCommands.enroll(executor, newConnectionContext(keys), otp, appName, deviceName, namespaces);
     KeysUtils.saveKeys(keys, keysFile);
     return keys.getEnrollmentId();
   }
@@ -301,7 +301,7 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
 
   public void complete(AtCommandExecutor executor) throws Exception {
     AtKeys keys = KeysUtils.loadKeys(keysFile);
-    keys = EnrollCommands.complete(executor, atSign, keys);
+    keys = EnrollCommands.complete(executor, newConnectionContext(keys));
     KeysUtils.saveKeys(keys, keysFile);
   }
 
@@ -316,19 +316,24 @@ public class Activate extends AbstractCli<Activate> implements Callable<Integer>
       throws Exception {
     Exception exception;
     int remainingRetries = retries;
+    AtKeys keys = KeysUtils.loadKeys(keysFile);
+    AtCommandExecutorContext context = newConnectionContext(keys);
     do {
       Thread.sleep(sleepUnit.toMillis(sleepDuration));
       try {
-        complete(executor);
+        keys = EnrollCommands.complete(executor, context);
+        saveKeys(keys, keysFile);
         return;
-      } catch (AtUnauthenticatedException e) {
-        exception = e.getMessage().contains("is pending") ? null : e;
       } catch (Exception e) {
         exception = e;
       }
-    } while (exception == null && remainingRetries-- > 0);
+    } while (isPendingApproval(exception) && remainingRetries-- > 0);
 
-    throw exception != null ? exception : new IllegalArgumentException();
+    throw exception;
+  }
+
+  private static boolean isPendingApproval(Exception e) {
+    return e instanceof AtUnauthenticatedException && e.getMessage().contains("is pending");
   }
 
   protected static AtKeys generateAtKeys(boolean generateEncryptionKeyPair) throws AtEncryptionException {

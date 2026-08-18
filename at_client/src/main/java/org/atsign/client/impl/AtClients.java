@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 
 import org.atsign.client.api.AtClient;
 import org.atsign.client.api.AtCommandExecutor;
+import org.atsign.client.api.AtCommandExecutorContext;
 import org.atsign.client.api.AtKeys;
 import org.atsign.client.api.AtSign;
 import org.atsign.client.impl.commands.MonitorOptions;
@@ -63,18 +64,18 @@ public class AtClients {
       monitorOptions = MonitorOptions.builder().build();
     }
 
+    AtCommandExecutorContext context = createContext(atSign, keys, config);
+
     Consumer<AtCommandExecutor> onReady = null;
     if (withMonitoring) {
       Notifications.EventBusBridge eventBusBridge = new Notifications.EventBusBridge(eventBus, atSign, monitorOptions);
-      onReady = Notifications.monitor(atSign, monitorOptions, keys, config, eventBusBridge);
+      onReady = createMonitoringOnReady(context, monitorOptions, eventBusBridge);
     }
 
     AtCommandExecutor executor = AtCommandExecutors.builder()
         .url(url)
-        .atSign(atSign)
-        .keys(keys)
+        .context(context)
         .onReady(onReady)
-        .config(config)
         .timeoutMillis(timeoutMillis)
         .awaitReadyMillis(awaitReadyMillis)
         .reconnect(reconnect)
@@ -83,14 +84,39 @@ public class AtClients {
         .build();
 
     return AtClientImpl.builder()
-        .atSign(atSign)
-        .keys(keys)
+        .context(context)
         .withMonitoring(withMonitoring)
         .monitorOptions(monitorOptions)
-        .config(config)
         .executor(executor)
         .eventBus(eventBus)
         .build();
+  }
+
+  /**
+   * The one context for the whole connection. The executor's {@code onReady} sequence and every
+   * command the client issues both read from it, so they share one {@code from:} challenge and one
+   * client config.
+   *
+   * <p>
+   * The config is enriched here — {@code clientId} plus the {@code client-config.properties} entries
+   * — and enriched exactly once, because a second call would mint a second {@code clientId}.
+   *
+   * <p>
+   * Package-private so a test can drive it together with {@link #createMonitoringOnReady}.
+   */
+  static AtCommandExecutorContext createContext(AtSign atSign, AtKeys keys, Map<String, Object> config) {
+    return new AtCommandExecutorContext(atSign, keys, AtCommandExecutors.createClientConfig(config));
+  }
+
+  /**
+   * The {@code onReady} sequence for a client built with monitoring: authenticate with PKAM using the
+   * connection's context, then send the {@code monitor} command. Package-private so that it can be
+   * driven with a stubbed {@link AtCommandExecutor} in tests.
+   */
+  static Consumer<AtCommandExecutor> createMonitoringOnReady(AtCommandExecutorContext context,
+                                                             MonitorOptions monitorOptions,
+                                                             Consumer<String> consumer) {
+    return Notifications.monitor(context, monitorOptions, consumer);
   }
 
   private static AtKeys loadKeys(String path, AtSign atSign) throws AtClientConfigException {

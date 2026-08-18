@@ -22,7 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import static org.atsign.client.impl.common.Preconditions.checkNotNull;
+import static org.atsign.client.impl.common.Preconditions.*;
 
 /**
  * Utility methods / builders for instantiating {@link AtCommandExecutor} implementations
@@ -42,10 +42,9 @@ import static org.atsign.client.impl.common.Preconditions.checkNotNull;
  *
  * <b>NOTE:</b> If the url is prefixed with proxy (e.g. proxy:host:port) then the builder
  * will automatically attempt to connect to an At Server at host:port.
- * <b>NOTE:</b> If an atSign is provided then the builder issues {@code from:@atSign} as the first
- * command once connected (so proxies / gateways can route the connection); if keys are also
- * provided it then authenticates the {@link AtCommandExecutor} with PKAM, reusing that
- * {@code from:}'s challenge.
+ * <b>NOTE:</b> The builder issues {@code from:@atSign} as the first command once connected (so
+ * proxies / gateways can route the connection); if keys are also provided it then authenticates the
+ * {@link AtCommandExecutor} with PKAM, reusing that {@code from:}'s challenge.
  * <b>NOTE:</b> If reconnect is not set then the builder will default to a
  * {@link SimpleReconnectStrategy}
  */
@@ -58,6 +57,7 @@ public class AtCommandExecutors {
   public static AtCommandExecutor createCommandExecutor(String url,
                                                         AtSign atSign,
                                                         AtKeys keys,
+                                                        AtCommandExecutorContext context,
                                                         Consumer<AtCommandExecutor> onReady,
                                                         Map<String, Object> config,
                                                         Long timeoutMillis,
@@ -67,22 +67,16 @@ public class AtCommandExecutors {
                                                         Boolean isVerbose)
       throws AtException {
 
-    if (AtEndpointSuppliers.isProxyUrl(url)) {
-      checkNotNull(atSign, "atSign not set");
-    }
-
-    // the context is closed over by the onReady consumers the builder wires (see createOnReady); the
-    // command executor itself stays pure transport and knows nothing about it
-    AtCommandExecutorContext context = new AtCommandExecutorContext(atSign, keys, createClientConfig(config));
+    AtCommandExecutorContext executorContext = resolveContext(context, atSign, keys, config);
 
     return NettyAtCommandExecutor.builder()
-        .endpoint(AtEndpointSuppliers.builder().url(url).atSign(atSign).build())
+        .endpoint(AtEndpointSuppliers.builder().url(url).atSign(executorContext.getAtSign()).build())
         .isVerbose(isVerbose)
         .timeoutMillis(defaultIfNotSet(timeoutMillis, DEFAULT_TIMEOUT_MILLIS))
         .awaitReadyMillis(defaultIfNotSet(awaitReadyMillis, DEFAULT_TIMEOUT_MILLIS))
         .reconnect(defaultIfNotSet(reconnect, SimpleReconnectStrategy.builder().build()))
         .queueLimit(queueLimit)
-        .onReady(defaultIfNotSet(onReady, createOnReady(context)))
+        .onReady(defaultIfNotSet(onReady, createOnReady(executorContext)))
         .build();
   }
 
@@ -94,8 +88,9 @@ public class AtCommandExecutors {
    *
    * AtCommandExecutors.builder()
    *   .url(...)           // the url for the root server or proxy (optional)
-   *   .atSign(...)        // the AtSign that this client will authenticate as (optional)
+   *   .atSign(...)        // the AtSign that this client will authenticate as (unless context is set)
    *   .keys(...)          // the AtKeys that this client will use (optional)
+   *   .context(...)       // the connection context to share with the caller (instead of the above)
    *   .timeoutMillis()    // timeout after which commands will complete exceptionally (optional)
    *   .awaitReadyMillis() // how long to wait for executor to become ready during build() (optional)
    *   .reconnect()        // a ReconnectStrategy (optional)
@@ -112,6 +107,11 @@ public class AtCommandExecutors {
    * {@link AtCommandExecutors#DEFAULT_TIMEOUT_MILLIS}.
    * If <b>reconnect</b> is not set then the builder will default to a {@link SimpleReconnectStrategy}
    * with no limit to the retry attempts.
+   * If <b>context</b> is not set then the builder creates one from <b>atSign</b>, <b>keys</b> and
+   * <b>config</b>, and <b>atSign</b> is then required. Set <b>context</b> when the caller needs the
+   * same context for its own commands, so that the {@code from:} challenge and the client config are
+   * shared rather than duplicated; it carries the whole identity, so it cannot be combined with
+   * <b>atSign</b>, <b>keys</b> or <b>config</b>.
    */
   public static class AtCommandExecutorBuilder {
     // required for javadoc
@@ -135,16 +135,30 @@ public class AtCommandExecutors {
   }
 
   /**
-   * The default protocol for a newly-ready connection. A connection with no atSign (e.g. one talking
-   * to the atDirectory / root server) sends nothing. Every connection that has an atSign issues
-   * {@code from:@atSign} first so that proxies / gateways can route it; if keys are also present it
-   * then authenticates with PKAM, reusing the challenge from that initial {@code from:}.
+   * The context the {@code onReady} consumers read the connection's identity from (see
+   * {@link #createOnReady}). The executor itself only sends and receives, and never sees it.
+   *
+   * <p>
+   * A caller that needs the same context for its own commands passes one in, so that the connection
+   * has a single challenge and a single {@code clientId} rather than one of each per holder.
+   */
+  private static AtCommandExecutorContext resolveContext(AtCommandExecutorContext context,
+                                                         AtSign atSign,
+                                                         AtKeys keys,
+                                                         Map<String, Object> config) {
+    if (context != null) {
+      checkAllNull("both context and one or more of atSign,keys and config set", atSign, keys, config);
+      return context;
+    }
+    return new AtCommandExecutorContext(atSign, keys, createClientConfig(config));
+  }
+
+  /**
+   * The default protocol for a newly-ready connection: issue {@code from:@atSign} first so that
+   * proxies / gateways can route it, then, if keys are present, authenticate with PKAM reusing the
+   * challenge from that initial {@code from:}.
    */
   private static Consumer<AtCommandExecutor> createOnReady(AtCommandExecutorContext context) {
-    if (context.getAtSign() == null) {
-      return c -> {
-      };
-    }
     Consumer<AtCommandExecutor> onReady = AuthenticationCommands.sendFrom(context);
     if (context.getKeys() != null) {
       onReady = onReady.andThen(AuthenticationCommands.pkamAuthenticator(context));

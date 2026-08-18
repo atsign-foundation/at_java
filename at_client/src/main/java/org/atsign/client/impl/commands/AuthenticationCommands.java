@@ -9,7 +9,6 @@ import static org.atsign.client.impl.util.EncryptionUtils.bytesToHex;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
@@ -18,7 +17,6 @@ import org.atsign.client.api.AtCommandExecutor;
 import org.atsign.client.api.AtCommandExecutorContext;
 import org.atsign.client.impl.util.EncryptionUtils;
 import org.atsign.client.impl.exceptions.AtException;
-import org.atsign.client.api.AtSign;
 import org.atsign.client.impl.exceptions.AtEncryptionException;
 import org.atsign.client.impl.exceptions.AtUnauthenticatedException;
 
@@ -58,70 +56,33 @@ public class AuthenticationCommands {
    * @return an onReady consumer that performs PKAM authentication
    */
   public static Consumer<AtCommandExecutor> pkamAuthenticator(AtCommandExecutorContext context) {
-    return throwOnReadyException(executor -> authenticateWithPkam(executor, context.getAtSign(),
-                                                                  context.getKeys(), context.getConfig(),
-                                                                  context.consumeChallenge()));
-  }
-
-  public static Consumer<AtCommandExecutor> pkamAuthenticator(AtSign atSign, AtKeys keys, Map<String, Object> config) {
-    return throwOnReadyException(executor -> authenticateWithPkam(executor, atSign, keys, config));
+    return throwOnReadyException(executor -> authenticateWithPkam(executor, context));
   }
 
   /**
-   * Implements the protocol workflow / sequence for PKAM authentication.
+   * Implements the protocol workflow / sequence for PKAM authentication, using the identity in the
+   * given {@code context}. Reuses the challenge from an initial {@code from:} (as issued by
+   * {@link #sendFrom(AtCommandExecutorContext)}) when the context holds one, and otherwise issues its
+   * own {@code from:}.
    *
    * @param executor The executor with which to send the commands.
-   * @param atSign The asign to authenticate.
-   * @param keys The keys to use to authenticate.
+   * @param context The connection context; supplies the atSign, keys and client config, and holds
+   *        the {@code from:} challenge.
    * @throws AtException If authentication fails.
    */
-  public static void authenticateWithPkam(AtCommandExecutor executor, AtSign atSign, AtKeys keys)
+  public static void authenticateWithPkam(AtCommandExecutor executor, AtCommandExecutorContext context)
       throws AtException {
-    authenticateWithPkam(executor, atSign, keys, null);
-  }
-
-  /**
-   * Implements the protocol workflow / sequence for PKAM authentication.
-   *
-   * @param executor The executor with which to send the commands.
-   * @param atSign The asign to authenticate.
-   * @param keys The keys to use to authenticate.
-   * @param config The map of configuration values to send in the from command.
-   * @throws AtException If authentication fails.
-   */
-  public static void authenticateWithPkam(AtCommandExecutor executor,
-                                          AtSign atSign,
-                                          AtKeys keys,
-                                          Map<String, Object> config)
-      throws AtException {
-    authenticateWithPkam(executor, atSign, keys, config, null);
-  }
-
-  /**
-   * Implements the protocol workflow / sequence for PKAM authentication, reusing an already-issued
-   * {@code from:} challenge when one is supplied.
-   *
-   * @param executor The executor with which to send the commands.
-   * @param atSign The asign to authenticate.
-   * @param keys The keys to use to authenticate.
-   * @param config The map of configuration values to send in the from command.
-   * @param reusableChallenge The challenge from an initial {@code from:} to reuse, or {@code null} to
-   *        issue a fresh {@code from:}.
-   * @throws AtException If authentication fails.
-   */
-  private static void authenticateWithPkam(AtCommandExecutor executor,
-                                           AtSign atSign,
-                                           AtKeys keys,
-                                           Map<String, Object> config,
-                                           String reusableChallenge)
-      throws AtException {
+    AtKeys keys = context.getKeys();
     try {
 
       // reuse the challenge from the initial from: if one was issued on this connection, otherwise
       // send a from command and expect to receive a challenge
-      String challenge = reusableChallenge;
+      String challenge = context.consumeChallenge();
       if (challenge == null) {
-        String fromCommand = CommandBuilders.fromCommandBuilder().atSign(atSign).config(config).build();
+        String fromCommand = CommandBuilders.fromCommandBuilder()
+            .atSign(context.getAtSign())
+            .config(context.getConfig())
+            .build();
         String fromResponse = executor.sendSync(fromCommand);
         challenge = matchDataStringNoWhitespace(throwExceptionIfError(fromResponse));
       }
