@@ -9,7 +9,7 @@ Feature: AtClient API tests for onboarding and enrolling atsign
 
   Scenario: Attempt to create AtClient prior to onboarding fails
     When AtClient fails for @device2
-    Then exception message matches "privatekey:at_pkam_publickey does not exist in keystore"
+    Then exception message matches "no legacy PKAM credential"
 
   Scenario: Attempt to onboard atsign with incorrect CRAM secret fails
     When @srie Activate.onboard fails with CRAM secret "not-the-correct-cramkey"
