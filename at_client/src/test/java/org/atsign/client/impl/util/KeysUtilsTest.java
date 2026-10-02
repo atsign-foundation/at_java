@@ -1,15 +1,19 @@
 package org.atsign.client.impl.util;
 
 import static org.atsign.client.api.AtSign.createAtSign;
+import static org.atsign.client.impl.common.EnrollmentId.createEnrollmentId;
 import static org.atsign.client.impl.util.EncryptionUtils.generateAESKeyBase64;
 import static org.atsign.client.impl.util.EncryptionUtils.generateRSAKeyPair;
+import static org.atsign.client.impl.util.EncryptionUtils.toStringBase64;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.Key;
+import java.security.KeyPair;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -120,29 +124,23 @@ public class KeysUtilsTest {
 
   @Test
   public void loadsAFileWrittenWithAStringVersion(@TempDir Path dir) throws Exception {
-    File file = copyFixture("at_java_string_version.atKeys", dir);
+    AtKeys keys = newKeys();
+    File file = writeKeysFile(keys, dir, Map.of("version", "1"));
 
-    AtKeys keys = KeysUtils.loadKeys(file);
-
-    assertEquals(readJson(file).get("selfEncryptionKey"), keys.getSelfEncryptKey());
-    assertNotNull(keys.getApkamPrivateKey());
-    assertNotNull(keys.getEncryptPrivateKey());
+    assertContentsMatch(keys, KeysUtils.loadKeys(file));
   }
 
   @Test
   public void loadsTheFlatFieldsOfATypedDocumentThatAuthenticatesThroughThem(@TempDir Path dir) throws Exception {
-    File file = copyFixture("at_auth_4_0_0_rc2_typed_atsign_keys.atKeys", dir);
+    AtKeys keys = newEnrolledKeys();
+    File file = writeKeysFile(keys, dir, typedAtSignKeysDocument());
 
-    AtKeys keys = KeysUtils.loadKeys(file);
-
-    assertEquals("flat-enrollment-1", keys.getEnrollmentId().toString());
-    assertEquals(readJson(file).get("selfEncryptionKey"), keys.getSelfEncryptKey());
-    assertNotNull(keys.getApkamPrivateKey());
+    assertContentsMatch(keys, KeysUtils.loadKeys(file));
   }
 
   @Test
   public void refusesATypedDocumentThatAuthenticatesThroughTypedMaterial(@TempDir Path dir) throws Exception {
-    File file = copyFixture("at_auth_4_0_0_rc2_typed_authentication.atKeys", dir);
+    File file = writeKeysFile(newEnrolledKeys(), dir, typedAuthenticationDocument("active"));
 
     AtClientConfigException e = assertThrows(AtClientConfigException.class, () -> KeysUtils.loadKeys(file));
 
@@ -150,30 +148,16 @@ public class KeysUtilsTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void loadsATypedDocumentWhoseTypedAuthenticationIsNotActive(@TempDir Path dir) throws Exception {
-    File file = copyFixture("at_auth_4_0_0_rc2_typed_authentication.atKeys", dir);
-    Map<String, Object> json = readJson(file);
-    for (Object enrollment : (List<?>) json.get("enrollments")) {
-      for (Object key : (List<?>) ((Map<?, ?>) enrollment).get("keys")) {
-        for (Object material : (List<?>) ((Map<?, ?>) key).get("material")) {
-          ((Map<String, Object>) material).put("status", "pending");
-        }
-      }
-    }
-    writeJson(file, json);
+    AtKeys keys = newEnrolledKeys();
+    File file = writeKeysFile(keys, dir, typedAuthenticationDocument("pending"));
 
-    AtKeys keys = KeysUtils.loadKeys(file);
-
-    assertEquals("flat-enrollment-1", keys.getEnrollmentId().toString());
+    assertContentsMatch(keys, KeysUtils.loadKeys(file));
   }
 
   @Test
   public void refusesAnUnsupportedVersion(@TempDir Path dir) throws Exception {
-    File file = copyFixture("at_java_string_version.atKeys", dir);
-    Map<String, Object> json = readJson(file);
-    json.put("version", 2);
-    writeJson(file, json);
+    File file = writeKeysFile(newKeys(), dir, Map.of("version", 2));
 
     AtClientConfigException e = assertThrows(AtClientConfigException.class, () -> KeysUtils.loadKeys(file));
 
@@ -182,10 +166,7 @@ public class KeysUtilsTest {
 
   @Test
   public void refusesAFlatFieldThatIsNotAString(@TempDir Path dir) throws Exception {
-    File file = copyFixture("at_java_string_version.atKeys", dir);
-    Map<String, Object> json = readJson(file);
-    json.put("selfEncryptionKey", List.of("not", "a", "string"));
-    writeJson(file, json);
+    File file = writeKeysFile(newKeys(), dir, Map.of("selfEncryptionKey", List.of("not", "a", "string")));
 
     AtClientConfigException e = assertThrows(AtClientConfigException.class, () -> KeysUtils.loadKeys(file));
 
@@ -194,10 +175,8 @@ public class KeysUtilsTest {
 
   @Test
   public void refusesATypedDocumentWhoseEnrollmentsAreNotAList(@TempDir Path dir) throws Exception {
-    File file = copyFixture("at_auth_4_0_0_rc2_typed_authentication.atKeys", dir);
-    Map<String, Object> json = readJson(file);
-    json.put("enrollments", Map.of("enrollmentId", "typed-enrollment-2"));
-    writeJson(file, json);
+    File file = writeKeysFile(newEnrolledKeys(), dir,
+                              typedDocument("enrollments", Map.of("enrollmentId", "typed-enrollment-2")));
 
     AtClientConfigException e = assertThrows(AtClientConfigException.class, () -> KeysUtils.loadKeys(file));
 
@@ -214,7 +193,7 @@ public class KeysUtilsTest {
 
   @Test
   public void saveKeysRefusesToOverwriteATypedDocument(@TempDir Path dir) throws Exception {
-    File file = copyFixture("at_auth_4_0_0_rc2_typed_atsign_keys.atKeys", dir);
+    File file = writeKeysFile(newEnrolledKeys(), dir, typedAtSignKeysDocument());
     byte[] before = Files.readAllBytes(file.toPath());
 
     IOException e = assertThrows(IOException.class, () -> KeysUtils.saveKeys(newKeys(), file));
@@ -225,7 +204,7 @@ public class KeysUtilsTest {
 
   @Test
   public void saveKeysOverwritesALegacyFile(@TempDir Path dir) throws Exception {
-    File file = copyFixture("at_java_string_version.atKeys", dir);
+    File file = writeKeysFile(newKeys(), dir, Map.of("version", "1"));
     AtKeys keys = newKeys();
 
     KeysUtils.saveKeys(keys, file);
@@ -242,13 +221,51 @@ public class KeysUtilsTest {
         .build();
   }
 
-  private static File copyFixture(String name, Path dir) throws Exception {
-    Path target = dir.resolve(name);
-    try (InputStream in = KeysUtilsTest.class.getResourceAsStream(name)) {
-      assertNotNull(in, "missing fixture " + name);
-      Files.copy(in, target);
-    }
-    return target.toFile();
+  private static AtKeys newEnrolledKeys() throws Exception {
+    return newKeys().toBuilder()
+        .enrollmentId(createEnrollmentId("flat-enrollment-1"))
+        .apkamSymmetricKey(generateAESKeyBase64())
+        .build();
+  }
+
+  private static File writeKeysFile(AtKeys keys, Path dir, Map<String, Object> fields) throws Exception {
+    File file = dir.resolve("keys.atKeys").toFile();
+    KeysUtils.saveKeys(keys, file);
+    Map<String, Object> json = readJson(file);
+    json.putAll(fields);
+    writeJson(file, json);
+    return file;
+  }
+
+  // NOTE the typed keys document at_auth 4.0.0-rc2 writes beside the flat fields. These spellings are
+  // at_auth's, so they stay raw literals rather than references to KeysUtils.
+  private static Map<String, Object> typedDocument(String container, Object entries) {
+    return Map.of("version", 1, "atsign", "@alice", "keys", List.of(), container, entries);
+  }
+
+  private static Map<String, Object> typedAtSignKeysDocument() throws Exception {
+    return typedDocument("atsignKeys",
+                         List.of(typedKey("root:rsa2048:1", "privateSigning", "publicVerification", "active")));
+  }
+
+  private static Map<String, Object> typedAuthenticationDocument(String status) throws Exception {
+    return typedDocument("enrollments",
+                         List.of(Map.of("enrollmentId", "typed-enrollment-2",
+                                        "keys", List.of(typedKey("auth:rsa2048:1", "privateAuthentication",
+                                                                 "publicAuthentication", status)))));
+  }
+
+  private static Map<String, Object> typedKey(String keyId, String privateRole, String publicRole, String status)
+      throws Exception {
+    KeyPair keyPair = generateRSAKeyPair();
+    return Map.of("keyId", keyId,
+                  "material", List.of(typedMaterial(privateRole, keyPair.getPrivate(), status),
+                                      typedMaterial(publicRole, keyPair.getPublic(), status)));
+  }
+
+  private static Map<String, Object> typedMaterial(String role, Key key, String status) {
+    return Map.of("role", role, "algorithm", "rsa2048", "createdAt", Instant.now().toString(), "status", status,
+                  "bytes", toStringBase64(key));
   }
 
   private static Map<String, Object> readJson(File file) throws IOException {
