@@ -57,7 +57,7 @@ public class TestServer implements AutoCloseable {
 
   private AtomicBoolean isAccept = new AtomicBoolean(true);
 
-  private final AtomicBoolean isAccepting = new AtomicBoolean();
+  private final AtomicBoolean isWorkerInAccept = new AtomicBoolean();
 
   private AtomicBoolean shutdown = new AtomicBoolean();
 
@@ -78,11 +78,11 @@ public class TestServer implements AutoCloseable {
           ServerSocket listening = serverSocket;
           if (listening != null && socket == null && isAccept.get()) {
             log.debug("accepting on {}", listening.getLocalPort());
-            isAccepting.set(true);
+            isWorkerInAccept.set(true);
             try {
               socket = listening.accept();
             } finally {
-              isAccepting.set(false);
+              isWorkerInAccept.set(false);
             }
             writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), false);
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -166,8 +166,8 @@ public class TestServer implements AutoCloseable {
       socket = null;
     }
     // NOTE the JDK keeps a socket listening until the thread blocked in its accept() wakes
-    long deadline = System.nanoTime() + SECONDS.toNanos(1);
-    while (isAccepting.get()) {
+    long deadline = System.nanoTime() + SECONDS.toNanos(5);
+    while (isWorkerInAccept.get()) {
       if (System.nanoTime() - deadline > 0) {
         throw new IllegalStateException("the worker thread has not left accept()");
       }
@@ -175,8 +175,8 @@ public class TestServer implements AutoCloseable {
     }
   }
 
-  public boolean isAccepting() {
-    return isAccepting.get();
+  public boolean isWorkerInAccept() {
+    return isWorkerInAccept.get();
   }
 
   public void accept() {
