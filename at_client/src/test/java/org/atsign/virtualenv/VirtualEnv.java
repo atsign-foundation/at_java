@@ -2,6 +2,7 @@ package org.atsign.virtualenv;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.io.File;
 import java.time.Duration;
@@ -11,12 +12,14 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.atsign.cucumber.helpers.Helpers;
 import org.slf4j.Logger;
 import org.testcontainers.containers.ComposeContainer;
 import org.testcontainers.containers.Container.ExecResult;
@@ -31,11 +34,14 @@ public class VirtualEnv {
 
   private static final String SERVICE = "virtualenv";
 
+  private static final String ROOT_SERVER = "vip.ve.atsign.zone:64";
+
   private static final Duration PROVISIONING_LIMIT = Duration.ofSeconds(180);
 
   private static final Pattern HOSTED = Pattern.compile("/secondary\\s+-a\\s+(@\\S+)");
 
-  private static final Lifecycle LIFECYCLE = new Lifecycle(VirtualEnv::startCompose, PROVISIONING_LIMIT);
+  private static final Lifecycle LIFECYCLE = new Lifecycle(VirtualEnv::startCompose,
+      () -> Helpers.isHostPortReachable(ROOT_SERVER, SECONDS.toMillis(2)), PROVISIONING_LIMIT);
 
   public static void main(String[] args) throws Exception {
     setUp();
@@ -46,14 +52,17 @@ public class VirtualEnv {
   }
 
   /**
-   * Starts the virtualenv, returning once install_PKAM_Keys has exited having provisioned every
-   * atSign the container hosts. A failure stops the container, and every later call rethrows it
-   * without starting another.
+   * Starts the virtualenv, unless one is already answering on its root server, returning once
+   * install_PKAM_Keys has exited having provisioned every atSign the container hosts. A failure
+   * stops the container, and every later call rethrows it without starting another.
    */
   public static void setUp() {
     LIFECYCLE.setUp();
   }
 
+  /**
+   * Stops the virtualenv this class started, if any.
+   */
   public static void tearDown() {
     LIFECYCLE.tearDown();
   }
@@ -95,7 +104,11 @@ public class VirtualEnv {
     try {
       container.start();
     } catch (RuntimeException e) {
-      container.stop();
+      try {
+        container.stop();
+      } catch (RuntimeException stopFailure) {
+        e.addSuppressed(stopFailure);
+      }
       throw e;
     }
     return new Started() {
@@ -127,27 +140,32 @@ public class VirtualEnv {
      */
     String supervisorConfig() throws Exception;
 
+    /**
+     * Stops and removes the container.
+     */
     void stop();
   }
 
   /**
-   * Starts a virtualenv at most once per run and waits for it to be provisioned.
+   * Starts a virtualenv, at most once until it is torn down, and waits for it to be provisioned.
    */
   static final class Lifecycle {
 
     private final Function<Consumer<OutputFrame>, Started> starter;
+    private final BooleanSupplier alreadyRunning;
     private final Duration limit;
     private Started started;
     private RuntimeException failure;
 
-    Lifecycle(Function<Consumer<OutputFrame>, Started> starter, Duration limit) {
+    Lifecycle(Function<Consumer<OutputFrame>, Started> starter, BooleanSupplier alreadyRunning, Duration limit) {
       this.starter = starter;
+      this.alreadyRunning = alreadyRunning;
       this.limit = limit;
     }
 
     /**
-     * Starts the virtualenv unless this lifecycle already has, returning once it is provisioned;
-     * throws, and stops the container, when it is not.
+     * Starts the virtualenv unless this lifecycle already has or one is already running, returning
+     * once it is provisioned; throws, and stops the container, when it is not.
      */
     synchronized void setUp() {
       if (failure != null) {
@@ -155,6 +173,10 @@ public class VirtualEnv {
             + failure.getMessage(), failure);
       }
       if (started != null) {
+        return;
+      }
+      if (alreadyRunning.getAsBoolean()) {
+        log.info("using the virtualenv that is already running");
         return;
       }
       ProvisioningWatch watch = new ProvisioningWatch();
@@ -197,20 +219,26 @@ public class VirtualEnv {
   }
 
   /**
-   * Records, from the container's output, each atSign install_PKAM_Keys reports provisioned and
-   * the status it exits with.
+   * Records, from the container's output, each atSign install_PKAM_Keys reports provisioned, the
+   * status it exits with, and whether the output has ended.
    */
   static final class ProvisioningWatch implements Consumer<OutputFrame> {
 
-    private static final Pattern PROVISIONED = Pattern.compile("install_PKAM_Keys .*successful for (@\\S+)");
+    private static final Pattern PROVISIONED =
+        Pattern.compile("install_PKAM_Keys \\|(?:cramAndPkamAuth|cramAuthOnly) successful for (@\\S+)$");
     private static final Pattern EXITED = Pattern.compile("install_PKAM_Keys exited with status (\\d+)");
 
     private final Set<String> provisioned = ConcurrentHashMap.newKeySet();
-    private final CountDownLatch exited = new CountDownLatch(1);
+    private final CountDownLatch exitedOrEnded = new CountDownLatch(1);
+    private volatile boolean exitReported;
     private volatile int exitStatus;
 
     @Override
     public void accept(OutputFrame frame) {
+      if (frame.getType() == OutputFrame.OutputType.END) {
+        exitedOrEnded.countDown();
+        return;
+      }
       String line = frame.getUtf8StringWithoutLineEnding();
       Matcher matcher = PROVISIONED.matcher(line);
       if (matcher.find()) {
@@ -220,32 +248,39 @@ public class VirtualEnv {
       matcher = EXITED.matcher(line);
       if (matcher.find()) {
         exitStatus = Integer.parseInt(matcher.group(1));
-        exited.countDown();
+        exitReported = true;
+        exitedOrEnded.countDown();
       }
     }
 
     /**
      * Returns once install_PKAM_Keys has exited with status 0 having provisioned every hosted
-     * atSign; throws naming the hosted atSigns it has not provisioned otherwise, or once the limit
-     * passes.
+     * atSign; throws naming the hosted atSigns it has not provisioned otherwise, when the
+     * container's output ends first, or once the limit passes.
      */
     void awaitProvisioned(Set<String> hosted, Duration limit) throws InterruptedException {
       if (hosted.isEmpty()) {
         throw new IllegalStateException("found no hosted atSigns in the virtualenv's supervisor configuration");
       }
       log.info("awaiting install_PKAM_Keys provisioning {} hosted atSigns...", hosted.size());
-      boolean hasExited = exited.await(limit.toMillis(), MILLISECONDS);
+      boolean finished = exitedOrEnded.await(limit.toMillis(), MILLISECONDS);
       List<String> missing = hosted.stream()
           .filter(atSign -> !provisioned.contains(atSign))
           .collect(Collectors.toList());
-      if (!hasExited) {
+      if (!finished) {
         throw new IllegalStateException(String.format(Locale.ROOT,
                                                       "install_PKAM_Keys had not exited after %.1fs; %d of %d hosted atSigns not yet provisioned: %s",
                                                       limit.toMillis() / 1000.0, missing.size(), hosted.size(),
                                                       missing));
       }
+      if (!exitReported) {
+        throw new IllegalStateException(String.format(Locale.ROOT,
+                                                      "the virtualenv container's output ended before install_PKAM_Keys exited; %d of %d hosted atSigns"
+                                                          + " not yet provisioned: %s",
+                                                      missing.size(), hosted.size(), missing));
+      }
       if (exitStatus != 0 || !missing.isEmpty()) {
-        throw new IllegalStateException(String.format(
+        throw new IllegalStateException(String.format(Locale.ROOT,
                                                       "install_PKAM_Keys exited with status %d; %d of %d hosted atSigns not provisioned: %s",
                                                       exitStatus, missing.size(), hosted.size(), missing));
       }

@@ -22,7 +22,6 @@ import java.util.regex.Pattern;
 
 import org.atsign.client.impl.util.KeysUtils;
 import org.atsign.cucumber.helpers.AtDemoData;
-import org.atsign.cucumber.helpers.Helpers;
 import org.atsign.virtualenv.VirtualEnv;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -40,9 +39,7 @@ class ActivateIT {
 
   @BeforeAll
   public static void classSetup() {
-    if (!Helpers.isHostPortReachable("vip.ve.atsign.zone:64", SECONDS.toMillis(2))) {
-      VirtualEnv.setUp();
-    }
+    VirtualEnv.setUp();
   }
 
   @BeforeEach

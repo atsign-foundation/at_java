@@ -1,6 +1,5 @@
 package org.atsign.client.impl;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -14,7 +13,6 @@ import org.atsign.client.impl.AtCommandExecutors.AtCommandExecutorBuilder;
 import org.atsign.client.impl.commands.ScanCommands;
 import org.atsign.client.impl.common.ReconnectStrategy;
 import org.atsign.client.impl.util.KeysUtils;
-import org.atsign.cucumber.helpers.Helpers;
 import org.atsign.virtualenv.VirtualEnv;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -29,9 +27,7 @@ class AtCommandExecutorsIT {
 
   @BeforeAll
   public static void classSetup() throws Exception {
-    if (!Helpers.isHostPortReachable("vip.ve.atsign.zone:64", SECONDS.toMillis(2))) {
-      VirtualEnv.setUp();
-    }
+    VirtualEnv.setUp();
     atSign = AtSign.createAtSign("colin");
     keys = KeysUtils.loadKeys(new File("target/at_demo_data/lib/assets/atkeys/@colin.atKeys"));
   }

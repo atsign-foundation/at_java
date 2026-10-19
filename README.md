@@ -76,6 +76,8 @@ attempt to start one. This requires dockerd or desktop docker to be running.
 They then wait until `install_PKAM_Keys` has exited having provisioned every
 atSign the container hosts. If it misses any, or has not exited within three
 minutes, the integration tests fail, naming the atSigns it did not provision.
+A virtual env that is already running (anything answering on
+vip.ve.atsign.zone:64) is used as it is, with no check that it is provisioned.
 
 For CI, "standing up" and then "tearing down" the docker container is the intended
 behavior. However, for a developer this will be slow so it's preferable to "standup"

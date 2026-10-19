@@ -1,6 +1,5 @@
 package org.atsign.client.impl.cli;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -14,7 +13,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.atsign.client.impl.util.KeysUtils;
-import org.atsign.cucumber.helpers.Helpers;
 import org.atsign.virtualenv.VirtualEnv;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -31,9 +29,7 @@ class CliIT {
 
   @BeforeAll
   public static void classSetup() {
-    if (!Helpers.isHostPortReachable(VIRTUAL_ENV_ROOT, SECONDS.toMillis(2))) {
-      VirtualEnv.setUp();
-    }
+    VirtualEnv.setUp();
     AT_SIGN_KEYS_DIR = KeysUtils.expectedKeysFilesLocation;
     ATSIGN_KEYS_SUFFIX = KeysUtils.keysFileSuffix;
     KeysUtils.expectedKeysFilesLocation = "target/at_demo_data/lib/assets/atkeys";
