@@ -1,6 +1,7 @@
 package org.atsign.client.impl.netty;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.atsign.client.impl.common.Preconditions.checkNotNull;
 
 import java.io.*;
@@ -56,6 +57,8 @@ public class TestServer implements AutoCloseable {
 
   private AtomicBoolean isAccept = new AtomicBoolean(true);
 
+  private final AtomicBoolean isAccepting = new AtomicBoolean();
+
   private AtomicBoolean shutdown = new AtomicBoolean();
 
   private final Thread workerThread;
@@ -72,9 +75,15 @@ public class TestServer implements AutoCloseable {
     workerThread = new Thread(() -> {
       while (!shutdown.get()) {
         try {
-          if (serverSocket != null && socket == null && isAccept.get()) {
-            log.debug("accepting on {}", serverSocket.getLocalPort());
-            socket = serverSocket.accept();
+          ServerSocket listening = serverSocket;
+          if (listening != null && socket == null && isAccept.get()) {
+            log.debug("accepting on {}", listening.getLocalPort());
+            isAccepting.set(true);
+            try {
+              socket = listening.accept();
+            } finally {
+              isAccepting.set(false);
+            }
             writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), false);
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             requestHandler.accept(null);
@@ -145,6 +154,10 @@ public class TestServer implements AutoCloseable {
     }
   }
 
+  /**
+   * Closes the listening socket and any accepted one, returning once the worker thread has left
+   * {@code accept()}, so that the port is free to be bound again.
+   */
   public void closeServerSocket() {
     try {
       closeNoThrow(serverSocket, socket, reader, writer);
@@ -152,6 +165,18 @@ public class TestServer implements AutoCloseable {
       serverSocket = null;
       socket = null;
     }
+    // NOTE the JDK keeps a socket listening until the thread blocked in its accept() wakes
+    long deadline = System.nanoTime() + SECONDS.toNanos(1);
+    while (isAccepting.get()) {
+      if (System.nanoTime() - deadline > 0) {
+        throw new IllegalStateException("the worker thread has not left accept()");
+      }
+      Thread.onSpinWait();
+    }
+  }
+
+  public boolean isAccepting() {
+    return isAccepting.get();
   }
 
   public void accept() {
