@@ -73,6 +73,9 @@ Use **-DskipITs** to avoid running integration tests.
 
 The integration tests check to see if a virtual env is running. If not they will
 attempt to start one. This requires dockerd or desktop docker to be running.
+They then wait until `install_PKAM_Keys` has exited having provisioned every
+atSign the container hosts. If it misses any, or has not exited within three
+minutes, the integration tests fail, naming the atSigns it did not provision.
 
 For CI, "standing up" and then "tearing down" the docker container is the intended
 behavior. However, for a developer this will be slow so it's preferable to "standup"
@@ -80,7 +83,7 @@ the virtual env independently, like this:
 
 ```shell
 cd at_client/src/test/resources/org/atsign/virtualenv
-docker compose -f up
+docker compose up
 ```
 
 The start-up can take a few minutes and involves running scripts that install the
@@ -89,10 +92,12 @@ following log output:
 
 ```text
 ...
-virtualenv-1  | SHOUT|...| install_PKAM_Keys |cramAndPkamAuth successful for @chris
-virtualenv-1  | SHOUT|...| install_PKAM_Keys |cramAndPkamAuth successful for @policy1
-virtualenv-1  | SHOUT|...| install_PKAM_Keys |cramAndPkamAuth successful for @emoji
+virtualenv-1  | install_PKAM_Keys exited with status 0
 ```
+
+Each atSign the script provisions logs a `cramAndPkamAuth successful` or
+`cramAuthOnly successful` line before that; a status other than 0, or an atSign
+with no such line, means the environment is not fully provisioned.
 
 The tests require test keys (CRAM keys and atKeys) which the virtual env was
 built with. The pom contains a plugin which downloads the
@@ -110,8 +115,8 @@ be necessary to reset the docker container, like this:
 
 ```shell
 cd at_client/src/test/resources/org/atsign/virtualenv
-docker compose -f down
-docker compose -f up
+docker compose down
+docker compose up
 ```
 
 ## Virtual Environment
