@@ -160,10 +160,9 @@ public class TestServer implements AutoCloseable {
    */
   public void closeServerSocket() {
     try {
-      closeNoThrow(serverSocket, socket, reader, writer);
+      closeNoThrow(serverSocket);
     } finally {
       serverSocket = null;
-      socket = null;
     }
     // NOTE the JDK keeps a socket listening until the thread blocked in its accept() wakes
     long deadline = System.nanoTime() + SECONDS.toNanos(5);
@@ -173,6 +172,7 @@ public class TestServer implements AutoCloseable {
       }
       Thread.onSpinWait();
     }
+    closeClientSocket();
   }
 
   public boolean isWorkerInAccept() {
