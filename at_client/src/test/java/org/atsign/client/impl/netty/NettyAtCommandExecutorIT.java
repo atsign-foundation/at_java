@@ -1,6 +1,5 @@
 package org.atsign.client.impl.netty;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.atsign.client.api.AtSign.createAtSign;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -11,7 +10,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.atsign.client.api.AtSign;
 import org.atsign.client.impl.netty.NettyAtCommandExecutor.NettyAtCommandExecutorBuilder;
-import org.atsign.cucumber.helpers.Helpers;
 import org.atsign.virtualenv.VirtualEnv;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
@@ -24,9 +22,7 @@ class NettyAtCommandExecutorIT {
 
   @BeforeAll
   public static void classSetup() {
-    if (!Helpers.isHostPortReachable("vip.ve.atsign.zone:64", SECONDS.toMillis(2))) {
-      VirtualEnv.setUp();
-    }
+    VirtualEnv.setUp();
   }
 
   @Test
